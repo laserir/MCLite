@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "no_sd_title": "Pas de carte SD",
     "no_sd_msg": "Inserer une carte SD avec config.json\net redemarrer.\n\nUtilisez l'outil MCLite Config Tool\npour creer votre configuration.",
     "setup_title": "Configuration requise",

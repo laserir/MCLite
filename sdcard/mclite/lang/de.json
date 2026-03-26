@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "no_sd_title": "Keine SD-Karte",
     "no_sd_msg": "SD-Karte mit config.json einlegen\nund neu starten.\n\nVerwenden Sie das MCLite Config Tool\num Ihre Konfiguration zu erstellen.",
     "setup_title": "Einrichtung erforderlich",
