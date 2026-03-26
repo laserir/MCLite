@@ -19,7 +19,8 @@ jobs:
         run: |
           gh release download "${{ github.event.release.tag_name }}" \
             --pattern "*.bin" \
-            --dir tools/web-flasher/firmware/
+            --dir tools/web-flasher/firmware/ \
+            --clobber
 
       - name: Upload config tool to release
         env:
