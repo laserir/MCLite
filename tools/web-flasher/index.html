@@ -60,7 +60,7 @@ label {
   color: var(--text2);
   margin-bottom: 4px;
 }
-input, select {
+select {
   width: 100%;
   background: var(--bg3);
   color: var(--text);
@@ -70,31 +70,11 @@ input, select {
   font-size: 0.9rem;
   font-family: inherit;
 }
-input:focus, select:focus {
+select:focus {
   outline: none;
   border-color: var(--accent);
 }
 select { cursor: pointer; }
-.row {
-  display: flex;
-  gap: 12px;
-  align-items: end;
-}
-.row > * { flex: 1; }
-.btn {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: background 0.15s;
-  white-space: nowrap;
-}
-.btn:hover { background: var(--accent-hover); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .flash-area {
   text-align: center;
   padding: 24px 16px;
@@ -167,19 +147,6 @@ esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
   </div>
 
   <div class="section">
-    <div class="section-title">Firmware Source</div>
-    <div class="row">
-      <div>
-        <label for="repo">GitHub Repository</label>
-        <input type="text" id="repo" value="laserir/MCLite" placeholder="owner/repo">
-      </div>
-      <div style="flex: 0 0 auto;">
-        <button class="btn" id="fetch-btn" onclick="fetchReleases()">Load Releases</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
     <div class="section-title">Version</div>
     <div>
       <label for="version">Select firmware version</label>
@@ -223,23 +190,14 @@ esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
 let releases = [];
 let currentManifestUrl = null;
 
+const REPO = 'laserir/MCLite';
+
 async function fetchReleases() {
-  const repo = document.getElementById('repo').value.trim();
-  const btn = document.getElementById('fetch-btn');
   const sel = document.getElementById('version');
-  const status = document.getElementById('status');
-
-  if (!repo || !repo.includes('/')) {
-    setStatus('Enter a valid repository (owner/repo)', 'error');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Loading...';
   setStatus('Fetching releases...', '');
 
   try {
-    const resp = await fetch(`https://api.github.com/repos/${repo}/releases`);
+    const resp = await fetch(`https://api.github.com/repos/${REPO}/releases`);
     if (!resp.ok) {
       throw new Error(resp.status === 404 ? 'Repository not found' : `GitHub API error (${resp.status})`);
     }
@@ -282,9 +240,6 @@ async function fetchReleases() {
     sel.innerHTML = '<option value="">-- Error loading releases --</option>';
     sel.disabled = true;
     setStatus(e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Load Releases';
   }
 }
 
