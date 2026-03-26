@@ -30,9 +30,11 @@ Most features below are optional. The primary goal is to keep things extremely s
 
 ### Install the firmware
 
-**Option 1 (Recommended):** Visit the [MCLite Web Flasher](https://laserir.github.io/MCLite/tools/web-flasher/), select a version, and flash directly from your browser. No software to install -- just Chrome/Edge and a USB cable.
+**Option 1: Web Flasher (recommended)**
+> Visit the [MCLite Web Flasher](https://laserir.github.io/MCLite/tools/web-flasher/), select a version, and flash directly from your browser. No software to install -- just Chrome/Edge and a USB cable.
 
-**Option 2 (Manual):** Download the latest `mclite-v*.bin` from the [Releases](../../releases) page and flash with esptool: `esptool.py write_flash 0x0 mclite-v0.1.0.bin`
+**Option 2: Manual**
+> Download the latest `mclite-v*.bin` from the [Releases](../../releases) page and flash with esptool: `esptool.py write_flash 0x0 mclite-v0.1.0.bin`
 
 ### Set up your config
 
