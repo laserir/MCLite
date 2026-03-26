@@ -157,8 +157,8 @@ esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
       </span>
     </esp-web-install-button>
     <div id="status" class="status"></div>
-    <div id="next-step" class="hidden" style="margin-top: 16px;">
-      <a href="../config-tool/mclite_config_tool.html" style="color: var(--accent); font-size: 0.9rem; font-weight: 500;">Next: open the Config Tool to set up your SD card &rarr;</a>
+    <div id="next-step" class="hidden" style="margin-top: 16px; font-size: 0.85rem; color: var(--text2);">
+      After flashing, use the <a href="../config-tool/mclite_config_tool.html" style="color: var(--accent);">Config Tool</a> to set up your SD card.
     </div>
   </div>
 
@@ -171,7 +171,8 @@ esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
       <strong>4.</strong> Release the trackball — the device is now in DFU mode<br>
       <strong>5.</strong> Connect via USB and select a firmware version above<br>
       <strong>6.</strong> Click "Install MCLite" and select the serial port<br>
-      <strong>7.</strong> Wait for the flash to complete (~30 seconds)<br><br>
+      <strong>7.</strong> Wait for the flash to complete (~30 seconds)<br>
+      <strong>8.</strong> Open the <a href="../config-tool/mclite_config_tool.html" style="color:var(--accent);">Config Tool</a> to set up your SD card<br><br>
       <strong>First-time flash?</strong> You will be prompted to erase the device. This is normal.<br>
       <strong>Note:</strong> Your config.json and SD card contents are not affected by flashing.
     </div>
@@ -270,6 +271,7 @@ function onVersionChange() {
   );
   flashBtn.setAttribute('manifest', currentManifestUrl);
   activateBtn.disabled = false;
+  document.getElementById('next-step').classList.remove('hidden');
 
   const sizeMB = (rel.binSize / (1024 * 1024)).toFixed(1);
   setStatus(`Ready: ${rel.binName} (${sizeMB} MB)`, 'ok');
@@ -285,23 +287,6 @@ function setStatus(msg, type) {
 if (!('serial' in navigator)) {
   document.getElementById('browser-warning').classList.remove('hidden');
 }
-
-// Detect when ESP Web Tools dialog closes after flashing
-// ESP Web Tools uses an internal dialog — watch for its removal to show next step
-const flashBtn = document.getElementById('flash-btn');
-let flashStarted = false;
-
-new MutationObserver(() => {
-  const shadow = flashBtn.shadowRoot;
-  if (!shadow) return;
-  const dialog = shadow.querySelector('ewt-install-dialog');
-  if (dialog && !flashStarted) {
-    flashStarted = true;
-  } else if (!dialog && flashStarted) {
-    flashStarted = false;
-    document.getElementById('next-step').classList.remove('hidden');
-  }
-}).observe(flashBtn, { childList: true, subtree: true });
 
 // Auto-load releases on page load
 fetchReleases();
