@@ -7,7 +7,7 @@ MCLite is ideal for groups, families, search and rescue teams, and anyone who ne
 Most features below are optional. The primary goal is to keep things extremely simple -- anyone who can use a smartphone can use MCLite without explanation. Advanced features like telemetry, GPS sharing, or PIN lock are there when you need them, but they stay out of the way until then.
 
 <p align="center">
-<a href="https://laserir.github.io/MCLite/tools/web-flasher/"><img src="https://img.shields.io/badge/Install_MCLite_Now-00cc66?style=for-the-badge&logo=espressif&logoColor=white" alt="Install MCLite Now"></a>
+<a href="https://laserir.github.io/MCLite/tools/web-flasher/"><img src="https://img.shields.io/badge/Install_MCLite_Now-00cc66?style=for-the-badge&logo=espressif&logoColor=white&scale=2" height="50" alt="Install MCLite Now"></a>
 </p>
 
 ## Features
