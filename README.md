@@ -26,16 +26,14 @@ Most features below are optional. The primary goal is to keep things extremely s
 
 ### Install the firmware
 
-1. Download the latest `mclite.bin` from the [Releases](../../releases) page
-2. Flash it to your T-Deck Plus -- pick whichever method is easiest for you:
-   - **Web flasher** (easiest): visit [Spacehuhn Web Flasher](https://esptool.spacehuhn.com/), connect your T-Deck Plus via USB, set the flash address to `0x0`, and upload the .bin file. No software to install.
-   - **esptool** (command line): `esptool.py write_flash 0x0 mclite.bin`
+1. **Web flasher** (easiest): visit the [MCLite Web Flasher](https://laserir.github.io/MCLite/tools/web-flasher/), select a version, and flash directly from your browser. No software to install -- just Chrome/Edge and a USB cable.
+2. **Manual**: download the latest `mclite-v*.bin` from the [Releases](../../releases) page and flash with esptool: `esptool.py write_flash 0x0 mclite-v0.1.0.bin`
 
 ### Set up your config
 
 **Option 1: Config Tool (recommended)**
 
-1. Open the **MCLite Config Tool** (`tools/config-tool/mclite_config_tool.html`) in any web browser. It works offline -- no internet needed, nothing to install.
+1. Open the [MCLite Config Tool](https://laserir.github.io/MCLite/tools/config-tool/mclite_config_tool.html) in any web browser (or use the local file at `tools/config-tool/mclite_config_tool.html`). It works offline -- no internet needed, nothing to install.
 2. The **Setup Wizard** opens automatically and walks you through the essentials: device name, region, key pair, and default channels. For more detailed settings (telemetry, GPS format, PIN lock, etc.), use the full editor after completing the wizard.
 3. Click **Export** to download `config.json`
 4. Copy `config.json` to the root of your SD card
