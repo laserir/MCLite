@@ -189,6 +189,7 @@ esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
 <script>
 let releases = [];
 let currentManifestUrl = null;
+let currentBinUrl = null;
 
 const REPO = 'laserir/MCLite';
 
@@ -214,7 +215,7 @@ async function fetchReleases() {
           body: rel.body || '',
           prerelease: rel.prerelease,
           date: rel.published_at ? rel.published_at.slice(0, 10) : '',
-          binUrl: asset.browser_download_url,
+          binApiUrl: asset.url,
           binName: asset.name,
           binSize: asset.size
         });
@@ -243,17 +244,21 @@ async function fetchReleases() {
   }
 }
 
-function onVersionChange() {
+async function onVersionChange() {
   const sel = document.getElementById('version');
   const flashBtn = document.getElementById('flash-btn');
   const activateBtn = flashBtn.querySelector('[slot="activate"]');
   const notesEl = document.getElementById('release-notes');
   const idx = sel.value;
 
-  // Revoke previous blob URL
+  // Revoke previous blob URLs
   if (currentManifestUrl) {
     URL.revokeObjectURL(currentManifestUrl);
     currentManifestUrl = null;
+  }
+  if (currentBinUrl) {
+    URL.revokeObjectURL(currentBinUrl);
+    currentBinUrl = null;
   }
 
   if (idx === '' || !releases[idx]) {
@@ -273,11 +278,31 @@ function onVersionChange() {
     notesEl.style.display = 'none';
   }
 
+  // Download binary via GitHub API (CORS-safe)
+  const sizeMB = (rel.binSize / (1024 * 1024)).toFixed(1);
+  setStatus(`Downloading ${rel.binName} (${sizeMB} MB)...`, '');
+  sel.disabled = true;
+
+  try {
+    const resp = await fetch(rel.binApiUrl, {
+      headers: { 'Accept': 'application/octet-stream' }
+    });
+    if (!resp.ok) throw new Error(`Download failed (${resp.status})`);
+    const blob = await resp.blob();
+    currentBinUrl = URL.createObjectURL(blob);
+  } catch (e) {
+    setStatus(`Download failed: ${e.message}`, 'error');
+    sel.disabled = false;
+    return;
+  }
+
+  sel.disabled = false;
+
   // Extract version from bin filename (mclite-v0.1.0.bin -> 0.1.0)
   const vMatch = rel.binName.match(/mclite-v(.+)\.bin/i);
   const version = vMatch ? vMatch[1] : rel.tag;
 
-  // Generate manifest
+  // Generate manifest pointing to local blob
   const manifest = {
     name: 'MCLite',
     version: version,
@@ -286,7 +311,7 @@ function onVersionChange() {
       chipFamily: 'ESP32-S3',
       improv: false,
       parts: [{
-        path: rel.binUrl,
+        path: currentBinUrl,
         offset: 0
       }]
     }]
@@ -298,7 +323,6 @@ function onVersionChange() {
   flashBtn.setAttribute('manifest', currentManifestUrl);
   activateBtn.disabled = false;
 
-  const sizeMB = (rel.binSize / (1024 * 1024)).toFixed(1);
   setStatus(`Ready: ${rel.binName} (${sizeMB} MB)`, 'ok');
 }
 
