@@ -1,4 +1,4 @@
-# MCLite
+# MCLite for T-Deck Plus
 
 Lightweight off-grid communicator firmware for the LilyGo T-Deck Plus. Built on [MeshCore](https://github.com/ripplebiz/MeshCore), MCLite is purpose-built for emergency and outdoor communication -- no internet, no cell towers, no training needed. Turn it on and communicate.
 
