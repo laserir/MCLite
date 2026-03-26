@@ -1,0 +1,36 @@
+name: Publish firmware to web flasher
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download .bin from release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ github.event.release.tag_name }}" \
+            --pattern "*.bin" \
+            --dir tools/web-flasher/firmware/
+
+      - name: Keep only last 5 firmware versions
+        run: |
+          cd tools/web-flasher/firmware
+          ls -t *.bin | tail -n +6 | xargs -r rm
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tools/web-flasher/firmware/
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "Publish firmware ${{ github.event.release.tag_name }} to web flasher"
+          git push

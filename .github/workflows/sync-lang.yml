@@ -1,0 +1,27 @@
+name: Sync language files to config tool
+
+on:
+  push:
+    paths:
+      - 'sdcard/mclite/lang/*.json'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync lang files into config tool
+        run: python3 tools/sync_lang.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tools/config-tool/mclite_config_tool.html
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "Auto-sync language files to config tool"
+          git push
