@@ -158,7 +158,7 @@ esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
     </esp-web-install-button>
     <div id="status" class="status"></div>
     <div id="next-step" class="hidden" style="margin-top: 16px;">
-      <a href="../config-tool/mclite_config_tool.html" style="color: var(--accent); font-size: 0.9rem; font-weight: 500;">Next step: open the Config Tool to set up your SD card &rarr;</a>
+      <a href="../config-tool/mclite_config_tool.html" style="color: var(--accent); font-size: 0.9rem; font-weight: 500;">Next: open the Config Tool to set up your SD card &rarr;</a>
     </div>
   </div>
 
@@ -286,12 +286,22 @@ if (!('serial' in navigator)) {
   document.getElementById('browser-warning').classList.remove('hidden');
 }
 
-// Show config tool link after successful flash
-document.getElementById('flash-btn').addEventListener('state-changed', (e) => {
-  if (e.detail.state === 'FINISHED') {
+// Detect when ESP Web Tools dialog closes after flashing
+// ESP Web Tools uses an internal dialog — watch for its removal to show next step
+const flashBtn = document.getElementById('flash-btn');
+let flashStarted = false;
+
+new MutationObserver(() => {
+  const shadow = flashBtn.shadowRoot;
+  if (!shadow) return;
+  const dialog = shadow.querySelector('ewt-install-dialog');
+  if (dialog && !flashStarted) {
+    flashStarted = true;
+  } else if (!dialog && flashStarted) {
+    flashStarted = false;
     document.getElementById('next-step').classList.remove('hidden');
   }
-});
+}).observe(flashBtn, { childList: true, subtree: true });
 
 // Auto-load releases on page load
 fetchReleases();
