@@ -244,7 +244,7 @@ MCLite uses the following open-source libraries:
 | TinyGPSPlus | LGPL-2.1 |
 | Arduino ESP32 core | LGPL-2.1 |
 
-LGPL-2.1 libraries are dynamically linked. Users may replace them by rebuilding with PlatformIO.
+LGPL-2.1 libraries are dynamically linked. Users may replace them by rebuilding with PlatformIO. See [LICENSES.md](LICENSES.md) for full copyright notices.
 
 ## Contributing
 
