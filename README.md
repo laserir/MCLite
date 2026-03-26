@@ -1,0 +1,249 @@
+# MCLite
+
+Lightweight off-grid communicator firmware for the LilyGo T-Deck Plus. Built on [MeshCore](https://github.com/ripplebiz/MeshCore), MCLite is purpose-built for emergency and outdoor communication -- no internet, no cell towers, no training needed. Turn it on and communicate.
+
+MCLite is ideal for groups, families, search and rescue teams, and anyone who needs reliable off-grid messaging. It is fully compatible with other MeshCore devices and companion apps (iOS, Android) -- MCLite users can communicate with anyone on the same MeshCore network. All configuration is done in a single file -- one person sets it up, copies it to everyone's SD card, and the whole group is ready to go. No accounts, no pairing, no per-device setup. Perfect for kids, older family members, or anyone who just needs it to work.
+
+Most features below are optional. The primary goal is to keep things extremely simple -- anyone who can use a smartphone can use MCLite without explanation. Advanced features like telemetry, GPS sharing, or PIN lock are there when you need them, but they stay out of the way until then.
+
+## Features
+
+- **Direct messages** -- private encrypted conversations between contacts
+- **Channels** -- group communication via shared or public channels, with optional read-only (listen-only) mode
+- **SOS alerts** -- long-press the trackball (hold 6 seconds) to broadcast an emergency alert
+- **Battery alerts** -- automatic low-battery warnings sent to your contacts
+- **GPS location sharing** -- manually send your position in lat/lon or UTMREF/MGRS (military grid) format, used by search and rescue worldwide. Last-known position support when GPS signal is temporarily lost
+- **Telemetry** -- responds to MeshCore-standard telemetry requests (battery, GPS) with per-contact permissions. Compatible with MeshCore companion apps. Optionally request telemetry from contacts to see their battery, location, and distance
+- **Message history** -- conversations saved to SD card and restored on reboot
+- **Multi-language** -- English, German, French, and Italian included. Add your own translations via SD card
+- **Notification sounds** -- chime on incoming messages, alarm on SOS. Supports custom WAV files from SD card
+- **Auto-dim** -- screen dims after inactivity to save battery
+- **Multiple input methods** -- QWERTY keyboard, trackball, and touchscreen
+- **PIN lock** -- optional screen lock to prevent unauthorized use
+- **Zero-config for end users** -- all settings live in one JSON file on the SD card. Set it up once, copy to every device in your group
+
+## Getting Started
+
+### Install the firmware
+
+1. Download the latest `mclite.bin` from the [Releases](../../releases) page
+2. Flash it to your T-Deck Plus -- pick whichever method is easiest for you:
+   - **Web flasher** (easiest): visit [Spacehuhn Web Flasher](https://esptool.spacehuhn.com/), connect your T-Deck Plus via USB, set the flash address to `0x0`, and upload the .bin file. No software to install.
+   - **esptool** (command line): `esptool.py write_flash 0x0 mclite.bin`
+
+### Set up your config
+
+**Option 1: Config Tool (recommended)**
+
+1. Open the **MCLite Config Tool** (`tools/config-tool/mclite_config_tool.html`) in any web browser. It works offline -- no internet needed, nothing to install.
+2. The **Setup Wizard** opens automatically and walks you through the essentials: device name, region, key pair, and default channels. For more detailed settings (telemetry, GPS format, PIN lock, etc.), use the full editor after completing the wizard.
+3. Click **Export** to download `config.json`
+4. Copy `config.json` to the root of your SD card
+5. Insert the SD card and power on -- done
+
+To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each person in your group, generate keys for all, then export -- the tool creates a ZIP with a separate `config.json` per device, each with the correct name, unique key pair, and all other devices pre-loaded as contacts. Copy each file to the corresponding SD card and you're done.
+
+**Option 2: Blank SD card (quick start)**
+
+1. Insert a blank FAT32-formatted SD card (max 32 GB) and power on
+2. MCLite auto-generates a unique identity and creates a default config with the Public and #mclite channels
+3. The device is immediately functional -- you can send and receive on both channels
+4. To add contacts, channels, or change settings (language, radio preset, etc.): open the Config Tool, click **Import** to load the auto-created `config.json` from your SD card, make your changes, click **Export**, and copy the updated file back to the SD card
+
+<details>
+<summary><strong>Example config.json</strong> (click to expand)</summary>
+
+```jsonc
+{
+  // Language: "" = English (default), "de" = German, "fr" = French, "it" = Italian
+  // Add your own: place <code>.json in /mclite/lang/ on the SD card
+  "language": "",
+
+  "device": {
+    "name": "Alice"                    // Display name shown in status bar and to other devices
+  },
+
+  // Radio settings — all devices in your group MUST use the same values
+  // Use the Config Tool's preset buttons to fill these automatically
+  "radio": {
+    "frequency": 869.618,              // MHz — EU/UK/CH: 869.618, US/Canada: 910.525
+    "spreading_factor": 8,             // EU: 8, US: 7 — higher = more range, slower
+    "bandwidth": 62.5,                 // kHz — 62.5 for both presets
+    "tx_power": 22,                    // dBm (1-22) — transmission power
+    "coding_rate": 8                   // EU: 8, US: 5 — error correction level
+  },
+
+  // Your identity — generated by the Config Tool (do NOT share your private key)
+  "identity": {
+    "private_key": "...your private key (hex)...",
+    "public_key": "...your public key (hex)..."
+  },
+
+  // Contacts — people you can send direct messages to
+  "contacts": [
+    {
+      "alias": "Bob",                  // Display name
+      "public_key": "...hex...",       // Their public key (from their config)
+      "allow_telemetry": true,         // Base telemetry permission (must be true for location/environment to work)
+      "allow_location": false,         // Let them request your GPS location (requires allow_telemetry)
+      "allow_environment": false,      // Let them request environment sensor data (requires allow_telemetry)
+      "always_sound": false,           // Play sound even when device is muted
+      "allow_sos": true,               // Show SOS alerts from this contact
+      "send_sos": true                 // Include in your outgoing SOS broadcast
+    }
+  ],
+
+  // Channels — group communication
+  "channels": [
+    {
+      "name": "Public",                // Well-known MeshCore public channel (all devices use this key)
+      "type": "public",                // "public" = hardcoded PSK, "hashtag" = open, "private" = user-provided PSK
+      "psk": "8b3387e9c5cdea6ac9e5edbaa115cd72",
+      "index": 0,
+      "allow_sos": false,               // Public channel: ignore SOS from strangers
+      "send_sos": false,               // Public channel: SOS off by default (readable by everyone)
+      "read_only": true                // Listen-only mode — hides the input bar
+    },
+    {
+      "name": "#mclite",             // Hashtag channels: lowercase only (a-z, 0-9, -), shared by name
+      "type": "hashtag",
+      "index": 1,
+      "allow_sos": true,
+      "send_sos": true
+    },
+    {
+      "name": "Team Alpha",
+      "type": "private",               // Private channel — PSK shared out-of-band with group members
+      "psk": "a1b2c3d4e5f6a7b8a1b2c3d4e5f6a7b8",
+      "index": 2,
+      "allow_sos": true,
+      "send_sos": false
+    }
+  ],
+
+  "display": {
+    "brightness": 180,                 // 0-255
+    "auto_dim_seconds": 30,            // Dim screen after N seconds of inactivity (0 = off)
+    "boot_text": ""                    // Optional text shown on boot screen (e.g. team name)
+  },
+
+  "messaging": {
+    "save_history": true,              // Save messages to SD card
+    "max_history_per_chat": 100,       // Max messages stored per conversation
+    "location_format": "decimal",       // "decimal" = lat/lon, "mgrs" = UTMREF/MGRS, "both"
+    "max_retries": 3,                  // DM delivery retry attempts (1-5)
+    "request_telemetry": true,         // Tap contact name to see battery/location (optional)
+    "show_telemetry": "both"           // Badges on convo list: "battery", "location", "both", "none"
+  },
+
+  "sound": {
+    "enabled": true,                   // Master sound toggle
+    "sos_keyword": "SOS",              // Keyword that triggers SOS alert sound
+    "sos_repeat": 3                    // How many times to repeat SOS alarm (1-10)
+  },
+
+  "gps": {
+    "enabled": true,
+    "clock_offset": 0,                 // UTC offset in hours for clock display (-12 to +14)
+    "last_known_max_age": 1800         // Seconds before last-known GPS position expires (60-7200)
+  },
+
+  "battery": {
+    "low_alert_enabled": true,         // Send automatic low-battery alert to contacts
+    "low_alert_threshold": 15          // Battery % that triggers the alert (5-50)
+  },
+
+  "security": {
+    "pin_enabled": false,              // Require PIN to unlock the device
+    "pin_code": "",                    // PIN code (4-8 alphanumeric characters)
+    "admin_enabled": true              // Allow access to device info screen (press 0)
+  }
+}
+```
+
+You don't need to write this by hand -- use the Config Tool. This example shows all available options with their defaults.
+
+</details>
+
+## Hints
+
+**Shortcuts**
+
+| Action | How |
+|--------|-----|
+| Device info | Sym + 0 |
+| Mute / unmute | Tap speaker icon in status bar |
+| Contact telemetry | Tap contact name in chat header |
+| Retry failed message | Tap the X on a failed message |
+| SOS broadcast | Hold trackball for 6 seconds |
+
+**Conversation list icons**
+
+| Symbol | Meaning |
+|--------|---------|
+| @ | Direct message (contact) |
+| # | Public or hashtag channel |
+| * | Private channel |
+| Green eye | Contact recently seen on the mesh |
+| Green dot | Unread messages |
+| Battery / GPS | Contact's last reported telemetry |
+
+**Status bar**
+
+| Icon | Meaning |
+|------|---------|
+| GPS | Green = live fix, amber = last known, gray = no fix |
+| Battery | Charge level; charging symbol when plugged in |
+
+**Message delivery indicators**
+
+| Icon | Meaning |
+|------|---------|
+| Single check | Message sent, waiting for acknowledgement |
+| Double check | Message delivered (acknowledged by recipient) |
+| X | Delivery failed -- tap to retry |
+
+**SOS keyword** -- incoming messages containing "SOS" (default) trigger an alert sound. The same keyword is sent via the trackball long-press SOS. Best left unchanged so all devices recognize each other's alerts.
+
+## Radio Compatibility
+
+MCLite uses MeshCore for radio communication and is compatible with other MeshCore devices. Built-in radio presets:
+
+- **EU/UK/CH**: 869.618 MHz, SF8, BW62.5, CR8, 22 dBm
+- **US/Canada**: 910.525 MHz, SF7, BW62.5, CR5, 22 dBm
+- **Australia Wide**: 915.800 MHz, SF10, BW250, CR5, 22 dBm
+- **Australia Victoria**: 916.575 MHz, SF10, BW250, CR5, 22 dBm
+
+All devices in your group must use the same radio settings.
+
+### Regulatory Compliance
+
+**EU/UK/CH (868 MHz)**: MCLite enforces the ETSI EN 300 220 duty cycle limit for the G3 sub-band (869.40–869.65 MHz). TX duty cycle is capped at 10% through MeshCore's airtime budget mechanism. The Admin screen shows real-time channel utilization so you can verify compliance.
+
+**US/Canada (915 MHz)**: The US ISM band (902–928 MHz) has no duty cycle restriction under FCC Part 15.247. MCLite uses the MeshCore default airtime budget (33%).
+
+**Australia (915 MHz)**: The 915–928 MHz ISM band is available under ACMA class licence (LIPD-2015). MCLite uses the MeshCore default airtime budget (33%).
+
+> **Disclaimer**: MCLite is experimental open-source software, not a certified radio product. The firmware-level duty cycle cap is provided as a best-effort aid, not a guarantee of regulatory compliance. The operator is solely responsible for ensuring that their complete setup (firmware, hardware, antenna, configuration) complies with all applicable local laws and regulations. The authors accept no liability for non-compliance or any consequences arising from the use of this software.
+
+## License
+
+MCLite firmware is released under the **MIT License**. See [LICENSE](LICENSE) for details.
+
+MCLite uses the following open-source libraries:
+
+| Library | License |
+|---------|---------|
+| MeshCore | MIT |
+| LVGL | MIT |
+| LovyanGFX | MIT + BSD-2-Clause |
+| ArduinoJson | MIT |
+| RadioLib | MIT |
+| TinyGPSPlus | LGPL-2.1 |
+| Arduino ESP32 core | LGPL-2.1 |
+
+LGPL-2.1 libraries are dynamically linked. Users may replace them by rebuilding with PlatformIO.
+
+## Contributing
+
+Contributions are welcome. Please open an issue or pull request on GitHub.

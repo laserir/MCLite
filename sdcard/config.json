@@ -1,0 +1,66 @@
+{
+  "language": "",
+  "device": {
+    "name": "MCLite"
+  },
+  "radio": {
+    "frequency": 869.618,
+    "spreading_factor": 8,
+    "bandwidth": 62.5,
+    "tx_power": 22,
+    "coding_rate": 8
+  },
+  "identity": {
+    "private_key": "",
+    "public_key": ""
+  },
+  "contacts": [],
+  "channels": [
+    {
+      "name": "Public",
+      "type": "public",
+      "psk": "8b3387e9c5cdea6ac9e5edbaa115cd72",
+      "index": 0,
+      "allow_sos": false,
+      "send_sos": false
+    },
+    {
+      "name": "#mclite",
+      "type": "hashtag",
+      "index": 1,
+      "allow_sos": true,
+      "send_sos": true
+    }
+  ],
+  "display": {
+    "brightness": 180,
+    "auto_dim_seconds": 30
+  },
+  "messaging": {
+    "save_history": true,
+    "max_history_per_chat": 100,
+    "location_format": "decimal",
+    "max_retries": 3,
+    "request_telemetry": true,
+    "show_telemetry": "both"
+  },
+  "sound": {
+    "enabled": true,
+    "sos_keyword": "SOS",
+    "sos_repeat": 3
+  },
+  "gps": {
+    "enabled": true,
+    "clock_offset": 0,
+    "last_known_max_age": 1800
+  },
+  "battery": {
+    "low_alert_enabled": false,
+    "low_alert_threshold": 10
+  },
+  "security": {
+    "pin_enabled": false,
+    "pin_code": "",
+    "admin_enabled": true
+  }
+}

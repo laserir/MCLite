@@ -1,0 +1,16 @@
+# Build artifacts
+firmware/.pio/
+
+# Claude Code
+.claude/
+
+# macOS
+.DS_Store
+._*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak

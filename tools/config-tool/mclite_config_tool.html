@@ -1,0 +1,2426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCLite Config Tool</title>
+<style>
+:root {
+  --bg: #0f0f1a;
+  --bg2: #1a1a2e;
+  --bg3: #22223a;
+  --accent: #007aff;
+  --accent-hover: #0060cc;
+  --text: #e8e8f0;
+  --text2: #8888aa;
+  --text3: #666688;
+  --green: #00cc66;
+  --red: #ff4444;
+  --border: #333355;
+  --radius: 8px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+.container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px;
+}
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+.subtitle {
+  color: var(--text2);
+  font-size: 0.85rem;
+  margin-bottom: 24px;
+}
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.btn:hover { background: var(--accent-hover); }
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-outline:hover { background: var(--bg3); }
+.btn-danger { background: var(--red); }
+.btn-danger:hover { background: #cc3333; }
+.btn-green { background: var(--green); color: #000; }
+.btn-green:hover { background: #00aa55; }
+.section {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .badge {
+  font-size: 0.7rem;
+  background: var(--bg3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text2);
+  font-weight: normal;
+}
+.field {
+  margin-bottom: 12px;
+}
+.field:last-child { margin-bottom: 0; }
+.field label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text2);
+  margin-bottom: 4px;
+}
+.field input, .field select {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--accent);
+}
+.field input[readonly] {
+  color: var(--text2);
+  cursor: default;
+}
+.field .hint {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+.field .error {
+  font-size: 0.72rem;
+  color: var(--red);
+  margin-top: 2px;
+  display: none;
+}
+.field.invalid input { border-color: var(--red); }
+.field.invalid .error { display: block; }
+.row {
+  display: flex;
+  gap: 12px;
+}
+.row .field { flex: 1; }
+.contact-card {
+  background: var(--bg3);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  position: relative;
+}
+.contact-card .contact-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.contact-card .contact-num {
+  font-size: 0.75rem;
+  color: var(--text3);
+}
+.btn-remove {
+  background: none;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 6px;
+}
+.btn-remove:hover { text-decoration: underline; }
+.channel-type {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+}
+.channel-type.hashtag { background: #1a3a2a; color: var(--green); }
+.channel-type.private { background: #3a2a1a; color: #ffaa44; }
+.channel-type.public { background: #1a2a3a; color: #44aaff; }
+.key-display {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.75rem;
+  word-break: break-all;
+  background: var(--bg);
+  padding: 6px 8px;
+  border-radius: 4px;
+  color: var(--text2);
+  margin-top: 4px;
+  user-select: all;
+}
+.key-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.key-actions .btn { font-size: 0.75rem; padding: 4px 10px; }
+.preset-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--accent);
+  color: #fff;
+  margin-left: 8px;
+}
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--green);
+  color: #000;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  z-index: 300;
+}
+.toast.show { opacity: 1; }
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 0;
+}
+#importInput { display: none; }
+.empty-state {
+  text-align: center;
+  padding: 20px;
+  color: var(--text3);
+  font-size: 0.85rem;
+}
+/* Fleet mode */
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  width: fit-content;
+}
+.mode-toggle button {
+  background: var(--bg2);
+  color: var(--text2);
+  border: none;
+  padding: 8px 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.mode-toggle button.active {
+  background: var(--accent);
+  color: #fff;
+}
+.mode-toggle button:not(.active):hover {
+  background: var(--bg3);
+}
+.fleet-device-card {
+  background: var(--bg3);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fleet-device-card input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  outline: none;
+  max-width: 160px;
+}
+.fleet-device-card input:focus { border-color: var(--accent); }
+.fleet-device-card .fleet-key {
+  flex: 2;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.7rem;
+  color: var(--text3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fleet-device-card .fleet-key.has-key { color: var(--text2); }
+.fleet-note {
+  background: var(--bg3);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: var(--text2);
+  margin-bottom: 10px;
+  border-left: 3px solid var(--accent);
+}
+.hidden { display: none !important; }
+
+/* Wizard */
+.wizard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.wizard-overlay.hidden { display: none !important; }
+.wizard-box {
+  background: var(--bg2);
+  border-radius: 12px;
+  max-width: 520px;
+  width: 100%;
+  padding: 28px 24px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.wizard-box h2 {
+  font-size: 1.3rem;
+  margin-bottom: 4px;
+}
+.wizard-box .wiz-sub {
+  color: var(--text2);
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+}
+.wizard-box .wiz-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.wizard-box .wiz-hint {
+  font-size: 0.8rem;
+  color: var(--text2);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.wizard-box .wiz-note {
+  font-size: 0.78rem;
+  color: var(--text3);
+  margin-top: 8px;
+  font-style: italic;
+}
+.wiz-welcome-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+.wiz-welcome-btns .btn {
+  padding: 14px 20px;
+  font-size: 0.95rem;
+  text-align: left;
+}
+.wiz-welcome-btns .btn small {
+  display: block;
+  font-weight: normal;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.7);
+  margin-top: 2px;
+}
+.wiz-welcome-btns .btn-outline small { color: var(--text3); }
+.wiz-region-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+.wiz-region-btn {
+  background: var(--bg3);
+  border: 2px solid var(--border);
+  color: var(--text);
+  padding: 16px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.wiz-region-btn:hover { border-color: var(--accent); background: var(--bg); }
+.wiz-region-btn.selected { border-color: var(--accent); background: rgba(0,122,255,0.15); }
+.wiz-toggle {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  width: fit-content;
+  margin-bottom: 12px;
+}
+.wiz-toggle button {
+  background: var(--bg3);
+  color: var(--text2);
+  border: none;
+  padding: 10px 24px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.wiz-toggle button.active { background: var(--accent); color: #fff; }
+.wiz-toggle button:not(.active):hover { background: var(--bg); }
+.wiz-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.wiz-tag {
+  background: #1a3a2a;
+  color: var(--green);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wiz-tag button {
+  background: none;
+  border: none;
+  color: var(--green);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+}
+.wiz-tag button:hover { opacity: 1; }
+.wiz-hashtag-input {
+  display: flex;
+  gap: 8px;
+}
+.wiz-hashtag-input input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  outline: none;
+}
+.wiz-hashtag-input input:focus { border-color: var(--accent); }
+.wiz-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+  gap: 10px;
+}
+.wiz-summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+.wiz-summary-item:last-child { border-bottom: none; }
+.wiz-summary-item .wiz-s-label { color: var(--text2); }
+.wiz-summary-item .wiz-s-value { font-weight: 500; }
+.wiz-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.wiz-check input[type=checkbox] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+.wiz-check label { font-size: 0.9rem; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>MCLite Config Tool</h1>
+  <p class="subtitle">Create and edit config.json for your MCLite device</p>
+
+  <div class="toolbar">
+    <button class="btn btn-green" id="exportBtn" onclick="doExport()">Export config.json</button>
+    <button class="btn btn-outline" onclick="document.getElementById('importInput').click()">Import JSON</button>
+    <button class="btn btn-outline" onclick="resetAll()">New Config</button>
+    <button class="btn btn-outline" onclick="openWizard()">Setup Wizard</button>
+    <input type="file" id="importInput" accept=".json" onchange="importConfig(event)">
+  </div>
+
+  <div class="mode-toggle">
+    <button id="btnSingleMode" class="active" onclick="setFleetMode(false)">Single Device</button>
+    <button id="btnFleetMode" onclick="setFleetMode(true)">Fleet Mode</button>
+  </div>
+
+  <!-- Device (single mode) -->
+  <div class="section" id="singleDeviceSection">
+    <div class="section-title">Device</div>
+    <div class="field">
+      <label>Device Name</label>
+      <input type="text" id="deviceName" value="MCLite" maxlength="20" placeholder="e.g. Alpha, Bravo">
+      <div class="hint">Max 20 characters. Shows in status bar and in channel messages.</div>
+    </div>
+  </div>
+
+  <!-- Fleet Devices (fleet mode) -->
+  <div class="section hidden" id="fleetDeviceSection">
+    <div class="section-title">Fleet Devices <span class="badge" id="fleetDeviceCount">0</span></div>
+    <div id="fleetDeviceList"></div>
+    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn" onclick="addFleetDevice()">+ Add Device</button>
+      <button class="btn btn-outline" onclick="generateAllFleetKeys()">Generate All Keys</button>
+    </div>
+  </div>
+
+  <!-- Identity (single mode) -->
+  <div class="section" id="identitySection">
+    <div class="section-title">Identity <span class="badge">Ed25519</span></div>
+    <div class="field">
+      <label>Public Key</label>
+      <div class="key-display" id="pubKeyDisplay">Not yet generated</div>
+    </div>
+    <div class="field">
+      <label>Private Key</label>
+      <div class="key-display" id="privKeyDisplay">Not yet generated</div>
+    </div>
+    <div class="key-actions">
+      <button class="btn" onclick="generateIdentity()">Generate New Keypair</button>
+      <button class="btn btn-outline" onclick="copyKey('pub')">Copy Public Key</button>
+    </div>
+    <div class="hint" style="margin-top:8px">Keys are generated locally in your browser. Share your <em>public</em> key with contacts.</div>
+  </div>
+
+  <!-- Radio -->
+  <div class="section">
+    <div class="section-title">Radio <span id="presetLabel" class="preset-tag">EU/UK Narrow</span></div>
+    <div class="field">
+      <label>Preset</label>
+      <select id="radioPreset" onchange="applyPreset()">
+        <option value="eu_narrow" selected>EU/UK/CH (869.618 MHz)</option>
+        <option value="us_ca">US/Canada (910.525 MHz)</option>
+        <option value="au_wide">Australia Wide (915.800 MHz)</option>
+        <option value="au_vic">Australia Victoria (916.575 MHz)</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Frequency (MHz)</label>
+        <input type="number" id="radioFreq" value="869.618" step="0.001" min="100" max="1000">
+        <div class="error">100–1000 MHz</div>
+      </div>
+      <div class="field">
+        <label>Spreading Factor</label>
+        <select id="radioSF">
+          <option value="5">SF5</option>
+          <option value="6">SF6</option>
+          <option value="7">SF7</option>
+          <option value="8" selected>SF8</option>
+          <option value="9">SF9</option>
+          <option value="10">SF10</option>
+          <option value="11">SF11</option>
+          <option value="12">SF12</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Bandwidth (kHz)</label>
+        <select id="radioBW">
+          <option value="31.25">31.25</option>
+          <option value="62.5" selected>62.5</option>
+          <option value="125">125</option>
+          <option value="250">250</option>
+          <option value="500">500</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>TX Power (dBm)</label>
+        <input type="number" id="radioTX" value="22" min="-9" max="22">
+        <div class="error">-9–22 dBm</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Coding Rate</label>
+      <select id="radioCR">
+        <option value="5">4/5</option>
+        <option value="6">4/6</option>
+        <option value="7">4/7</option>
+        <option value="8" selected>4/8</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Contacts -->
+  <div class="section">
+    <div class="section-title">Contacts <span class="badge" id="contactCount">0</span></div>
+    <div class="fleet-note hidden" id="fleetContactNote">Fleet contacts are auto-generated. Additional contacts can be added below.</div>
+    <div id="contactList"></div>
+    <div class="empty-state" id="contactEmpty">No contacts added yet.</div>
+    <button class="btn" onclick="addContact()" style="margin-top:8px">+ Add Contact</button>
+  </div>
+
+  <!-- Channels -->
+  <div class="section">
+    <div class="section-title">Channels <span class="badge" id="channelCount">0</span></div>
+    <div id="channelList"></div>
+    <div class="empty-state" id="channelEmpty">No channels added yet.</div>
+    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn" onclick="addChannel('hashtag')">+ Hashtag Channel (#)</button>
+      <button class="btn btn-outline" onclick="addChannel('private')">+ Private Channel</button>
+      <button class="btn btn-outline" id="addPublicBtn" onclick="addPublicChannel()">+ Public Channel</button>
+    </div>
+    <div class="hint" style="margin-top:6px">Hashtag channels derive encryption from the name (lowercase only: a-z, 0-9, -) — anyone with the same name can join. Private channels use a random key shared out-of-band and allow any name. The Public channel uses a well-known hardcoded key shared by all MeshCore devices — messages are readable by anyone on the network.</div>
+  </div>
+
+  <!-- Display -->
+  <div class="section">
+    <div class="section-title">Display</div>
+    <div class="row">
+      <div class="field">
+        <label>Brightness (0–255)</label>
+        <input type="number" id="dispBrightness" value="180" min="10" max="255">
+        <div class="error">10–255</div>
+      </div>
+      <div class="field">
+        <label>Auto-dim (seconds, 0=off)</label>
+        <input type="number" id="dispAutoDim" value="30" min="0" max="3600">
+        <div class="error">0–3600</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Boot Text (optional)</label>
+      <input type="text" id="dispBootText" value="" maxlength="32" placeholder="e.g. Team Alpha">
+      <div class="hint">Shown on boot screen below version number. Max 32 characters.</div>
+    </div>
+    <div class="field">
+      <label>Language</label>
+      <input type="text" id="language" value="" maxlength="5" placeholder="e.g. de, fr, es">
+      <div class="hint">Leave empty for English. Place translation file at /mclite/lang/&lt;code&gt;.json on SD.</div>
+    </div>
+  </div>
+
+  <!-- Messaging -->
+  <div class="section">
+    <div class="section-title">Messaging</div>
+    <div class="row">
+      <div class="field">
+        <label>Save History</label>
+        <select id="msgHistory">
+          <option value="true" selected>Yes</option>
+          <option value="false">No (ephemeral)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Max Messages per Chat</label>
+        <input type="number" id="msgMax" value="100" min="10" max="10000">
+        <div class="error">10–10000</div>
+      </div>
+      <div class="field">
+        <label>DM Retry Attempts</label>
+        <input type="number" id="msgRetries" value="3" min="1" max="5">
+        <div class="error">1–5</div>
+      </div>
+      <div class="field">
+        <label>Request Telemetry</label>
+        <select id="msgTelemetry">
+          <option value="true" selected>Yes</option>
+          <option value="false">No</option>
+        </select>
+        <div class="hint">Tap contact name in chat to see battery/location info.</div>
+      </div>
+      <div class="field">
+        <label>Show Telemetry Badges</label>
+        <select id="msgShowTelemetry">
+          <option value="both" selected>Both (battery + location)</option>
+          <option value="battery">Battery only</option>
+          <option value="location">Location only</option>
+          <option value="none">None</option>
+        </select>
+        <div class="hint">Icons shown next to contacts on the conversation list.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sound -->
+  <div class="section">
+    <div class="section-title">Sound</div>
+    <div class="row">
+      <div class="field">
+        <label>Notification Sound</label>
+        <select id="soundEnabled">
+          <option value="true" selected>On</option>
+          <option value="false">Off</option>
+        </select>
+      </div>
+      <div class="field">
+        <label style="color:#888">Custom notification sound</label>
+        <div class="hint">Place <code>notification.wav</code> on SD root. Format: 16-bit PCM WAV, mono or stereo, max 3 seconds.</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-size:0.85rem; font-weight:600; margin-bottom:8px;">SOS Alert</div>
+    <div class="row">
+      <div class="field">
+        <label>SOS Keyword</label>
+        <input type="text" id="sosKeyword" value="SOS" maxlength="16" placeholder="e.g. SOS, HELP">
+        <div class="hint">Messages starting with this word trigger SOS alert (case-insensitive). Hold trackball 6s to send SOS to all contacts.</div>
+      </div>
+      <div class="field">
+        <label>SOS Sound Repeats</label>
+        <input type="number" id="sosRepeat" value="3" min="1" max="10">
+        <div class="error">1–10</div>
+      </div>
+    </div>
+    <div class="field">
+      <label style="color:#888">Custom SOS sound</label>
+      <div class="hint">Place <code>sos.wav</code> on SD root. Format: 16-bit PCM WAV, mono or stereo. Falls back to built-in morse pattern.</div>
+    </div>
+  </div>
+
+  <!-- Boot Logo (removed — boot screen is now LVGL-based with configurable boot_text) -->
+
+  <!-- GPS -->
+  <div class="section">
+    <div class="section-title">GPS</div>
+    <div class="field">
+      <label>GPS Enabled</label>
+      <select id="gpsEnabled">
+        <option value="true" selected>Yes</option>
+        <option value="false">No</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Clock Offset (UTC)</label>
+      <input type="number" id="gpsClockOffset" value="0" min="-12" max="14">
+      <div class="hint">Hours offset from UTC (-12 to +14)</div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Coordinate Format</label>
+        <select id="gpsCoordFormat">
+          <option value="decimal" selected>Decimal (lat, lon)</option>
+          <option value="mgrs">MGRS only</option>
+          <option value="both">Both (decimal + MGRS)</option>
+        </select>
+        <div class="hint">MGRS (Military Grid Reference) is used by SAR and emergency services.</div>
+      </div>
+      <div class="field">
+        <label>Last Known Max Age (seconds)</label>
+        <input type="number" id="gpsLastKnownMaxAge" value="1800" min="60" max="7200">
+        <div class="hint">How long to keep last GPS fix (60-7200s). After this, position is discarded.</div>
+        <div class="error">60–7200</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Battery -->
+  <div class="section">
+    <div class="section-title">Battery</div>
+    <div class="row">
+      <div class="field">
+        <label>Low Battery Alert</label>
+        <select id="batteryAlertEnabled">
+          <option value="false" selected>Off</option>
+          <option value="true">On</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Alert Threshold (%)</label>
+        <input type="number" id="batteryThreshold" value="10" min="5" max="50">
+        <div class="error">5–50%</div>
+      </div>
+    </div>
+    <div class="hint">Send alert to contacts with Send SOS enabled when battery drops below this level.</div>
+  </div>
+
+  <!-- Security -->
+  <div class="section">
+    <div class="section-title">Security</div>
+    <div class="row">
+      <div class="field">
+        <label>PIN Lock</label>
+        <select id="pinEnabled" onchange="togglePinField()">
+          <option value="false" selected>Off</option>
+          <option value="true">On</option>
+        </select>
+      </div>
+      <div class="field" id="pinCodeField" style="display:none">
+        <label>PIN Code</label>
+        <input type="password" id="pinCode" value="" maxlength="8" placeholder="4-8 characters" pattern="[a-zA-Z0-9]*">
+        <div class="error" id="pinError">PIN must be 4-8 alphanumeric characters</div>
+        <div class="hint">Letters and numbers, case-insensitive. Required on boot and after idle timeout.</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="field">
+        <label>Admin Screen</label>
+        <select id="adminEnabled">
+          <option value="true" selected>Enabled</option>
+          <option value="false">Disabled</option>
+        </select>
+        <div class="hint">Press 0 on home screen to view device info. Disable to hide admin access.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center; padding:16px 0;">
+    <button class="btn btn-green" id="exportBtnBottom" onclick="doExport()" style="font-size:1rem; padding:12px 32px;">
+      Export config.json
+    </button>
+  </div>
+  <p style="text-align:center; color:var(--text3); font-size:0.75rem; padding-bottom:24px;">
+    MCLite Config Tool &mdash; all data stays in your browser
+  </p>
+</div>
+
+<!-- Setup Wizard Overlay -->
+<div class="wizard-overlay hidden" id="wizardOverlay">
+  <div class="wizard-box" id="wizardBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Ed25519 Key Generation (based on noble-ed25519) =====
+const CURVE_P = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffedn;
+const CURVE_n = 0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3edn;
+const CURVE_d = 0x52036cee2b6ffe738cc740797779e89800700a4d4141d8ab75eb4dca135978a3n;
+const CURVE_Gx = 0x216936d3cd6e53fec0a4e231fdd6dc5c692cc7609525a7b2c9562d608f25d51an;
+const CURVE_Gy = 0x6666666666666666666666666666666666666666666666666666666666666658n;
+
+function modP(a) { const r = a % CURVE_P; return r >= 0n ? r : CURVE_P + r; }
+function modN(a) { const r = a % CURVE_n; return r >= 0n ? r : CURVE_n + r; }
+function invP(a) { return powModP(a, CURVE_P - 2n); }
+function powModP(base, exp) {
+  let result = 1n;
+  base = modP(base);
+  while (exp > 0n) {
+    if (exp & 1n) result = modP(result * base);
+    exp >>= 1n;
+    base = modP(base * base);
+  }
+  return result;
+}
+
+// Extended point: (X, Y, Z, T) where x=X/Z, y=Y/Z, xy=T/Z
+function extAdd(p1, p2) {
+  const [X1,Y1,Z1,T1] = p1, [X2,Y2,Z2,T2] = p2;
+  const A = modP(X1 * X2), B = modP(Y1 * Y2);
+  const C = modP(T1 * CURVE_d * T2), D = modP(Z1 * Z2);
+  const E = modP((X1+Y1)*(X2+Y2) - A - B);
+  const F = modP(D - C), G = modP(D + C);
+  const H = modP(B - modP(-1n * A));
+  return [modP(E*F), modP(G*H), modP(F*G), modP(E*H)];
+}
+
+function extDouble(p) { return extAdd(p, p); }
+
+function scalarMult(point, scalar) {
+  let result = [0n, 1n, 1n, 0n]; // identity
+  let current = point;
+  while (scalar > 0n) {
+    if (scalar & 1n) result = extAdd(result, current);
+    current = extDouble(current);
+    scalar >>= 1n;
+  }
+  return result;
+}
+
+function toAffine(ext) {
+  const [X,Y,Z] = ext;
+  const iz = invP(Z);
+  return [modP(X * iz), modP(Y * iz)];
+}
+
+function pointToBytes(ext) {
+  const [x, y] = toAffine(ext);
+  const bytes = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) bytes[i] = Number((y >> BigInt(8*i)) & 0xFFn);
+  if (x & 1n) bytes[31] |= 0x80;
+  return bytes;
+}
+
+const BASE_POINT = [CURVE_Gx, CURVE_Gy, 1n, modP(CURVE_Gx * CURVE_Gy)];
+
+async function sha512(data) {
+  const hash = await crypto.subtle.digest('SHA-512', data);
+  return new Uint8Array(hash);
+}
+
+async function sha256(data) {
+  const buf = (typeof data === 'string') ? new TextEncoder().encode(data) : data;
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return new Uint8Array(hash);
+}
+
+// Derive hashtag channel PSK: SHA256(name)[:16] where name includes '#' prefix
+// This matches the MeshCore convention — all clients derive the same key from the channel name.
+async function deriveHashtagPSK(name) {
+  const fullName = name.startsWith('#') ? name : '#' + name;
+  const hash = await sha256(fullName);
+  return bytesToHex(hash.slice(0, 16));
+}
+
+function bytesToBigInt(bytes) {
+  let n = 0n;
+  for (let i = 0; i < bytes.length; i++) n += BigInt(bytes[i]) << BigInt(8*i);
+  return n;
+}
+
+async function generateKeypair() {
+  // 1. Generate 32-byte seed
+  const seed = crypto.getRandomValues(new Uint8Array(32));
+  // 2. SHA-512 hash
+  const hash = await sha512(seed);
+  // 3. Clamp scalar (first 32 bytes)
+  const clamped = hash.slice(0, 32);
+  clamped[0]  &= 248;
+  clamped[31] &= 127;
+  clamped[31] |= 64;
+  // 4. Derive public key
+  const scalar = bytesToBigInt(clamped);
+  const pubPoint = scalarMult(BASE_POINT, scalar);
+  const pubBytes = pointToBytes(pubPoint);
+  // 5. Private key = clamped(32) + hash_second_half(32)
+  const privBytes = new Uint8Array(64);
+  privBytes.set(clamped, 0);
+  privBytes.set(hash.slice(32), 32);
+  return { publicKey: pubBytes, privateKey: privBytes };
+}
+
+function bytesToHex(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function hexToBytes(hex) {
+  const bytes = new Uint8Array(hex.length/2);
+  for (let i = 0; i < hex.length; i+=2) bytes[i/2] = parseInt(hex.substr(i,2),16);
+  return bytes;
+}
+function bytesToBase64(bytes) {
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+function base64ToBytes(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+// ===== Radio Presets =====
+const PRESETS = {
+  eu_narrow: { freq: 869.618, sf: 8, bw: 62.5, cr: 8, tx: 22, label: 'EU/UK/CH' },
+  us_ca:     { freq: 910.525, sf: 7, bw: 62.5, cr: 5, tx: 22, label: 'US/Canada' },
+  au_wide:   { freq: 915.800, sf: 10, bw: 250, cr: 5, tx: 22, label: 'AU Wide' },
+  au_vic:    { freq: 916.575, sf: 10, bw: 250, cr: 5, tx: 22, label: 'AU Victoria' },
+};
+
+function applyPreset() {
+  const sel = document.getElementById('radioPreset').value;
+  const label = document.getElementById('presetLabel');
+  if (sel === 'custom') {
+    label.textContent = 'Custom';
+    return;
+  }
+  const p = PRESETS[sel];
+  if (!p) return;
+  document.getElementById('radioFreq').value = p.freq;
+  document.getElementById('radioSF').value = p.sf;
+  document.getElementById('radioBW').value = p.bw;
+  document.getElementById('radioCR').value = p.cr;
+  document.getElementById('radioTX').value = p.tx;
+  label.textContent = p.label;
+}
+
+// Detect if current radio values match a preset
+function detectPreset() {
+  const freq = parseFloat(document.getElementById('radioFreq').value);
+  const sf = parseInt(document.getElementById('radioSF').value);
+  const bw = parseFloat(document.getElementById('radioBW').value);
+  const cr = parseInt(document.getElementById('radioCR').value);
+  for (const [key, p] of Object.entries(PRESETS)) {
+    if (Math.abs(freq - p.freq) < 0.01 && sf === p.sf && Math.abs(bw - p.bw) < 0.1 && cr === p.cr) {
+      document.getElementById('radioPreset').value = key;
+      document.getElementById('presetLabel').textContent = p.label;
+      return;
+    }
+  }
+  document.getElementById('radioPreset').value = 'custom';
+  document.getElementById('presetLabel').textContent = 'Custom';
+}
+
+// ===== Contacts =====
+let contacts = [];
+
+function renderContacts() {
+  const list = document.getElementById('contactList');
+  const empty = document.getElementById('contactEmpty');
+  const maxContacts = fleetMode ? 32 - (fleetDevices.length - 1) : 32;
+  document.getElementById('contactCount').textContent = contacts.length + '/' + maxContacts;
+  // Disable add button when at limit
+  const addContactBtn = document.querySelector('[onclick="addContact()"]');
+  if (addContactBtn) addContactBtn.disabled = contacts.length >= maxContacts;
+  if (contacts.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = contacts.map((c, i) => `
+    <div class="contact-card">
+      <div class="contact-header">
+        <span class="contact-num">Contact ${i + 1}</span>
+        <button class="btn-remove" onclick="removeContact(${i})">Remove</button>
+      </div>
+      <div class="field">
+        <label>Alias (display name)</label>
+        <input type="text" value="${esc(c.alias)}" maxlength="16"
+               onchange="contacts[${i}].alias=this.value" placeholder="e.g. Alice">
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label>Public Key (hex)</label>
+        <input type="text" value="${esc(c.public_key)}"
+               onchange="contacts[${i}].public_key=this.value"
+               placeholder="Paste contact's public key" style="font-family:monospace; font-size:0.8rem;">
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="field">
+          <label>Allow Telemetry</label>
+          <select onchange="contacts[${i}].allow_telemetry=(this.value==='true')">
+            <option value="true" ${c.allow_telemetry !== false ? 'selected' : ''}>Yes</option>
+            <option value="false" ${c.allow_telemetry === false ? 'selected' : ''}>No</option>
+          </select>
+          <div class="hint">Base telemetry (required for location/environment)</div>
+        </div>
+        <div class="field">
+          <label>Allow Location</label>
+          <select onchange="contacts[${i}].allow_location=(this.value==='true')">
+            <option value="false" ${c.allow_location !== true ? 'selected' : ''}>No</option>
+            <option value="true" ${c.allow_location === true ? 'selected' : ''}>Yes</option>
+          </select>
+          <div class="hint">GPS position (requires telemetry)</div>
+        </div>
+        <div class="field">
+          <label>Allow Environment</label>
+          <select onchange="contacts[${i}].allow_environment=(this.value==='true')">
+            <option value="false" ${c.allow_environment !== true ? 'selected' : ''}>No</option>
+            <option value="true" ${c.allow_environment === true ? 'selected' : ''}>Yes</option>
+          </select>
+          <div class="hint">Temp, humidity (requires telemetry)</div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="field">
+          <label>Always Sound</label>
+          <select onchange="contacts[${i}].always_sound=(this.value==='true')">
+            <option value="false" ${c.always_sound !== true ? 'selected' : ''}>No</option>
+            <option value="true" ${c.always_sound === true ? 'selected' : ''}>Yes</option>
+          </select>
+          <div class="hint">Play sound even when muted</div>
+        </div>
+        <div class="field">
+          <label>Allow SOS</label>
+          <select onchange="contacts[${i}].allow_sos=(this.value==='true')">
+            <option value="true" ${c.allow_sos !== false ? 'selected' : ''}>Yes</option>
+            <option value="false" ${c.allow_sos === false ? 'selected' : ''}>No</option>
+          </select>
+          <div class="hint">Trigger SOS alert from this contact</div>
+        </div>
+        <div class="field">
+          <label>Send SOS</label>
+          <select onchange="contacts[${i}].send_sos=(this.value==='true')">
+            <option value="true" ${c.send_sos !== false ? 'selected' : ''}>Yes</option>
+            <option value="false" ${c.send_sos === false ? 'selected' : ''}>No</option>
+          </select>
+          <div class="hint">Include in outgoing SOS broadcast</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addContact(alias = '', pubkey = '') {
+  const maxContacts = fleetMode ? 32 - (fleetDevices.length - 1) : 32;
+  if (contacts.length >= maxContacts) { toast('Maximum ' + maxContacts + ' contacts' + (fleetMode ? ' (fleet uses ' + (fleetDevices.length - 1) + ' slots)' : '') + ' — firmware limit'); return; }
+  contacts.push({ alias: alias, public_key: pubkey, allow_telemetry: true, allow_location: false, allow_environment: false, always_sound: false, allow_sos: true, send_sos: true });
+  renderContacts();
+  // Focus the new alias field
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('#contactList input[type=text]');
+    if (inputs.length >= 2) inputs[inputs.length - 2].focus();
+  }, 50);
+}
+
+function removeContact(i) {
+  contacts.splice(i, 1);
+  renderContacts();
+  if (fleetMode) renderFleetDevices(); // update fleet add button state
+}
+
+// ===== Channels =====
+let channels = [];
+
+function renderChannels() {
+  const list = document.getElementById('channelList');
+  const empty = document.getElementById('channelEmpty');
+  document.getElementById('channelCount').textContent = channels.length + '/16';
+
+  // Enable/disable channel buttons based on limits
+  const atLimit = channels.length >= 16;
+  const hasPublic = channels.some(c => c.type === 'public');
+  const pubBtn = document.getElementById('addPublicBtn');
+  if (pubBtn) pubBtn.disabled = hasPublic || atLimit;
+  document.querySelectorAll('[onclick="addChannel(\'hashtag\')"], [onclick="addChannel(\'private\')"]').forEach(btn => btn.disabled = atLimit);
+
+  if (channels.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = channels.map((ch, i) => {
+    const isPublic = ch.type === 'public';
+    const isPrivate = ch.type === 'private';
+    const isHashtag = !isPrivate && !isPublic;
+    const typeLabel = isPublic ? 'Public' : isPrivate ? 'Private' : 'Hashtag';
+    const typeCls = isPublic ? 'public' : isPrivate ? 'private' : 'hashtag';
+
+    // PSK section varies by type
+    let pskSection;
+    if (isPublic) {
+      pskSection = `
+      <div class="field" style="margin-top:8px">
+        <label>Pre-Shared Key (hardcoded)</label>
+        <input type="text" value="${esc(ch.psk)}" readonly
+               style="font-family:monospace; font-size:0.8rem; color:var(--text3);">
+        <div class="hint">Well-known MeshCore Public channel key. All devices use this same key.</div>
+      </div>`;
+    } else if (isHashtag) {
+      pskSection = `
+      <div class="field" style="margin-top:8px">
+        <label>Pre-Shared Key (derived from name)</label>
+        <input type="text" value="${esc(ch.psk)}" readonly
+               style="font-family:monospace; font-size:0.8rem; color:var(--text3);">
+        <div class="hint">Auto-derived via SHA256("${esc(ch.name)}"). Any MeshCore device with this channel name will compute the same key.</div>
+      </div>`;
+    } else {
+      pskSection = `
+      <div class="field" style="margin-top:8px">
+        <label>Pre-Shared Key (hex, 16 bytes)</label>
+        <input type="text" value="${esc(ch.psk)}"
+               onchange="channels[${i}].psk=this.value"
+               placeholder="Shared secret for this channel" style="font-family:monospace; font-size:0.8rem;">
+        <div style="margin-top:4px">
+          <button class="btn btn-outline" style="font-size:0.72rem; padding:2px 8px;"
+                  onclick="generateChannelPSK(${i})">Generate PSK</button>
+        </div>
+      </div>`;
+    }
+
+    return `
+    <div class="contact-card">
+      <div class="contact-header">
+        <span class="contact-num">Channel ${i + 1} <span class="channel-type ${typeCls}">${typeLabel}</span></span>
+        <button class="btn-remove" onclick="removeChannel(${i})">Remove</button>
+      </div>
+      <div class="field">
+        <label>Channel Name</label>
+        <input type="text" value="${esc(ch.name)}" maxlength="32"
+               ${isPublic ? 'readonly style="color:var(--text3);"' : ''}
+               onchange="${isHashtag ? `updateHashtagName(${i}, this.value)` : `channels[${i}].name=this.value`}"
+               ${isHashtag ? 'pattern="#?[a-z0-9-]+" title="Lowercase letters, numbers, and hyphens only (# prefix added automatically)"' : ''}
+               placeholder="${isHashtag ? 'e.g. #london, #emergency' : 'e.g. SecureOps'}">
+      </div>
+      ${pskSection}
+      <div class="row" style="margin-top:8px; gap:16px;">
+        <div class="field">
+          <label>Allow SOS</label>
+          <select onchange="channels[${i}].allow_sos=(this.value==='true')">
+            <option value="true" ${ch.allow_sos !== false ? 'selected' : ''}>Yes</option>
+            <option value="false" ${ch.allow_sos === false ? 'selected' : ''}>No</option>
+          </select>
+          <div class="hint">Trigger SOS alert from this channel</div>
+        </div>
+        <div class="field">
+          <label>Send SOS</label>
+          <select onchange="channels[${i}].send_sos=(this.value==='true')">
+            <option value="true" ${ch.send_sos !== false ? 'selected' : ''}>Yes</option>
+            <option value="false" ${ch.send_sos === false ? 'selected' : ''}>No</option>
+          </select>
+          <div class="hint">Include in outgoing SOS broadcast</div>
+        </div>
+        <div class="field">
+          <label>Read Only</label>
+          <select onchange="channels[${i}].read_only=(this.value==='true')">
+            <option value="false" ${ch.read_only ? '' : 'selected'}>No</option>
+            <option value="true" ${ch.read_only ? 'selected' : ''}>Yes</option>
+          </select>
+          <div class="hint">Listen-only mode (hides input bar)</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addChannel(type) {
+  if (channels.length >= 16) { toast('Maximum 16 channels reached (firmware limit)'); return; }
+  const ch = { name: '', type: type, psk: '', index: channels.length, allow_sos: true, send_sos: true, read_only: false };
+  channels.push(ch);
+  renderChannels();
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('#channelList input[type=text]');
+    if (inputs.length) inputs[inputs.length - 2].focus();
+  }, 50);
+}
+
+function addPublicChannel() {
+  if (channels.some(c => c.type === 'public')) return;
+  if (channels.length >= 16) { toast('Maximum 16 channels reached (firmware limit)'); return; }
+  channels.push({
+    name: 'Public', type: 'public',
+    psk: '8b3387e9c5cdea6ac9e5edbaa115cd72',
+    index: channels.length,
+    allow_sos: false, send_sos: false, read_only: false
+  });
+  renderChannels();
+}
+
+function removeChannel(i) {
+  channels.splice(i, 1);
+  // Re-index
+  channels.forEach((ch, idx) => ch.index = idx);
+  renderChannels();
+}
+
+// Generate random 16-byte PSK for private channels (MeshCore standard key size)
+function generateChannelPSK(i) {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  channels[i].psk = bytesToHex(bytes);
+  renderChannels();
+  toast('PSK generated (16 bytes)');
+}
+
+// Update hashtag channel name and re-derive PSK
+// Hashtag names must be lowercase (a-z, 0-9, -) — MeshCore convention
+async function updateHashtagName(i, name) {
+  name = name.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+  // Ensure '#' prefix (only leading # allowed)
+  if (name) name = '#' + name;
+  channels[i].name = name;
+  if (name) {
+    channels[i].psk = await deriveHashtagPSK(name);
+  } else {
+    channels[i].psk = '';
+  }
+  renderChannels();
+}
+
+// Ensure all hashtag channels have derived PSKs (called before export)
+async function ensureHashtagPSKs() {
+  for (let i = 0; i < channels.length; i++) {
+    if (channels[i].type !== 'private' && channels[i].type !== 'public' && channels[i].name.trim()) {
+      channels[i].psk = await deriveHashtagPSK(channels[i].name.trim());
+    }
+  }
+}
+
+// ===== Identity =====
+let identity = { privateKey: '', publicKey: '' };
+
+async function generateIdentity() {
+  try {
+    const kp = await generateKeypair();
+    identity.publicKey  = bytesToHex(kp.publicKey);
+    identity.privateKey = bytesToHex(kp.privateKey);
+    document.getElementById('pubKeyDisplay').textContent  = identity.publicKey;
+    document.getElementById('privKeyDisplay').textContent = identity.privateKey;
+    // Auto-update device name if still default or auto-generated
+    const nameInput = document.getElementById('deviceName');
+    if (nameInput.value === 'MCLite' || nameInput.value === '' || /^MCLite-[0-9a-f]{8}$/i.test(nameInput.value)) {
+      nameInput.value = 'MCLite-' + identity.publicKey.substring(0, 8);
+    }
+    toast('Keypair generated');
+  } catch (e) {
+    toast('Key generation failed: ' + e.message);
+  }
+}
+
+function copyKey(type) {
+  const key = type === 'pub' ? identity.publicKey : identity.privateKey;
+  if (!key) { toast('Generate a keypair first'); return; }
+  navigator.clipboard.writeText(key).then(() => toast('Copied to clipboard'));
+}
+
+// ===== PIN field toggle =====
+function togglePinField() {
+  const enabled = document.getElementById('pinEnabled').value === 'true';
+  document.getElementById('pinCodeField').style.display = enabled ? '' : 'none';
+}
+
+// ===== Validation =====
+function validate() {
+  let valid = true;
+  function check(id, min, max) {
+    const el = document.getElementById(id);
+    const v = parseFloat(el.value);
+    const field = el.closest('.field');
+    if (isNaN(v) || v < min || v > max) {
+      field.classList.add('invalid');
+      valid = false;
+    } else {
+      field.classList.remove('invalid');
+    }
+    return v;
+  }
+  check('radioFreq', 100, 1000);
+  check('radioTX', -9, 22);
+  check('dispBrightness', 10, 255);
+  check('dispAutoDim', 0, 3600);
+  check('msgMax', 10, 10000);
+  check('msgRetries', 1, 5);
+  check('sosRepeat', 1, 10);
+  check('batteryThreshold', 5, 50);
+  check('gpsLastKnownMaxAge', 60, 7200);
+  check('gpsClockOffset', -12, 14);
+
+  // Identity key validation (single mode only — fleet checks in exportFleet)
+  if (!fleetMode) {
+    if (!identity.publicKey || !identity.privateKey) {
+      toast('Generate a keypair first');
+      valid = false;
+    } else if (!/^[0-9a-fA-F]{64}$/.test(identity.publicKey) || !/^[0-9a-fA-F]{128}$/.test(identity.privateKey)) {
+      toast('Invalid identity keys — regenerate keypair');
+      valid = false;
+    }
+  }
+
+  // PIN validation
+  const pinEnabled = document.getElementById('pinEnabled').value === 'true';
+  const pinCode = document.getElementById('pinCode').value;
+  const pinField = document.getElementById('pinCodeField');
+  if (pinEnabled) {
+    if (!/^[a-zA-Z0-9]{4,8}$/.test(pinCode)) {
+      pinField.classList.add('invalid');
+      valid = false;
+    } else {
+      pinField.classList.remove('invalid');
+    }
+  } else {
+    pinField.classList.remove('invalid');
+  }
+
+  // Contact/channel count limits (must match firmware MAX_CONTACTS/MAX_GROUP_CHANNELS)
+  if (fleetMode) {
+    const perDevice = fleetDevices.length - 1 + contacts.length;
+    if (perDevice > 32) {
+      valid = false;
+      toast('Too many contacts per device: ' + perDevice + ' (max 32)');
+    }
+  } else if (contacts.length > 32) {
+    valid = false;
+    toast('Too many contacts: ' + contacts.length + ' (max 32)');
+  }
+  if (channels.length > 16) {
+    valid = false;
+    toast('Too many channels: ' + channels.length + ' (max 16)');
+  }
+
+  // Contact public key validation (must be 64 hex chars = 32 bytes)
+  contacts.forEach((c, i) => {
+    if (c.public_key && !/^[0-9a-fA-F]{64}$/.test(c.public_key.trim())) {
+      valid = false;
+      toast('Contact ' + (i + 1) + ': public key must be 64 hex characters');
+    }
+  });
+
+  // Private channel PSK validation (must be 32 hex chars = 16 bytes)
+  channels.forEach((ch, i) => {
+    if (ch.type === 'private' && ch.name) {
+      const psk = (ch.psk || '').trim();
+      if (!psk || !/^[0-9a-fA-F]{32}$/.test(psk)) {
+        valid = false;
+        toast('Channel ' + (i + 1) + ' (' + ch.name + '): PSK must be 32 hex characters');
+      }
+    }
+  });
+
+  // Duplicate channel name validation (firmware uses name as identifier)
+  const channelNames = new Set();
+  channels.forEach((ch, i) => {
+    if (ch.name) {
+      if (channelNames.has(ch.name)) {
+        valid = false;
+        toast('Duplicate channel name: ' + ch.name + ' (channel ' + (i + 1) + ')');
+      }
+      channelNames.add(ch.name);
+    }
+  });
+
+  return valid;
+}
+
+// ===== Export =====
+function buildConfig() {
+  const langVal = document.getElementById('language').value.trim();
+  const cfg = {
+    ...(langVal ? { language: langVal } : {}),
+    device: { name: document.getElementById('deviceName').value.trim() || 'MCLite' },
+    radio: {
+      frequency: parseFloat(document.getElementById('radioFreq').value),
+      spreading_factor: parseInt(document.getElementById('radioSF').value),
+      bandwidth: parseFloat(document.getElementById('radioBW').value),
+      tx_power: parseInt(document.getElementById('radioTX').value),
+      coding_rate: parseInt(document.getElementById('radioCR').value)
+    },
+    identity: {
+      private_key: identity.privateKey,
+      public_key: identity.publicKey
+    },
+    contacts: contacts.filter(c => c.alias || c.public_key).map(c => ({
+      alias: c.alias,
+      public_key: c.public_key,
+      allow_telemetry: c.allow_telemetry !== false,
+      allow_location: c.allow_location === true,
+      allow_environment: c.allow_environment === true,
+      always_sound: c.always_sound === true,
+      allow_sos: c.allow_sos !== false,
+      send_sos: c.send_sos !== false
+    })),
+    channels: channels.filter(c => c.name).map(ch => {
+      const obj = { name: ch.name, type: ch.type, index: ch.index, allow_sos: ch.allow_sos !== false, send_sos: ch.send_sos !== false };
+      // Hashtag channels: PSK is optional in JSON (firmware derives from name)
+      // but we include it for compatibility with tools that expect it
+      if (ch.psk) obj.psk = ch.psk;
+      if (ch.read_only) obj.read_only = true;
+      return obj;
+    }),
+    display: {
+      brightness: parseInt(document.getElementById('dispBrightness').value),
+      auto_dim_seconds: parseInt(document.getElementById('dispAutoDim').value),
+      theme: 'dark',
+      ...(document.getElementById('dispBootText').value.trim() ? { boot_text: document.getElementById('dispBootText').value.trim() } : {})
+    },
+    messaging: {
+      save_history: document.getElementById('msgHistory').value === 'true',
+      max_history_per_chat: parseInt(document.getElementById('msgMax').value),
+      location_format: document.getElementById('gpsCoordFormat').value,
+      max_retries: parseInt(document.getElementById('msgRetries').value),
+      request_telemetry: document.getElementById('msgTelemetry').value === 'true',
+      show_telemetry: document.getElementById('msgShowTelemetry').value
+    },
+    sound: {
+      enabled: document.getElementById('soundEnabled').value === 'true',
+      sos_keyword: document.getElementById('sosKeyword').value.trim() || 'SOS',
+      sos_repeat: parseInt(document.getElementById('sosRepeat').value) || 3
+    },
+    gps: {
+      enabled: document.getElementById('gpsEnabled').value === 'true',
+      clock_offset: parseInt(document.getElementById('gpsClockOffset').value) || 0,
+      last_known_max_age: parseInt(document.getElementById('gpsLastKnownMaxAge').value) || 1800
+    },
+    battery: {
+      low_alert_enabled: document.getElementById('batteryAlertEnabled').value === 'true',
+      low_alert_threshold: parseInt(document.getElementById('batteryThreshold').value) || 10
+    },
+    security: {
+      pin_enabled: document.getElementById('pinEnabled').value === 'true',
+      pin_code: document.getElementById('pinCode').value || '',
+      admin_enabled: document.getElementById('adminEnabled').value === 'true'
+    }
+  };
+  return cfg;
+}
+
+async function exportConfig() {
+  if (!validate()) { toast('Fix validation errors first'); return; }
+  await ensureHashtagPSKs();
+  const cfg = buildConfig();
+  const json = JSON.stringify(cfg, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'config.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('config.json exported');
+}
+
+// ===== Import =====
+function importConfig(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const cfg = JSON.parse(e.target.result);
+      loadConfig(cfg);
+      toast('Config imported');
+    } catch(err) {
+      toast('Invalid JSON file');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function loadConfig(cfg) {
+  // Switch to single mode on import (a single config.json is one device)
+  if (fleetMode) setFleetMode(false);
+
+  // Language
+  document.getElementById('language').value = cfg.language || '';
+
+  // Device
+  document.getElementById('deviceName').value = cfg.device?.name || 'MCLite';
+
+  // Radio
+  if (cfg.radio) {
+    document.getElementById('radioFreq').value = cfg.radio.frequency ?? 869.618;
+    document.getElementById('radioSF').value   = cfg.radio.spreading_factor ?? 8;
+    document.getElementById('radioBW').value   = cfg.radio.bandwidth ?? 62.5;
+    document.getElementById('radioTX').value   = cfg.radio.tx_power ?? 22;
+    document.getElementById('radioCR').value   = cfg.radio.coding_rate ?? 8;
+    detectPreset();
+  }
+
+  // Identity
+  identity.privateKey = cfg.identity?.private_key || '';
+  identity.publicKey  = cfg.identity?.public_key  || '';
+  document.getElementById('pubKeyDisplay').textContent  = identity.publicKey || 'Not yet generated';
+  document.getElementById('privKeyDisplay').textContent = identity.privateKey || 'Not yet generated';
+
+  // Contacts
+  contacts = (cfg.contacts || []).map(c => ({
+    alias: c.alias || c.name || '',
+    public_key: c.public_key || '',
+    allow_telemetry: c.allow_telemetry !== false,
+    allow_location: c.allow_location === true,
+    allow_environment: c.allow_environment === true,
+    always_sound: c.always_sound === true,
+    allow_sos: c.allow_sos !== false,
+    send_sos: c.send_sos !== false
+  }));
+  renderContacts();
+
+  // Channels
+  channels = (cfg.channels || []).map((ch, i) => ({
+    name: ch.name || '',
+    type: ch.type || 'hashtag',
+    psk: ch.psk || '',
+    index: ch.index ?? i,
+    allow_sos: ch.allow_sos !== false,
+    send_sos: ch.send_sos !== false,
+    read_only: ch.read_only === true
+  }));
+  renderChannels();
+
+  // Display
+  if (cfg.display) {
+    document.getElementById('dispBrightness').value = cfg.display.brightness ?? 180;
+    document.getElementById('dispAutoDim').value    = cfg.display.auto_dim_seconds ?? 30;
+    document.getElementById('dispBootText').value   = cfg.display.boot_text ?? '';
+  }
+
+  // Messaging
+  if (cfg.messaging) {
+    document.getElementById('msgHistory').value = String(cfg.messaging.save_history ?? true);
+    document.getElementById('msgMax').value     = cfg.messaging.max_history_per_chat ?? 100;
+    document.getElementById('msgRetries').value = cfg.messaging.max_retries ?? 3;
+    document.getElementById('msgTelemetry').value = String(cfg.messaging.request_telemetry ?? true);
+    document.getElementById('msgShowTelemetry').value = cfg.messaging.show_telemetry ?? 'both';
+  }
+
+  // Sound
+  document.getElementById('soundEnabled').value = String(cfg.sound?.enabled ?? true);
+  document.getElementById('sosKeyword').value   = cfg.sound?.sos_keyword ?? 'SOS';
+  document.getElementById('sosRepeat').value     = cfg.sound?.sos_repeat ?? 3;
+
+  // GPS
+  document.getElementById('gpsEnabled').value = String(cfg.gps?.enabled ?? true);
+  document.getElementById('gpsClockOffset').value = cfg.gps?.clock_offset ?? 0;
+  document.getElementById('gpsCoordFormat').value = cfg.messaging?.location_format || 'decimal';
+  document.getElementById('gpsLastKnownMaxAge').value = cfg.gps?.last_known_max_age ?? 1800;
+
+  // Battery
+  document.getElementById('batteryAlertEnabled').value = String(cfg.battery?.low_alert_enabled ?? false);
+  document.getElementById('batteryThreshold').value = cfg.battery?.low_alert_threshold ?? 10;
+
+  // Security
+  document.getElementById('pinEnabled').value = String(cfg.security?.pin_enabled ?? false);
+  document.getElementById('pinCode').value = cfg.security?.pin_code ?? '';
+  document.getElementById('adminEnabled').value = String(cfg.security?.admin_enabled ?? true);
+  togglePinField();
+
+  // Warn about firmware limits
+  if (contacts.length > 32) toast('Warning: imported config has ' + contacts.length + ' contacts (firmware max 32)');
+  if (channels.length > 16) toast('Warning: imported config has ' + channels.length + ' channels (firmware max 16)');
+}
+
+function resetAll() {
+  if (!confirm('Start a new config? Unsaved changes will be lost.')) return;
+  identity = { privateKey: '', publicKey: '' };
+  contacts = [];
+  channels = [];
+  fleetDevices = [];
+  if (fleetMode) setFleetMode(false);
+  document.getElementById('language').value = '';
+  document.getElementById('deviceName').value = 'MCLite';
+  document.getElementById('radioPreset').value = 'eu_narrow';
+  applyPreset();
+  document.getElementById('pubKeyDisplay').textContent = 'Not yet generated';
+  document.getElementById('privKeyDisplay').textContent = 'Not yet generated';
+  document.getElementById('dispBrightness').value = 180;
+  document.getElementById('dispAutoDim').value = 30;
+  document.getElementById('dispBootText').value = '';
+  document.getElementById('msgHistory').value = 'true';
+  document.getElementById('msgMax').value = 100;
+  document.getElementById('msgRetries').value = 3;
+  document.getElementById('msgTelemetry').value = 'true';
+  document.getElementById('msgShowTelemetry').value = 'both';
+  document.getElementById('soundEnabled').value = 'true';
+  document.getElementById('sosKeyword').value = 'SOS';
+  document.getElementById('sosRepeat').value = 3;
+  document.getElementById('gpsEnabled').value = 'true';
+  document.getElementById('gpsClockOffset').value = 0;
+  document.getElementById('gpsCoordFormat').value = 'decimal';
+  document.getElementById('gpsLastKnownMaxAge').value = 1800;
+  document.getElementById('batteryAlertEnabled').value = 'false';
+  document.getElementById('batteryThreshold').value = 10;
+  document.getElementById('pinEnabled').value = 'false';
+  document.getElementById('pinCode').value = '';
+  document.getElementById('adminEnabled').value = 'true';
+  togglePinField();
+  renderContacts();
+  renderChannels();
+  toast('Config reset');
+}
+
+// ===== Utils =====
+function esc(s) { return (s||'').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ===== Fleet Mode =====
+const NATO = ['Alpha','Bravo','Charlie','Delta','Echo','Foxtrot','Golf','Hotel',
+  'India','Juliet','Kilo','Lima','Mike','November','Oscar','Papa','Quebec',
+  'Romeo','Sierra','Tango','Uniform','Victor','Whiskey','Xray','Yankee','Zulu'];
+
+let fleetMode = false;
+let fleetDevices = []; // [{ name, publicKey, privateKey }]
+
+function setFleetMode(enabled) {
+  fleetMode = enabled;
+  document.getElementById('btnSingleMode').classList.toggle('active', !enabled);
+  document.getElementById('btnFleetMode').classList.toggle('active', enabled);
+  document.getElementById('singleDeviceSection').classList.toggle('hidden', enabled);
+  document.getElementById('identitySection').classList.toggle('hidden', enabled);
+  document.getElementById('fleetDeviceSection').classList.toggle('hidden', !enabled);
+  document.getElementById('fleetContactNote').classList.toggle('hidden', !enabled);
+  // Update export button text
+  const label = enabled ? 'Export Fleet (ZIP)' : 'Export config.json';
+  document.getElementById('exportBtn').textContent = label;
+  document.getElementById('exportBtnBottom').textContent = label;
+  if (!enabled && fleetDevices.length > 0) {
+    // Switching back to single: use first fleet device's name
+    document.getElementById('deviceName').value = fleetDevices[0].name;
+  }
+  if (enabled && fleetDevices.length === 0) {
+    // Initialize fleet from current device name or defaults
+    const firstName = document.getElementById('deviceName').value.trim() || NATO[0];
+    // Pick a second name that doesn't collide with the first
+    let secondName = NATO[1];
+    for (const n of NATO) {
+      if (n !== firstName) { secondName = n; break; }
+    }
+    fleetDevices = [
+      { name: firstName, publicKey: '', privateKey: '', allow_telemetry: true, allow_location: false, allow_environment: false },
+      { name: secondName, publicKey: '', privateKey: '', allow_telemetry: true, allow_location: false, allow_environment: false }
+    ];
+    // Auto-generate keys for initial devices
+    generateAllFleetKeys();
+    // Auto-add fleet private channel if none exists
+    if (!channels.some(c => c.name === 'private' && c.type === 'private')) {
+      const pskBytes = crypto.getRandomValues(new Uint8Array(16));
+      channels.push({
+        name: 'private', type: 'private',
+        psk: bytesToHex(pskBytes),
+        index: channels.length,
+        allow_sos: true, send_sos: true, read_only: false
+      });
+      renderChannels();
+    }
+  }
+  renderFleetDevices();
+  renderContacts(); // update contact counter for fleet limit
+}
+
+function renderFleetDevices() {
+  document.getElementById('fleetDeviceCount').textContent = fleetDevices.length;
+  const addDevBtn = document.querySelector('[onclick="addFleetDevice()"]');
+  if (addDevBtn) addDevBtn.disabled = (fleetDevices.length - 1 + contacts.length >= 32);
+  const list = document.getElementById('fleetDeviceList');
+  list.innerHTML = fleetDevices.map((d, i) => {
+    const keyText = d.publicKey ? d.publicKey.substring(0, 20) + '...' : 'No key';
+    const keyCls = d.publicKey ? 'fleet-key has-key' : 'fleet-key';
+    return `<div class="fleet-device-card">
+      <span style="color:var(--text3);font-size:0.75rem;min-width:18px;">${i+1}</span>
+      <input type="text" value="${esc(d.name)}" maxlength="20"
+             onchange="fleetDevices[${i}].name=this.value" placeholder="Device name">
+      <span class="${keyCls}" title="${esc(d.publicKey)}">${keyText}</span>
+      <button class="btn-remove" onclick="removeFleetDevice(${i})"${fleetDevices.length <= 2 ? ' disabled style="opacity:0.3"' : ''}>Remove</button>
+    </div>`;
+  }).join('');
+}
+
+async function addFleetDevice() {
+  if (fleetDevices.length - 1 + contacts.length >= 32) { toast('Maximum 32 contacts per device (fleet + manual combined)'); return; }
+  const kp = await generateKeypair();
+  const pubHex = bytesToHex(kp.publicKey);
+  const name = 'MCLite-' + pubHex.substring(0, 8);
+  fleetDevices.push({
+    name: name,
+    publicKey: pubHex,
+    privateKey: bytesToHex(kp.privateKey),
+    allow_telemetry: true,
+    allow_location: false,
+    allow_environment: false
+  });
+  renderFleetDevices();
+  renderContacts(); // update contact limit counter
+  toast(name + ' added');
+}
+
+function removeFleetDevice(i) {
+  if (fleetDevices.length <= 2) return;
+  const name = fleetDevices[i].name;
+  fleetDevices.splice(i, 1);
+  renderFleetDevices();
+  renderContacts(); // update contact limit counter
+  toast(name + ' removed');
+}
+
+async function generateAllFleetKeys() {
+  for (let i = 0; i < fleetDevices.length; i++) {
+    const kp = await generateKeypair();
+    fleetDevices[i].publicKey = bytesToHex(kp.publicKey);
+    fleetDevices[i].privateKey = bytesToHex(kp.privateKey);
+    // Auto-name devices that still have default or auto-generated names
+    const name = fleetDevices[i].name;
+    if (NATO.includes(name) || name === 'MCLite' || name.startsWith('Device') || /^MCLite-[0-9a-f]{8}$/i.test(name)) {
+      fleetDevices[i].name = 'MCLite-' + fleetDevices[i].publicKey.substring(0, 8);
+    }
+  }
+  renderFleetDevices();
+  toast('All fleet keys generated');
+}
+
+function buildFleetConfigs() {
+  // Get shared settings from form (use buildConfig as base, then override per-device)
+  const base = buildConfig();
+  const configs = [];
+  for (let i = 0; i < fleetDevices.length; i++) {
+    const dev = fleetDevices[i];
+    const cfg = JSON.parse(JSON.stringify(base));
+    cfg.device.name = dev.name.trim() || ('Device' + (i + 1));
+    cfg.identity = { private_key: dev.privateKey, public_key: dev.publicKey };
+    // Build contacts: all other fleet devices + manually added contacts
+    const fleetContacts = fleetDevices
+      .filter((_, j) => j !== i)
+      .map(d => ({
+        alias: d.name,
+        public_key: d.publicKey,
+        allow_telemetry: d.allow_telemetry !== false,
+        allow_location: d.allow_location === true,
+        allow_environment: d.allow_environment === true,
+        always_sound: false,
+        allow_sos: true,
+        send_sos: true
+      }));
+    // Append manual contacts from the form
+    const manualContacts = contacts.filter(c => c.alias || c.public_key).map(c => ({
+      alias: c.alias,
+      public_key: c.public_key,
+      allow_telemetry: c.allow_telemetry !== false,
+      allow_location: c.allow_location === true,
+      allow_environment: c.allow_environment === true,
+      always_sound: c.always_sound === true,
+      allow_sos: c.allow_sos !== false,
+      send_sos: c.send_sos !== false
+    }));
+    cfg.contacts = fleetContacts.concat(manualContacts);
+    configs.push({ name: dev.name, config: cfg });
+  }
+  return configs;
+}
+
+// ===== Minimal ZIP Builder (STORE, no compression) =====
+function buildZip(files) {
+  // files: [{ path: 'Alpha/config.json', data: Uint8Array }]
+  const encoder = new TextEncoder();
+  const parts = []; // local file entries
+  const central = []; // central directory entries
+  let offset = 0;
+
+  for (const file of files) {
+    const nameBytes = encoder.encode(file.path);
+    const data = file.data;
+
+    // CRC-32
+    const crc = crc32(data);
+
+    // Local file header (30 + name + data)
+    const local = new Uint8Array(30 + nameBytes.length + data.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true);  // signature
+    lv.setUint16(4, 20, true);          // version needed
+    lv.setUint16(6, 0, true);           // flags
+    lv.setUint16(8, 0, true);           // compression (STORE)
+    lv.setUint16(10, 0, true);          // mod time
+    lv.setUint16(12, 0, true);          // mod date
+    lv.setUint32(14, crc, true);        // crc32
+    lv.setUint32(18, data.length, true);// compressed size
+    lv.setUint32(22, data.length, true);// uncompressed size
+    lv.setUint16(26, nameBytes.length, true); // filename length
+    lv.setUint16(28, 0, true);          // extra field length
+    local.set(nameBytes, 30);
+    local.set(data, 30 + nameBytes.length);
+    parts.push(local);
+
+    // Central directory entry (46 + name)
+    const cdir = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cdir.buffer);
+    cv.setUint32(0, 0x02014b50, true);  // signature
+    cv.setUint16(4, 20, true);          // version made by
+    cv.setUint16(6, 20, true);          // version needed
+    cv.setUint16(8, 0, true);           // flags
+    cv.setUint16(10, 0, true);          // compression
+    cv.setUint16(12, 0, true);          // mod time
+    cv.setUint16(14, 0, true);          // mod date
+    cv.setUint32(16, crc, true);        // crc32
+    cv.setUint32(20, data.length, true);// compressed size
+    cv.setUint32(24, data.length, true);// uncompressed size
+    cv.setUint16(28, nameBytes.length, true); // filename length
+    cv.setUint16(30, 0, true);          // extra field length
+    cv.setUint16(32, 0, true);          // comment length
+    cv.setUint16(34, 0, true);          // disk number
+    cv.setUint16(36, 0, true);          // internal attrs
+    cv.setUint32(38, 0, true);          // external attrs
+    cv.setUint32(42, offset, true);     // local header offset
+    cdir.set(nameBytes, 46);
+    central.push(cdir);
+
+    offset += local.length;
+  }
+
+  // End of central directory
+  const centralOffset = offset;
+  let centralSize = 0;
+  for (const c of central) centralSize += c.length;
+
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);        // signature
+  ev.setUint16(4, 0, true);                  // disk number
+  ev.setUint16(6, 0, true);                  // central dir disk
+  ev.setUint16(8, files.length, true);       // entries on disk
+  ev.setUint16(10, files.length, true);      // total entries
+  ev.setUint32(12, centralSize, true);       // central dir size
+  ev.setUint32(16, centralOffset, true);     // central dir offset
+  ev.setUint16(20, 0, true);                 // comment length
+
+  // Concatenate all parts
+  const totalSize = offset + centralSize + 22;
+  const result = new Uint8Array(totalSize);
+  let pos = 0;
+  for (const p of parts) { result.set(p, pos); pos += p.length; }
+  for (const c of central) { result.set(c, pos); pos += c.length; }
+  result.set(eocd, pos);
+  return result;
+}
+
+// CRC-32 (IEEE)
+function crc32(data) {
+  if (!crc32.table) {
+    const t = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let c = i;
+      for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[i] = c;
+    }
+    crc32.table = t;
+  }
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < data.length; i++) crc = crc32.table[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+async function exportFleet() {
+  if (!validate()) { toast('Fix validation errors first'); return; }
+  await ensureHashtagPSKs();
+  // Check all devices have keys
+  const missing = fleetDevices.filter(d => !d.publicKey);
+  if (missing.length) {
+    toast('Generate keys for all devices first');
+    return;
+  }
+  // Check for duplicate device names (would cause ZIP path collision)
+  const names = new Set();
+  for (const d of fleetDevices) {
+    const n = d.name.trim() || 'Unnamed';
+    if (names.has(n)) {
+      toast('Duplicate device name: ' + n);
+      return;
+    }
+    names.add(n);
+  }
+  const configs = buildFleetConfigs();
+  const encoder = new TextEncoder();
+  const files = configs.map(c => ({
+    path: c.name + '/config.json',
+    data: encoder.encode(JSON.stringify(c.config, null, 2))
+  }));
+  const zipData = buildZip(files);
+  const blob = new Blob([zipData], { type: 'application/zip' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mclite-fleet.zip';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Fleet ZIP exported (' + configs.length + ' devices)');
+}
+
+async function doExport() {
+  if (fleetMode) await exportFleet();
+  else await exportConfig();
+}
+
+// Auto-detect preset changes when radio fields are manually edited
+['radioFreq','radioSF','radioBW','radioCR'].forEach(id => {
+  document.getElementById(id).addEventListener('change', detectPreset);
+});
+
+// ===== Setup Wizard =====
+let wizState = {
+  page: 1,
+  deviceCount: 1,
+  region: 'eu_narrow',
+  publicChannel: true,
+  hashtags: ['#mclite'],
+  fleetPrivateChannel: true,
+  gpsEnabled: true,
+  shareLocation: true,
+};
+
+function openWizard() {
+  // Pre-fill from current config state
+  wizState.page = 1;
+  wizState.deviceCount = fleetMode ? fleetDevices.length : 1;
+  // Detect region from current radio settings
+  const freq = parseFloat(document.getElementById('radioFreq').value);
+  const sf = parseInt(document.getElementById('radioSF').value);
+  const bw = parseFloat(document.getElementById('radioBW').value);
+  const cr = parseInt(document.getElementById('radioCR').value);
+  wizState.region = 'eu_narrow';
+  for (const [key, p] of Object.entries(PRESETS)) {
+    if (Math.abs(freq - p.freq) < 0.01 && sf === p.sf && Math.abs(bw - p.bw) < 0.1 && cr === p.cr) {
+      wizState.region = key;
+      break;
+    }
+  }
+  wizState.gpsEnabled = document.getElementById('gpsEnabled').value === 'true';
+  // Detect share location from contacts/fleet devices (default true for fresh configs)
+  const allDevices = fleetMode ? fleetDevices : contacts;
+  if (allDevices.length > 0) {
+    wizState.shareLocation = allDevices.some(d => d.allow_location === true);
+  } else {
+    wizState.shareLocation = true;
+  }
+  // Detect channels
+  wizState.publicChannel = channels.some(c => c.type === 'public');
+  wizState.hashtags = channels.filter(c => c.type !== 'public' && c.type !== 'private').map(c => c.name).filter(Boolean);
+  if (wizState.hashtags.length === 0) wizState.hashtags = ['#mclite'];
+  // Detect existing fleet private channel
+  const hasPrivate = channels.some(c => c.type === 'private' && c.name === 'private');
+  wizState.fleetPrivateChannel = hasPrivate || wizState.deviceCount > 1;
+
+  document.getElementById('wizardOverlay').classList.remove('hidden');
+  renderWizardPage();
+}
+
+function closeWizard() {
+  document.getElementById('wizardOverlay').classList.add('hidden');
+}
+
+function renderWizardPage() {
+  const box = document.getElementById('wizardBox');
+  switch (wizState.page) {
+    case 1: renderWizWelcome(box); break;
+    case 2: renderWizDevices(box); break;
+    case 3: renderWizRegion(box); break;
+    case 4: renderWizChannels(box); break;
+    case 5: renderWizGPS(box); break;
+    case 6: renderWizSummary(box); break;
+  }
+}
+
+function renderWizWelcome(box) {
+  box.innerHTML = `
+    <h2>Welcome to MCLite</h2>
+    <p class="wiz-sub">Configure your emergency communicator in a few simple steps.</p>
+    <div class="wiz-welcome-btns">
+      <button class="btn" onclick="wizState.page=2; renderWizardPage();">
+        Setup Wizard
+        <small>Guided setup — recommended for first-time users</small>
+      </button>
+      <button class="btn btn-outline" onclick="wizStartFromScratch()">
+        Start from scratch
+        <small>Empty config with defaults — for experienced users</small>
+      </button>
+      <button class="btn btn-outline" onclick="wizImportConfig()">
+        Import config
+        <small>Load an existing config.json file</small>
+      </button>
+    </div>`;
+}
+
+function wizStartFromScratch() {
+  closeWizard();
+  // Reset to defaults
+  identity = { privateKey: '', publicKey: '' };
+  contacts = [];
+  channels = [];
+  fleetDevices = [];
+  if (fleetMode) setFleetMode(false);
+  document.getElementById('language').value = '';
+  document.getElementById('deviceName').value = 'MCLite';
+  document.getElementById('radioPreset').value = 'eu_narrow';
+  applyPreset();
+  document.getElementById('pubKeyDisplay').textContent = 'Not yet generated';
+  document.getElementById('privKeyDisplay').textContent = 'Not yet generated';
+  document.getElementById('dispBrightness').value = 180;
+  document.getElementById('dispAutoDim').value = 30;
+  document.getElementById('dispBootText').value = '';
+  document.getElementById('msgHistory').value = 'true';
+  document.getElementById('msgMax').value = 100;
+  document.getElementById('msgRetries').value = 3;
+  document.getElementById('msgTelemetry').value = 'true';
+  document.getElementById('msgShowTelemetry').value = 'both';
+  document.getElementById('soundEnabled').value = 'true';
+  document.getElementById('sosKeyword').value = 'SOS';
+  document.getElementById('sosRepeat').value = 3;
+  document.getElementById('gpsEnabled').value = 'true';
+  document.getElementById('gpsClockOffset').value = -(new Date().getTimezoneOffset() / 60);
+  document.getElementById('gpsCoordFormat').value = 'decimal';
+  document.getElementById('gpsLastKnownMaxAge').value = 1800;
+  document.getElementById('batteryAlertEnabled').value = 'false';
+  document.getElementById('batteryThreshold').value = 10;
+  document.getElementById('pinEnabled').value = 'false';
+  document.getElementById('pinCode').value = '';
+  document.getElementById('adminEnabled').value = 'true';
+  togglePinField();
+  // Auto-generate keypair and add default channels
+  generateIdentity().then(async () => {
+    addPublicChannel();
+    await addDefaultHashtag();
+    toast('New config ready');
+  });
+}
+
+async function addDefaultHashtag() {
+  const name = '#mclite';
+  const psk = await deriveHashtagPSK(name);
+  channels.push({ name, type: 'hashtag', psk, index: channels.length, allow_sos: true, send_sos: true, read_only: false });
+  renderChannels();
+}
+
+function wizImportConfig() {
+  const input = document.getElementById('importInput');
+  const origHandler = input.onchange;
+  input.onchange = function(event) {
+    if (event.target.files && event.target.files.length > 0) {
+      origHandler.call(this, event);
+      closeWizard();
+    }
+    input.onchange = origHandler;
+  };
+  input.click();
+}
+
+function wizUpdateDeviceHint() {
+  const el = document.getElementById('wizDeviceHint');
+  if (el) el.textContent = wizState.deviceCount === 1 ? 'Single device mode' : wizState.deviceCount + ' devices — fleet mode';
+}
+
+function renderWizDevices(box) {
+  box.innerHTML = `
+    <h2>How many devices?</h2>
+    <p class="wiz-sub">Step 1 of 5</p>
+    <p class="wiz-hint">If you have multiple MCLite devices, fleet mode will generate keys for each one and set them up as contacts for each other.</p>
+    <div class="field">
+      <input type="number" id="wizDeviceCount" value="${wizState.deviceCount}" min="1" max="32"
+             style="max-width:120px; font-size:1.1rem; padding:10px 12px;"
+             oninput="this.value=this.value.replace(/[^0-9]/g,''); var n=parseInt(this.value); if(!n||n<1){wizState.deviceCount=1;}else{wizState.deviceCount=Math.min(32,n);} wizUpdateDeviceHint();">
+      <div class="hint" id="wizDeviceHint" style="margin-top:6px">${wizState.deviceCount === 1 ? 'Single device mode' : wizState.deviceCount + ' devices — fleet mode'}</div>
+    </div>
+    <div class="wiz-nav">
+      <button class="btn btn-outline" onclick="wizState.page=1; renderWizardPage();">Back</button>
+      <button class="btn" onclick="wizState.deviceCount=Math.max(1,Math.min(32,parseInt(document.getElementById('wizDeviceCount').value)||1)); wizState.page=3; renderWizardPage();">Next</button>
+    </div>`;
+}
+
+function renderWizRegion(box) {
+  const regions = [
+    { key: 'eu_narrow', label: 'EU / UK / CH' },
+    { key: 'us_ca', label: 'US / Canada' },
+    { key: 'au_wide', label: 'Australia Wide' },
+    { key: 'au_vic', label: 'Australia Victoria' },
+  ];
+  box.innerHTML = `
+    <h2>Where are you located?</h2>
+    <p class="wiz-sub">Step 2 of 5</p>
+    <p class="wiz-hint">This sets the radio frequency and parameters for your region. All devices in your group must use the same region.</p>
+    <div class="wiz-region-grid">
+      ${regions.map(r => `
+        <button class="wiz-region-btn${wizState.region === r.key ? ' selected' : ''}"
+                onclick="wizSelectRegion('${r.key}')">${r.label}</button>
+      `).join('')}
+    </div>
+    <div class="wiz-nav">
+      <button class="btn btn-outline" onclick="wizState.page=2; renderWizardPage();">Back</button>
+      <button class="btn" onclick="wizState.page=4; renderWizardPage();">Next</button>
+    </div>`;
+}
+
+function wizSelectRegion(key) {
+  wizState.region = key;
+  renderWizardPage();
+}
+
+function renderWizChannels(box) {
+  const tagsHtml = wizState.hashtags.map((tag, i) => `
+    <span class="wiz-tag">${esc(tag)}<button onclick="wizRemoveHashtag(${i})">x</button></span>
+  `).join('');
+
+  box.innerHTML = `
+    <h2>Channels</h2>
+    <p class="wiz-sub">Step 3 of 5</p>
+
+    <div class="wiz-check">
+      <input type="checkbox" id="wizPublic" ${wizState.publicChannel ? 'checked' : ''}
+             onchange="wizState.publicChannel=this.checked; var m=wizMaxHashtags(); if(wizState.hashtags.length>m) wizState.hashtags.length=m; renderWizardPage();">
+      <label for="wizPublic"><strong>Public channel</strong></label>
+    </div>
+    <p class="wiz-hint">The Public channel is shared by all MeshCore devices. Anyone nearby can read messages on this channel.</p>
+
+    <div class="wiz-label">Hashtag channels</div>
+    <p class="wiz-hint">Hashtag channels are open group channels. Anyone who knows the channel name can join. No key needed.</p>
+    <div class="wiz-tags" id="wizTagList">${tagsHtml}</div>
+    ${wizState.hashtags.length >= wizMaxHashtags() ? '<p class="wiz-note">Maximum channels reached (firmware limit: 16 total).</p>' : `<div class="wiz-hashtag-input">
+      <input type="text" id="wizHashtagInput" placeholder="Channel name (e.g. london)"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();wizAddHashtag();}">
+      <button class="btn" onclick="wizAddHashtag()">Add</button>
+    </div>`}
+
+    <div class="wiz-label" style="margin-top:16px">Private channels</div>
+    ${wizState.deviceCount > 1 ? `
+    <div class="wiz-check">
+      <input type="checkbox" id="wizFleetPrivate" ${wizState.fleetPrivateChannel ? 'checked' : ''}
+             onchange="wizState.fleetPrivateChannel=this.checked; var m=wizMaxHashtags(); if(wizState.hashtags.length>m) wizState.hashtags.length=m; renderWizardPage();">
+      <label for="wizFleetPrivate"><strong>Create a private channel for all fleet devices</strong></label>
+    </div>
+    <p class="wiz-hint">A private channel encrypted with a unique random key, shared only by your fleet devices. Recommended for secure internal communication.</p>
+    ` : `<p class="wiz-hint">Private channels require a shared secret key. You can add them in the config tool after the wizard.</p>`}
+
+    <div class="wiz-nav">
+      <button class="btn btn-outline" onclick="wizState.page=3; renderWizardPage();">Back</button>
+      <button class="btn" onclick="wizState.page=5; renderWizardPage();">Next</button>
+    </div>`;
+}
+
+function wizMaxHashtags() {
+  const fleetPrivate = (wizState.deviceCount > 1 && wizState.fleetPrivateChannel) ? 1 : 0;
+  return 16 - (wizState.publicChannel ? 1 : 0) - fleetPrivate;
+}
+
+function wizAddHashtag() {
+  if (wizState.hashtags.length >= wizMaxHashtags()) return;
+  const input = document.getElementById('wizHashtagInput');
+  let name = input.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+  if (!name) return;
+  name = '#' + name;
+  if (wizState.hashtags.includes(name)) { input.value = ''; return; }
+  wizState.hashtags.push(name);
+  input.value = '';
+  renderWizardPage();
+}
+
+function wizRemoveHashtag(i) {
+  wizState.hashtags.splice(i, 1);
+  renderWizardPage();
+}
+
+function renderWizGPS(box) {
+  box.innerHTML = `
+    <h2>GPS</h2>
+    <p class="wiz-sub">Step 4 of 5</p>
+
+    <div class="wiz-label">Enable GPS?</div>
+    <p class="wiz-hint">Enables time sync and the ability to manually share your location.</p>
+    <div class="wiz-toggle">
+      <button class="${wizState.gpsEnabled ? 'active' : ''}" onclick="wizState.gpsEnabled=true; renderWizardPage();">Yes</button>
+      <button class="${!wizState.gpsEnabled ? 'active' : ''}" onclick="wizState.gpsEnabled=false; renderWizardPage();">No</button>
+    </div>
+
+    ${wizState.gpsEnabled ? `
+      <div class="wiz-label">Share location with contacts?</div>
+      <p class="wiz-hint">Allows your contacts to request your GPS position.</p>
+      <div class="wiz-toggle">
+        <button class="${wizState.shareLocation ? 'active' : ''}" onclick="wizState.shareLocation=true; renderWizardPage();">Yes</button>
+        <button class="${!wizState.shareLocation ? 'active' : ''}" onclick="wizState.shareLocation=false; renderWizardPage();">No</button>
+      </div>
+    ` : ''}
+
+    <div class="wiz-nav">
+      <button class="btn btn-outline" onclick="wizState.page=4; renderWizardPage();">Back</button>
+      <button class="btn" onclick="wizApplyAndShowSummary()">Next</button>
+    </div>`;
+}
+
+async function wizApplyAndShowSummary() {
+  // Apply wizard choices to config tool
+  const isFleet = wizState.deviceCount > 1;
+
+  // Language (not configurable in wizard — reset to English default)
+  document.getElementById('language').value = '';
+
+  // Region
+  document.getElementById('radioPreset').value = wizState.region;
+  applyPreset();
+
+  // GPS
+  document.getElementById('gpsEnabled').value = String(wizState.gpsEnabled);
+  document.getElementById('gpsClockOffset').value = -(new Date().getTimezoneOffset() / 60);
+
+  // Channels — rebuild from wizard state, preserving any existing private channels
+  const existingPrivate = channels.filter(c => c.type === 'private');
+  channels = [];
+  if (wizState.publicChannel) {
+    channels.push({
+      name: 'Public', type: 'public',
+      psk: '8b3387e9c5cdea6ac9e5edbaa115cd72',
+      index: 0, allow_sos: false, send_sos: false, read_only: false
+    });
+  }
+  for (const tag of wizState.hashtags) {
+    const psk = await deriveHashtagPSK(tag);
+    channels.push({ name: tag, type: 'hashtag', psk, index: channels.length, allow_sos: true, send_sos: true, read_only: false });
+  }
+  // Auto-create fleet private channel
+  if (isFleet && wizState.fleetPrivateChannel) {
+    const idx = existingPrivate.findIndex(c => c.name === 'private');
+    if (idx >= 0) {
+      // Reuse existing (preserves PSK across wizard re-runs)
+      const ch = existingPrivate.splice(idx, 1)[0];
+      ch.index = channels.length;
+      ch.allow_sos = true;
+      ch.send_sos = true;
+      channels.push(ch);
+    } else {
+      const pskBytes = crypto.getRandomValues(new Uint8Array(16));
+      channels.push({
+        name: 'private', type: 'private',
+        psk: bytesToHex(pskBytes),
+        index: channels.length,
+        allow_sos: true, send_sos: true, read_only: false
+      });
+    }
+  } else if (isFleet && !wizState.fleetPrivateChannel) {
+    // User unchecked — remove the wizard-created "private" channel
+    const idx = existingPrivate.findIndex(c => c.name === 'private');
+    if (idx >= 0) existingPrivate.splice(idx, 1);
+  }
+  for (const ch of existingPrivate) {
+    ch.index = channels.length;
+    channels.push(ch);
+  }
+  renderChannels();
+
+  // Fleet vs single mode
+  const shareLocation = wizState.gpsEnabled && wizState.shareLocation;
+
+  if (isFleet) {
+    // Switch to fleet mode UI if not already
+    if (!fleetMode) {
+      fleetMode = true;
+      document.getElementById('btnSingleMode').classList.remove('active');
+      document.getElementById('btnFleetMode').classList.add('active');
+      document.getElementById('singleDeviceSection').classList.add('hidden');
+      document.getElementById('identitySection').classList.add('hidden');
+      document.getElementById('fleetDeviceSection').classList.remove('hidden');
+      document.getElementById('fleetContactNote').classList.remove('hidden');
+      const label = 'Export Fleet (ZIP)';
+      document.getElementById('exportBtn').textContent = label;
+      document.getElementById('exportBtnBottom').textContent = label;
+    }
+    // Reconcile fleet device count with wizard state
+    try {
+      // Add new devices if count increased
+      while (fleetDevices.length < wizState.deviceCount) {
+        const kp = await generateKeypair();
+        const pubHex = bytesToHex(kp.publicKey);
+        fleetDevices.push({
+          name: 'MCLite-' + pubHex.substring(0, 8),
+          publicKey: pubHex,
+          privateKey: bytesToHex(kp.privateKey),
+          allow_telemetry: true,
+          allow_location: shareLocation,
+          allow_environment: false,
+        });
+      }
+    } catch (e) {
+      toast('Key generation failed: ' + e.message);
+      return;
+    }
+    // Trim devices if count decreased
+    if (fleetDevices.length > wizState.deviceCount) {
+      fleetDevices.length = wizState.deviceCount;
+    }
+    // Generate keys for any devices that lack them
+    for (let i = 0; i < fleetDevices.length; i++) {
+      if (!fleetDevices[i].publicKey) {
+        const kp = await generateKeypair();
+        fleetDevices[i].publicKey = bytesToHex(kp.publicKey);
+        fleetDevices[i].privateKey = bytesToHex(kp.privateKey);
+        fleetDevices[i].name = 'MCLite-' + fleetDevices[i].publicKey.substring(0, 8);
+      }
+    }
+    renderFleetDevices();
+  } else if (fleetMode) {
+    setFleetMode(false);
+    await generateIdentity();
+  } else {
+    // Single device — generate keypair if none
+    if (!identity.publicKey) await generateIdentity();
+  }
+
+  // Apply telemetry settings to all contacts and fleet devices
+  contacts.forEach(c => { c.allow_telemetry = true; c.allow_location = shareLocation; });
+  renderContacts();
+  fleetDevices.forEach(d => { d.allow_telemetry = true; d.allow_location = shareLocation; });
+
+  wizState.page = 6;
+  renderWizardPage();
+}
+
+function renderWizSummary(box) {
+  const preset = PRESETS[wizState.region];
+  const modeLabel = wizState.deviceCount === 1 ? 'Single device' : wizState.deviceCount + ' devices (fleet)';
+  const channelList = [];
+  if (wizState.publicChannel) channelList.push('Public');
+  channelList.push(...wizState.hashtags);
+  if (wizState.deviceCount > 1 && wizState.fleetPrivateChannel) channelList.push('private');
+
+  box.innerHTML = `
+    <h2>Summary</h2>
+    <p class="wiz-sub">Step 5 of 5</p>
+    <p class="wiz-hint">Your choices have been applied to the config tool. Review below and export when ready.</p>
+
+    <div style="background:var(--bg3); border-radius:6px; padding:12px 14px; margin-bottom:16px;">
+      <div class="wiz-summary-item">
+        <span class="wiz-s-label">Devices</span>
+        <span class="wiz-s-value">${modeLabel}</span>
+      </div>
+      <div class="wiz-summary-item">
+        <span class="wiz-s-label">Region</span>
+        <span class="wiz-s-value">${preset ? preset.label : 'Custom'}</span>
+      </div>
+      <div class="wiz-summary-item">
+        <span class="wiz-s-label">Channels</span>
+        <span class="wiz-s-value">${channelList.join(', ') || 'None'}</span>
+      </div>
+      <div class="wiz-summary-item">
+        <span class="wiz-s-label">GPS</span>
+        <span class="wiz-s-value">${wizState.gpsEnabled ? 'Enabled' + (wizState.shareLocation ? ' (sharing on)' : '') : 'Disabled'}</span>
+      </div>
+    </div>
+
+    <p class="wiz-hint">Want a different language? Set it under <em>Edit config</em> and copy the <code>/mclite/lang/</code> folder from the MCLite release to your SD card.</p>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-green" onclick="closeWizard(); doExport();" style="flex:1; padding:12px;">${wizState.deviceCount > 1 ? 'Export Fleet (ZIP)' : 'Export config.json'}</button>
+      <button class="btn btn-outline" onclick="closeWizard();" style="flex:1; padding:12px;">Edit config</button>
+    </div>
+    <div class="wiz-nav" style="margin-top:12px;">
+      <button class="btn btn-outline" onclick="wizState.page=5; renderWizardPage();">Back</button>
+      <span></span>
+    </div>`;
+}
+
+// Show wizard automatically on fresh page load (no identity, no channels)
+function maybeShowWizard() {
+  if (!identity.publicKey && channels.length === 0 && contacts.length === 0) {
+    wizState = { page: 1, deviceCount: 1, region: 'eu_narrow', publicChannel: true, hashtags: ['#mclite'], fleetPrivateChannel: true, gpsEnabled: true, shareLocation: true };
+    document.getElementById('wizardOverlay').classList.remove('hidden');
+    renderWizardPage();
+  }
+}
+
+// Init
+renderContacts();
+renderChannels();
+maybeShowWizard();
+</script>
+</body>
+</html>

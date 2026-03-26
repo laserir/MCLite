@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCLite Web Flasher</title>
+<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
+<style>
+:root {
+  --bg: #0f0f1a;
+  --bg2: #1a1a2e;
+  --bg3: #22223a;
+  --accent: #007aff;
+  --accent-hover: #0060cc;
+  --text: #e8e8f0;
+  --text2: #8888aa;
+  --text3: #666688;
+  --green: #00cc66;
+  --red: #ff4444;
+  --amber: #ffaa00;
+  --border: #333355;
+  --radius: 8px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+.container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px;
+}
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+.subtitle {
+  color: var(--text2);
+  font-size: 0.85rem;
+  margin-bottom: 24px;
+}
+.section {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text2);
+  margin-bottom: 4px;
+}
+input, select {
+  width: 100%;
+  background: var(--bg3);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+select { cursor: pointer; }
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+}
+.row > * { flex: 1; }
+.btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--accent-hover); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.flash-area {
+  text-align: center;
+  padding: 24px 16px;
+}
+esp-web-install-button {
+  display: inline-block;
+}
+esp-web-install-button button {
+  background: var(--green);
+  color: #000;
+  border: none;
+  padding: 12px 32px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+esp-web-install-button button:hover { background: #00aa55; }
+esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
+.status {
+  font-size: 0.85rem;
+  color: var(--text2);
+  margin-top: 12px;
+}
+.status.error { color: var(--red); }
+.status.ok { color: var(--green); }
+.warning-box {
+  background: rgba(255, 170, 0, 0.1);
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-size: 0.85rem;
+  color: var(--amber);
+  margin-bottom: 16px;
+}
+.info-box {
+  background: rgba(0, 122, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-size: 0.82rem;
+  color: var(--text2);
+  line-height: 1.6;
+}
+.info-box strong { color: var(--text); }
+.release-notes {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--text2);
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  white-space: pre-wrap;
+  display: none;
+}
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>MCLite Web Flasher</h1>
+  <p class="subtitle">Flash MCLite firmware to your T-Deck Plus directly from the browser</p>
+
+  <div id="browser-warning" class="warning-box hidden">
+    Your browser does not support Web Serial. Please use Chrome, Edge, or another Chromium-based browser.
+  </div>
+
+  <div class="section">
+    <div class="section-title">Firmware Source</div>
+    <div class="row">
+      <div>
+        <label for="repo">GitHub Repository</label>
+        <input type="text" id="repo" value="laserir/MCLite" placeholder="owner/repo">
+      </div>
+      <div style="flex: 0 0 auto;">
+        <button class="btn" id="fetch-btn" onclick="fetchReleases()">Load Releases</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Version</div>
+    <div>
+      <label for="version">Select firmware version</label>
+      <select id="version" onchange="onVersionChange()" disabled>
+        <option value="">-- Load releases first --</option>
+      </select>
+    </div>
+    <div id="release-notes" class="release-notes"></div>
+  </div>
+
+  <div class="section flash-area">
+    <esp-web-install-button id="flash-btn">
+      <button slot="activate" disabled>Install MCLite</button>
+      <span slot="unsupported">
+        <span class="status error">Web Serial not supported in this browser.</span>
+      </span>
+      <span slot="not-allowed">
+        <span class="status error">Web Serial access denied. Ensure the page is served over HTTPS.</span>
+      </span>
+    </esp-web-install-button>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Instructions</div>
+    <div class="info-box">
+      <strong>1.</strong> Switch off the T-Deck Plus<br>
+      <strong>2.</strong> Press and hold the trackball button<br>
+      <strong>3.</strong> Switch the device on while holding the trackball<br>
+      <strong>4.</strong> Release the trackball — the device is now in DFU mode<br>
+      <strong>5.</strong> Connect via USB and select a firmware version above<br>
+      <strong>6.</strong> Click "Install MCLite" and select the serial port<br>
+      <strong>7.</strong> Wait for the flash to complete (~30 seconds)<br><br>
+      <strong>First-time flash?</strong> You will be prompted to erase the device. This is normal.<br>
+      <strong>Note:</strong> Your config.json and SD card contents are not affected by flashing.
+    </div>
+  </div>
+</div>
+
+<script>
+let releases = [];
+let currentManifestUrl = null;
+
+async function fetchReleases() {
+  const repo = document.getElementById('repo').value.trim();
+  const btn = document.getElementById('fetch-btn');
+  const sel = document.getElementById('version');
+  const status = document.getElementById('status');
+
+  if (!repo || !repo.includes('/')) {
+    setStatus('Enter a valid repository (owner/repo)', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+  setStatus('Fetching releases...', '');
+
+  try {
+    const resp = await fetch(`https://api.github.com/repos/${repo}/releases`);
+    if (!resp.ok) {
+      throw new Error(resp.status === 404 ? 'Repository not found' : `GitHub API error (${resp.status})`);
+    }
+    const data = await resp.json();
+
+    // Filter releases that have an mclite .bin asset
+    releases = [];
+    for (const rel of data) {
+      const asset = rel.assets.find(a => /^mclite-v.*\.bin$/i.test(a.name));
+      if (asset) {
+        releases.push({
+          tag: rel.tag_name,
+          name: rel.name || rel.tag_name,
+          body: rel.body || '',
+          prerelease: rel.prerelease,
+          date: rel.published_at ? rel.published_at.slice(0, 10) : '',
+          binUrl: asset.browser_download_url,
+          binName: asset.name,
+          binSize: asset.size
+        });
+      }
+    }
+
+    sel.innerHTML = '';
+    if (releases.length === 0) {
+      sel.innerHTML = '<option value="">No releases with mclite-v*.bin found</option>';
+      sel.disabled = true;
+      setStatus('No flashable releases found. Upload mclite-v*.bin to a GitHub Release.', 'error');
+    } else {
+      sel.innerHTML = '<option value="">-- Select version --</option>';
+      for (let i = 0; i < releases.length; i++) {
+        const r = releases[i];
+        const label = `${r.name}${r.prerelease ? ' (pre-release)' : ''} - ${r.date}`;
+        sel.innerHTML += `<option value="${i}">${label}</option>`;
+      }
+      sel.disabled = false;
+      setStatus(`Found ${releases.length} release${releases.length > 1 ? 's' : ''}`, 'ok');
+    }
+  } catch (e) {
+    sel.innerHTML = '<option value="">-- Error loading releases --</option>';
+    sel.disabled = true;
+    setStatus(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Load Releases';
+  }
+}
+
+function onVersionChange() {
+  const sel = document.getElementById('version');
+  const flashBtn = document.getElementById('flash-btn');
+  const activateBtn = flashBtn.querySelector('[slot="activate"]');
+  const notesEl = document.getElementById('release-notes');
+  const idx = sel.value;
+
+  // Revoke previous blob URL
+  if (currentManifestUrl) {
+    URL.revokeObjectURL(currentManifestUrl);
+    currentManifestUrl = null;
+  }
+
+  if (idx === '' || !releases[idx]) {
+    flashBtn.removeAttribute('manifest');
+    activateBtn.disabled = true;
+    notesEl.style.display = 'none';
+    return;
+  }
+
+  const rel = releases[idx];
+
+  // Show release notes
+  if (rel.body) {
+    notesEl.textContent = rel.body;
+    notesEl.style.display = 'block';
+  } else {
+    notesEl.style.display = 'none';
+  }
+
+  // Extract version from bin filename (mclite-v0.1.0.bin -> 0.1.0)
+  const vMatch = rel.binName.match(/mclite-v(.+)\.bin/i);
+  const version = vMatch ? vMatch[1] : rel.tag;
+
+  // Generate manifest
+  const manifest = {
+    name: 'MCLite',
+    version: version,
+    new_install_prompt_erase: true,
+    builds: [{
+      chipFamily: 'ESP32-S3',
+      improv: false,
+      parts: [{
+        path: rel.binUrl,
+        offset: 0
+      }]
+    }]
+  };
+
+  currentManifestUrl = URL.createObjectURL(
+    new Blob([JSON.stringify(manifest)], { type: 'application/json' })
+  );
+  flashBtn.setAttribute('manifest', currentManifestUrl);
+  activateBtn.disabled = false;
+
+  const sizeMB = (rel.binSize / (1024 * 1024)).toFixed(1);
+  setStatus(`Ready: ${rel.binName} (${sizeMB} MB)`, 'ok');
+}
+
+function setStatus(msg, type) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status' + (type ? ' ' + type : '');
+}
+
+// Check Web Serial support
+if (!('serial' in navigator)) {
+  document.getElementById('browser-warning').classList.remove('hidden');
+}
+
+// Auto-load releases on page load
+fetchReleases();
+</script>
+</body>
+</html>
