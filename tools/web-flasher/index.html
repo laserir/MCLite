@@ -124,18 +124,6 @@ esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
   line-height: 1.6;
 }
 .info-box strong { color: var(--text); }
-.release-notes {
-  margin-top: 8px;
-  font-size: 0.82rem;
-  color: var(--text2);
-  max-height: 120px;
-  overflow-y: auto;
-  padding: 8px;
-  background: var(--bg);
-  border-radius: var(--radius);
-  white-space: pre-wrap;
-  display: none;
-}
 .hidden { display: none; }
 </style>
 </head>
@@ -156,7 +144,6 @@ esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
         <option value="">-- Load releases first --</option>
       </select>
     </div>
-    <div id="release-notes" class="release-notes"></div>
   </div>
 
   <div class="section flash-area">
@@ -194,129 +181,85 @@ esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
 <script>
 let releases = [];
 let currentManifestUrl = null;
-let currentBinUrl = null;
 
 const REPO = 'laserir/MCLite';
+const FW_BASE = new URL('firmware/', window.location.href).href;
 
 async function fetchReleases() {
   const sel = document.getElementById('version');
-  setStatus('Fetching releases...', '');
+  setStatus('Scanning firmware...', '');
 
   try {
-    const resp = await fetch(`https://api.github.com/repos/${REPO}/releases`);
-    if (!resp.ok) {
-      throw new Error(resp.status === 404 ? 'Repository not found' : `GitHub API error (${resp.status})`);
-    }
-    const data = await resp.json();
+    // List firmware binaries via GitHub Contents API
+    const resp = await fetch(`https://api.github.com/repos/${REPO}/contents/tools/web-flasher/firmware`);
+    if (!resp.ok) throw new Error(`GitHub API error (${resp.status})`);
+    const files = await resp.json();
 
-    // Filter releases that have an mclite .bin asset
     releases = [];
-    for (const rel of data) {
-      const asset = rel.assets.find(a => /^mclite-v.*\.bin$/i.test(a.name));
-      if (asset) {
+    for (const f of files) {
+      const m = f.name.match(/^mclite-v(.+)\.bin$/i);
+      if (m) {
         releases.push({
-          tag: rel.tag_name,
-          name: rel.name || rel.tag_name,
-          body: rel.body || '',
-          prerelease: rel.prerelease,
-          date: rel.published_at ? rel.published_at.slice(0, 10) : '',
-          binApiUrl: asset.url,
-          binName: asset.name,
-          binSize: asset.size
+          version: m[1],
+          binName: f.name,
+          binSize: f.size
         });
       }
     }
+    // Sort by version descending (newest first)
+    releases.sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }));
 
     sel.innerHTML = '';
     if (releases.length === 0) {
-      sel.innerHTML = '<option value="">No releases with mclite-v*.bin found</option>';
+      sel.innerHTML = '<option value="">No firmware binaries found</option>';
       sel.disabled = true;
-      setStatus('No flashable releases found. Upload mclite-v*.bin to a GitHub Release.', 'error');
+      setStatus('No firmware found.', 'error');
     } else {
       sel.innerHTML = '<option value="">-- Select version --</option>';
       for (let i = 0; i < releases.length; i++) {
         const r = releases[i];
-        const label = `${r.name}${r.prerelease ? ' (pre-release)' : ''} - ${r.date}`;
-        sel.innerHTML += `<option value="${i}">${label}</option>`;
+        const sizeMB = (r.binSize / (1024 * 1024)).toFixed(1);
+        sel.innerHTML += `<option value="${i}">v${r.version} (${sizeMB} MB)</option>`;
       }
       sel.disabled = false;
-      setStatus(`Found ${releases.length} release${releases.length > 1 ? 's' : ''}`, 'ok');
+      setStatus(`Found ${releases.length} version${releases.length > 1 ? 's' : ''}`, 'ok');
     }
   } catch (e) {
-    sel.innerHTML = '<option value="">-- Error loading releases --</option>';
+    sel.innerHTML = '<option value="">-- Error loading versions --</option>';
     sel.disabled = true;
     setStatus(e.message, 'error');
   }
 }
 
-async function onVersionChange() {
+function onVersionChange() {
   const sel = document.getElementById('version');
   const flashBtn = document.getElementById('flash-btn');
   const activateBtn = flashBtn.querySelector('[slot="activate"]');
-  const notesEl = document.getElementById('release-notes');
   const idx = sel.value;
 
-  // Revoke previous blob URLs
   if (currentManifestUrl) {
     URL.revokeObjectURL(currentManifestUrl);
     currentManifestUrl = null;
-  }
-  if (currentBinUrl) {
-    URL.revokeObjectURL(currentBinUrl);
-    currentBinUrl = null;
   }
 
   if (idx === '' || !releases[idx]) {
     flashBtn.removeAttribute('manifest');
     activateBtn.disabled = true;
-    notesEl.style.display = 'none';
     return;
   }
 
   const rel = releases[idx];
 
-  // Show release notes
-  if (rel.body) {
-    notesEl.textContent = rel.body;
-    notesEl.style.display = 'block';
-  } else {
-    notesEl.style.display = 'none';
-  }
-
-  // Download binary via GitHub API (CORS-safe)
-  const sizeMB = (rel.binSize / (1024 * 1024)).toFixed(1);
-  setStatus(`Downloading ${rel.binName} (${sizeMB} MB)...`, '');
-  sel.disabled = true;
-
-  try {
-    const resp = await fetch(rel.binApiUrl, {
-      headers: { 'Accept': 'application/octet-stream' }
-    });
-    if (!resp.ok) throw new Error(`Download failed (${resp.status})`);
-    const blob = await resp.blob();
-    currentBinUrl = URL.createObjectURL(blob);
-  } catch (e) {
-    setStatus(`Download failed: ${e.message}`, 'error');
-    sel.disabled = false;
-    return;
-  }
-
-  sel.disabled = false;
-
-  // Extract version from bin filename (mclite-v0.1.0.bin -> 0.1.0)
-  const vMatch = rel.binName.match(/mclite-v(.+)\.bin/i);
-  const version = vMatch ? vMatch[1] : rel.tag;
-
-  // Generate manifest pointing to local blob
+  // Generate manifest pointing to same-origin binary (no CORS issues)
   const manifest = {
     name: 'MCLite',
-    version: version,
+    version: rel.version,
     new_install_prompt_erase: true,
     builds: [{
       chipFamily: 'ESP32-S3',
       improv: false,
       parts: [{
-        path: currentBinUrl,
+        path: FW_BASE + rel.binName,
         offset: 0
       }]
     }]
@@ -328,6 +271,7 @@ async function onVersionChange() {
   flashBtn.setAttribute('manifest', currentManifestUrl);
   activateBtn.disabled = false;
 
+  const sizeMB = (rel.binSize / (1024 * 1024)).toFixed(1);
   setStatus(`Ready: ${rel.binName} (${sizeMB} MB)`, 'ok');
 }
 
