@@ -41,7 +41,8 @@ Most features below are optional. The primary goal is to keep things extremely s
 2. The **Setup Wizard** opens automatically and walks you through the essentials: device name, region, key pair, and default channels. For more detailed settings (telemetry, GPS format, PIN lock, etc.), use the full editor after completing the wizard.
 3. Click **Export** to download `config.json`
 4. Copy `config.json` to the root of your SD card
-5. Insert the SD card and power on -- done
+5. For translations (German, French, Italian), download the [language files](https://github.com/laserir/MCLite/tree/main/sdcard/mclite/lang) and copy the `mclite/` folder to your SD card
+6. Insert the SD card and power on -- done
 
 To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each person in your group, generate keys for all, then export -- the tool creates a ZIP with a separate `config.json` per device, each with the correct name, unique key pair, and all other devices pre-loaded as contacts. Copy each file to the corresponding SD card and you're done.
 
