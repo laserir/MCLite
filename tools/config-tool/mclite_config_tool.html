@@ -221,6 +221,19 @@ h1 {
   z-index: 300;
 }
 .toast.show { opacity: 1; }
+.post-export {
+  background: rgba(0, 204, 102, 0.08);
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+.post-export code {
+  background: var(--bg3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+}
 .divider {
   height: 1px;
   background: var(--border);
@@ -816,6 +829,16 @@ h1 {
     <button class="btn btn-green" id="exportBtnBottom" onclick="doExport()" style="font-size:1rem; padding:12px 32px;">
       Export config.json
     </button>
+  </div>
+  <div id="post-export" class="post-export hidden">
+    <div class="section-title">Next: copy files to your SD card</div>
+    <div style="font-size:0.85rem; color:var(--text2); line-height:1.6;">
+      <strong style="color:var(--text);">1.</strong> Copy <code>config.json</code> to the root of your SD card<br>
+      <strong style="color:var(--text);">2.</strong> For translations, download language files from
+      <a href="https://github.com/laserir/MCLite/tree/main/sdcard/mclite/lang" target="_blank" style="color:var(--accent);">GitHub</a>
+      and copy the <code>mclite/</code> folder to your SD card<br>
+      <strong style="color:var(--text);">3.</strong> Insert the SD card and power on
+    </div>
   </div>
   <p style="text-align:center; color:var(--text3); font-size:0.75rem; padding-bottom:24px;">
     MCLite Config Tool &mdash; all data stays in your browser
@@ -1494,6 +1517,7 @@ async function exportConfig() {
   a.click();
   URL.revokeObjectURL(url);
   toast('config.json exported');
+  document.getElementById('post-export').classList.remove('hidden');
 }
 
 // ===== Import =====
@@ -1944,6 +1968,7 @@ async function exportFleet() {
   a.click();
   URL.revokeObjectURL(url);
   toast('Fleet ZIP exported (' + configs.length + ' devices)');
+  document.getElementById('post-export').classList.remove('hidden');
 }
 
 async function doExport() {
@@ -2401,7 +2426,7 @@ function renderWizSummary(box) {
       </div>
     </div>
 
-    <p class="wiz-hint">Want a different language? Set it under <em>Edit config</em> and copy the <code>/mclite/lang/</code> folder from the MCLite release to your SD card.</p>
+    <p class="wiz-hint">Want a different language? Set it under <em>Edit config</em> and copy the <a href="https://github.com/laserir/MCLite/tree/main/sdcard/mclite/lang" target="_blank" style="color:var(--accent);">language files</a> to <code>/mclite/lang/</code> on your SD card.</p>
 
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <button class="btn btn-green" onclick="closeWizard(); doExport();" style="flex:1; padding:12px;">${wizState.deviceCount > 1 ? 'Export Fleet (ZIP)' : 'Export config.json'}</button>

@@ -170,6 +170,9 @@ esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
       </span>
     </esp-web-install-button>
     <div id="status" class="status"></div>
+    <div id="next-step" class="hidden" style="margin-top: 16px;">
+      <a href="../config-tool/mclite_config_tool.html" style="color: var(--accent); font-size: 0.9rem; font-weight: 500;">Next step: open the Config Tool to set up your SD card &rarr;</a>
+    </div>
   </div>
 
   <div class="section">
@@ -338,6 +341,13 @@ function setStatus(msg, type) {
 if (!('serial' in navigator)) {
   document.getElementById('browser-warning').classList.remove('hidden');
 }
+
+// Show config tool link after successful flash
+document.getElementById('flash-btn').addEventListener('state-changed', (e) => {
+  if (e.detail.state === 'FINISHED') {
+    document.getElementById('next-step').classList.remove('hidden');
+  }
+});
 
 // Auto-load releases on page load
 fetchReleases();
