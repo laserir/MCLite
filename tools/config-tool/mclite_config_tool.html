@@ -221,19 +221,6 @@ h1 {
   z-index: 300;
 }
 .toast.show { opacity: 1; }
-.post-export {
-  background: rgba(0, 204, 102, 0.08);
-  border: 1px solid var(--green);
-  border-radius: 8px;
-  padding: 16px;
-  margin: 16px 0;
-}
-.post-export code {
-  background: var(--bg3);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.82rem;
-}
 .divider {
   height: 1px;
   background: var(--border);
@@ -830,16 +817,6 @@ h1 {
       Export config.json
     </button>
   </div>
-  <div id="post-export" class="post-export hidden">
-    <div class="section-title">Next: copy files to your SD card</div>
-    <div style="font-size:0.85rem; color:var(--text2); line-height:1.6;">
-      <strong style="color:var(--text);">1.</strong> Copy <code>config.json</code> to the root of your SD card<br>
-      <strong style="color:var(--text);">2.</strong> For translations, download language files from
-      <a href="https://github.com/laserir/MCLite/tree/main/sdcard/mclite/lang" target="_blank" style="color:var(--accent);">GitHub</a>
-      and copy the <code>mclite/</code> folder to your SD card<br>
-      <strong style="color:var(--text);">3.</strong> Insert the SD card and power on
-    </div>
-  </div>
   <p style="text-align:center; color:var(--text3); font-size:0.75rem; padding-bottom:24px;">
     MCLite Config Tool &mdash; all data stays in your browser
   </p>
@@ -851,6 +828,19 @@ h1 {
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Post-Export Modal -->
+<div class="wizard-overlay hidden" id="exportModal">
+  <div class="wizard-box" style="max-width:480px;">
+    <h2 style="margin-bottom:12px;">Next: set up your SD card</h2>
+    <div style="font-size:0.9rem; color:var(--text2); line-height:1.8;">
+      <strong style="color:var(--text);">1.</strong> Copy <code style="background:var(--bg3); padding:2px 6px; border-radius:4px;">config.json</code> to the root of your SD card<br>
+      <strong style="color:var(--text);">2.</strong> For translations, download <a href="https://github.com/laserir/MCLite/tree/main/sdcard/mclite/lang" target="_blank" style="color:var(--accent);">language files</a> and copy the <code style="background:var(--bg3); padding:2px 6px; border-radius:4px;">mclite/</code> folder to your SD card<br>
+      <strong style="color:var(--text);">3.</strong> Insert the SD card and power on
+    </div>
+    <button class="btn btn-green" onclick="document.getElementById('exportModal').classList.add('hidden');" style="width:100%; margin-top:16px; padding:12px; font-size:0.95rem;">Done</button>
+  </div>
+</div>
 
 <script>
 // ===== Ed25519 Key Generation (based on noble-ed25519) =====
@@ -1517,7 +1507,7 @@ async function exportConfig() {
   a.click();
   URL.revokeObjectURL(url);
   toast('config.json exported');
-  document.getElementById('post-export').classList.remove('hidden');
+  document.getElementById('exportModal').classList.remove('hidden');
 }
 
 // ===== Import =====
@@ -1968,7 +1958,7 @@ async function exportFleet() {
   a.click();
   URL.revokeObjectURL(url);
   toast('Fleet ZIP exported (' + configs.length + ' devices)');
-  document.getElementById('post-export').classList.remove('hidden');
+  document.getElementById('exportModal').classList.remove('hidden');
 }
 
 async function doExport() {
@@ -2425,8 +2415,6 @@ function renderWizSummary(box) {
         <span class="wiz-s-value">${wizState.gpsEnabled ? 'Enabled' + (wizState.shareLocation ? ' (sharing on)' : '') : 'Disabled'}</span>
       </div>
     </div>
-
-    <p class="wiz-hint">Want a different language? Set it under <em>Edit config</em> and copy the <a href="https://github.com/laserir/MCLite/tree/main/sdcard/mclite/lang" target="_blank" style="color:var(--accent);">language files</a> to <code>/mclite/lang/</code> on your SD card.</p>
 
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <button class="btn btn-green" onclick="closeWizard(); doExport();" style="flex:1; padding:12px;">${wizState.deviceCount > 1 ? 'Export Fleet (ZIP)' : 'Export config.json'}</button>
