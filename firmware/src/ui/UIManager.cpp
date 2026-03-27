@@ -509,6 +509,7 @@ void UIManager::handleRetry(const ConvoId& id, const String& text, uint32_t oldP
     // Update the existing failed message in-place
     target->packetId = newPacketId;
     target->status = MessageStatus::SENDING;
+    MessageStore::instance().saveHistory(id);
 
     _chatScreen.refresh();
     _lastActivity = millis();

@@ -79,7 +79,7 @@ void MessageStore::loadHistory(const ConvoId& id) {
         const char* status = obj["status"] | "sent";
         if (strcmp(status, "delivered") == 0)    msg.status = MessageStatus::DELIVERED;
         else if (strcmp(status, "failed") == 0)  msg.status = MessageStatus::FAILED;
-        else if (strcmp(status, "sending") == 0) msg.status = MessageStatus::SENDING;
+        else if (strcmp(status, "sending") == 0) msg.status = MessageStatus::FAILED;  // Can't ACK after reboot
         else                                     msg.status = MessageStatus::SENT;
 
         convo->messages.push_back(msg);
@@ -148,6 +148,7 @@ void MessageStore::updateStatus(uint32_t packetId, MessageStatus status) {
         for (auto& msg : convo.messages) {
             if (msg.packetId == packetId && msg.fromSelf) {
                 msg.status = status;
+                saveHistory(convo.convoId);
                 return;
             }
         }
