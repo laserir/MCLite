@@ -10,6 +10,11 @@ Most features below are optional. The primary goal is to keep things extremely s
 <a href="https://laserir.github.io/MCLite/tools/web-flasher/"><img src="https://img.shields.io/badge/Install_MCLite_Now-00cc66?style=for-the-badge&logo=espressif&logoColor=white&scale=2" height="50" alt="Install MCLite Now"></a>
 </p>
 
+<p align="center">
+<img src="docs/images/conversation-list.jpg" width="400" alt="Conversation list screen">&nbsp;&nbsp;
+<img src="docs/images/chat-view.jpg" width="400" alt="Chat view screen">
+</p>
+
 ## Features
 
 - **Direct messages** -- private encrypted conversations between contacts
