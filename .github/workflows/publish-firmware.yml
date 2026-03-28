@@ -11,7 +11,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: main
 
@@ -29,7 +29,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "${{ github.event.release.tag_name }}" \
-            tools/config-tool/mclite_config_tool.html
+            tools/config-tool/mclite_config_tool.html \
+            --clobber
 
       - name: Keep only last 5 firmware versions
         run: |
