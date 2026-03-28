@@ -41,7 +41,7 @@ Visit the [MCLite Web Flasher](https://laserir.github.io/MCLite/tools/web-flashe
 
 **Option 2: Manual**
 
-Download the latest `mclite-v*.bin` from the [Releases](../../releases) page and flash with esptool: `esptool.py write_flash 0x0 mclite-v0.1.0.bin`
+Download the latest `mclite-v*.bin` from the [Releases](../../releases) page and flash with esptool: `esptool.py write_flash 0x0 mclite-v0.1.1.bin`
 
 ### Set up your config
 
