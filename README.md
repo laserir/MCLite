@@ -26,7 +26,7 @@ Most features below are optional. The primary goal is to keep things extremely s
 - **Message history** -- conversations saved to SD card and restored on reboot
 - **Multi-language** -- English, German, French, and Italian included. Add your own translations via SD card
 - **Notification sounds** -- chime on incoming messages, alarm on SOS. Supports custom WAV files from SD card
-- **Auto-dim** -- screen dims after inactivity to save battery
+- **Auto-dim** -- screen and keyboard backlight dim after inactivity to save battery
 - **Multiple input methods** -- QWERTY keyboard, trackball, and touchscreen
 - **PIN lock** -- optional screen lock to prevent unauthorized use
 - **Zero-config for end users** -- all settings live in one JSON file on the SD card. Set it up once, copy to every device in your group
@@ -136,7 +136,10 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
   "display": {
     "brightness": 180,                 // 0-255
     "auto_dim_seconds": 30,            // Dim screen after N seconds of inactivity (0 = off)
-    "boot_text": ""                    // Optional text shown on boot screen (e.g. team name)
+    "dim_brightness": 20,              // Brightness when dimmed (0 = screen off)
+    "boot_text": "",                   // Optional text shown on boot screen (e.g. team name)
+    "kbd_backlight": true,             // Keyboard backlight on/off with auto-dim
+    "kbd_brightness": 127              // Keyboard backlight brightness (1-255)
   },
 
   "messaging": {

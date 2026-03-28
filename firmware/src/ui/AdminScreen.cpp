@@ -165,6 +165,10 @@ void AdminScreen::show() {
     addRow("Brightness", String(cfg.display.brightness));
     addRow("Auto-Dim", cfg.display.autoDimSeconds > 0
         ? String(cfg.display.autoDimSeconds) + "s" : String(t("off")));
+    addRow("Dim Brightness", cfg.display.dimBrightness > 0
+        ? String(cfg.display.dimBrightness) : String(t("off")));
+    addRow("Kbd Backlight", cfg.display.kbdBacklight
+        ? String(t("on")) + " (" + String(cfg.display.kbdBrightness) + ")" : String(t("off")));
     if (cfg.display.bootText.length() > 0) {
         addRow("Boot Text", cfg.display.bootText);
     }

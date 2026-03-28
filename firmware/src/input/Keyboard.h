@@ -13,6 +13,9 @@ public:
     char lastKey() const { return _lastKey; }
     void clearKey() { _lastKey = 0; }
 
+    // Keyboard backlight (0=off, 1-255=brightness). I2C cmd 0x01 to ESP32-C3.
+    void setBacklight(uint8_t brightness);
+
     // Register with LVGL as input device
     lv_indev_t* indev() { return _indev; }
 

@@ -22,6 +22,13 @@ bool Keyboard::init() {
     return true;
 }
 
+void Keyboard::setBacklight(uint8_t brightness) {
+    Wire1.beginTransmission(TDECK_KB_I2C_ADDR);
+    Wire1.write(0x01);        // LILYGO_KB_BRIGHTNESS_CMD
+    Wire1.write(brightness);
+    Wire1.endTransmission();
+}
+
 char Keyboard::readI2C() {
     Wire1.requestFrom((uint8_t)TDECK_KB_I2C_ADDR, (uint8_t)1);
     if (Wire1.available()) {

@@ -24,6 +24,9 @@ constexpr uint8_t  RADIO_CODING_RATE     = 8;
 constexpr uint8_t  DISPLAY_BRIGHTNESS    = 180;
 constexpr uint16_t AUTO_DIM_SECONDS      = 30;
 constexpr const char* BOOT_TEXT          = "";
+constexpr uint8_t  DIM_BRIGHTNESS        = 20;
+constexpr bool     KBD_BACKLIGHT         = true;
+constexpr uint8_t  KBD_BRIGHTNESS        = 127;
 
 // Messaging
 constexpr bool     SAVE_HISTORY          = true;

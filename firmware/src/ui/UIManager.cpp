@@ -68,6 +68,12 @@ bool UIManager::init() {
 
     _lastActivity = millis();
 
+    // Turn on keyboard backlight if enabled
+    const auto& initCfg = ConfigManager::instance().config();
+    if (initCfg.display.kbdBacklight) {
+        Keyboard::instance().setBacklight(initCfg.display.kbdBrightness);
+    }
+
     // Do NOT show any screen yet — loadMainScreen() will do that after boot
     Serial.println("[UI] Initialized");
     return true;
@@ -94,7 +100,10 @@ void UIManager::update() {
     if (cfg.display.autoDimSeconds > 0) {
         uint32_t dimTimeout = cfg.display.autoDimSeconds * 1000;
         if (nowDim - _lastActivity > dimTimeout && !_dimmed) {
-            Display::instance().setBrightness(20);
+            Display::instance().setBrightness(cfg.display.dimBrightness);
+            if (cfg.display.kbdBacklight) {
+                Keyboard::instance().setBacklight(0);
+            }
             _dimmed = true;
             // Lock on idle if PIN enabled
             const auto& sec = cfg.security;
@@ -147,7 +156,11 @@ void UIManager::checkWake() {
 
     // Wake display if dimmed
     if (_dimmed) {
-        Display::instance().setBrightness(ConfigManager::instance().config().display.brightness);
+        const auto& dispCfg = ConfigManager::instance().config().display;
+        Display::instance().setBrightness(dispCfg.brightness);
+        if (dispCfg.kbdBacklight) {
+            Keyboard::instance().setBacklight(dispCfg.kbdBrightness);
+        }
         _dimmed = false;
         // Consume the keyboard wake key so it doesn't pass through
         if (!_isLocked && Keyboard::instance().lastKey() != 0) {
@@ -187,7 +200,11 @@ void UIManager::showScreen(Screen screen) {
 
     // Wake display if dimmed
     if (_dimmed) {
-        Display::instance().setBrightness(ConfigManager::instance().config().display.brightness);
+        const auto& dispCfg = ConfigManager::instance().config().display;
+        Display::instance().setBrightness(dispCfg.brightness);
+        if (dispCfg.kbdBacklight) {
+            Keyboard::instance().setBacklight(dispCfg.kbdBrightness);
+        }
         _dimmed = false;
     }
 }
@@ -246,7 +263,11 @@ void UIManager::onIncomingMessage(const ConvoId& id, const Message& msg) {
 
     // Wake display
     if (_dimmed) {
-        Display::instance().setBrightness(ConfigManager::instance().config().display.brightness);
+        const auto& dispCfg = ConfigManager::instance().config().display;
+        Display::instance().setBrightness(dispCfg.brightness);
+        if (dispCfg.kbdBacklight) {
+            Keyboard::instance().setBacklight(dispCfg.kbdBrightness);
+        }
         _dimmed = false;
     }
     _lastActivity = millis();
@@ -345,6 +366,9 @@ void UIManager::showSOSAlert(const ConvoId& id, const Message& msg) {
 
     // Wake display to max brightness
     Display::instance().setBrightness(255);
+    if (cfg.display.kbdBacklight) {
+        Keyboard::instance().setBacklight(cfg.display.kbdBrightness);
+    }
     _dimmed = false;
     _lastActivity = millis();
 
@@ -404,7 +428,11 @@ void UIManager::dismissSOSAlert(bool sendReply) {
     _sosAlertText = "";  // Free the persisted text
 
     // Restore normal brightness
-    Display::instance().setBrightness(ConfigManager::instance().config().display.brightness);
+    const auto& dispCfgSos = ConfigManager::instance().config().display;
+    Display::instance().setBrightness(dispCfgSos.brightness);
+    if (dispCfgSos.kbdBacklight) {
+        Keyboard::instance().setBacklight(dispCfgSos.kbdBrightness);
+    }
 
     Serial.println("[UI] SOS alert dismissed");
 }
@@ -887,7 +915,11 @@ void UIManager::pinKeyCb(lv_event_t* e) {
 void UIManager::onPinKey(uint32_t key) {
     // Wake display on any keypress while locked and dimmed
     if (_dimmed) {
-        Display::instance().setBrightness(ConfigManager::instance().config().display.brightness);
+        const auto& dispCfg = ConfigManager::instance().config().display;
+        Display::instance().setBrightness(dispCfg.brightness);
+        if (dispCfg.kbdBacklight) {
+            Keyboard::instance().setBacklight(dispCfg.kbdBrightness);
+        }
         _dimmed = false;
     }
     _lastActivity = millis();
@@ -959,7 +991,11 @@ void UIManager::dismissPinLock() {
 
     // Wake display
     if (_dimmed) {
-        Display::instance().setBrightness(ConfigManager::instance().config().display.brightness);
+        const auto& dispCfg = ConfigManager::instance().config().display;
+        Display::instance().setBrightness(dispCfg.brightness);
+        if (dispCfg.kbdBacklight) {
+            Keyboard::instance().setBacklight(dispCfg.kbdBrightness);
+        }
         _dimmed = false;
     }
     _lastActivity = millis();

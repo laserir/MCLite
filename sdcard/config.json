@@ -34,7 +34,10 @@
   ],
   "display": {
     "brightness": 180,
-    "auto_dim_seconds": 30
+    "auto_dim_seconds": 30,
+    "dim_brightness": 20,
+    "kbd_backlight": true,
+    "kbd_brightness": 127
   },
   "messaging": {
     "save_history": true,

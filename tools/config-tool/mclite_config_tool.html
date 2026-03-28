@@ -635,6 +635,27 @@ h1 {
         <input type="number" id="dispAutoDim" value="30" min="0" max="3600">
         <div class="error">0–3600</div>
       </div>
+      <div class="field">
+        <label>Dim Brightness (0–255)</label>
+        <input type="number" id="dispDimBrightness" value="20" min="0" max="255">
+        <div class="error">0–255</div>
+        <div class="hint">Set to 0 to turn screen off completely when inactive.</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Keyboard Backlight</label>
+        <select id="kbdBacklight">
+          <option value="true" selected>On</option>
+          <option value="false">Off</option>
+        </select>
+        <div class="hint">Turn keyboard backlight on/off with auto-dim.</div>
+      </div>
+      <div class="field">
+        <label>Kbd Brightness (1–255)</label>
+        <input type="number" id="kbdBrightness" value="127" min="1" max="255">
+        <div class="error">1–255</div>
+      </div>
     </div>
     <div class="field">
       <label>Boot Text (optional)</label>
@@ -1347,6 +1368,10 @@ function validate() {
   check('radioTX', -9, 22);
   check('dispBrightness', 10, 255);
   check('dispAutoDim', 0, 3600);
+  check('dispDimBrightness', 0, 255);
+  if (document.getElementById('kbdBacklight').value === 'true') {
+    check('kbdBrightness', 1, 255);
+  }
   check('msgMax', 10, 10000);
   check('msgRetries', 1, 5);
   check('sosRepeat', 1, 10);
@@ -1468,8 +1493,11 @@ function buildConfig() {
     display: {
       brightness: parseInt(document.getElementById('dispBrightness').value),
       auto_dim_seconds: parseInt(document.getElementById('dispAutoDim').value),
+      dim_brightness: parseInt(document.getElementById('dispDimBrightness').value),
       theme: 'dark',
-      ...(document.getElementById('dispBootText').value.trim() ? { boot_text: document.getElementById('dispBootText').value.trim() } : {})
+      ...(document.getElementById('dispBootText').value.trim() ? { boot_text: document.getElementById('dispBootText').value.trim() } : {}),
+      kbd_backlight: document.getElementById('kbdBacklight').value === 'true',
+      kbd_brightness: parseInt(document.getElementById('kbdBrightness').value) || 127
     },
     messaging: {
       save_history: document.getElementById('msgHistory').value === 'true',
@@ -1597,7 +1625,11 @@ function loadConfig(cfg) {
   if (cfg.display) {
     document.getElementById('dispBrightness').value = cfg.display.brightness ?? 180;
     document.getElementById('dispAutoDim').value    = cfg.display.auto_dim_seconds ?? 30;
+    document.getElementById('dispDimBrightness').value = cfg.display.dim_brightness ?? 20;
     document.getElementById('dispBootText').value   = cfg.display.boot_text ?? '';
+    document.getElementById('kbdBacklight').value = cfg.display.kbd_backlight !== false ? 'true' : 'false';
+    document.getElementById('kbdBrightness').value  = cfg.display.kbd_brightness ?? 127;
+    document.getElementById('kbdBrightness').disabled = document.getElementById('kbdBacklight').value !== 'true';
   }
 
   // Messaging
@@ -1650,7 +1682,11 @@ function resetAll() {
   document.getElementById('privKeyDisplay').textContent = 'Not yet generated';
   document.getElementById('dispBrightness').value = 180;
   document.getElementById('dispAutoDim').value = 30;
+  document.getElementById('dispDimBrightness').value = 20;
   document.getElementById('dispBootText').value = '';
+  document.getElementById('kbdBacklight').value = 'true';
+  document.getElementById('kbdBrightness').value = 127;
+  document.getElementById('kbdBrightness').disabled = false;
   document.getElementById('msgHistory').value = 'true';
   document.getElementById('msgMax').value = 100;
   document.getElementById('msgRetries').value = 3;
@@ -1995,6 +2031,11 @@ async function doExport() {
   document.getElementById(id).addEventListener('change', detectPreset);
 });
 
+// Toggle kbd brightness field when backlight select changes
+document.getElementById('kbdBacklight').addEventListener('change', function() {
+  document.getElementById('kbdBrightness').disabled = this.value !== 'true';
+});
+
 // ===== Setup Wizard =====
 let wizState = {
   page: 1,
@@ -2095,7 +2136,11 @@ function wizStartFromScratch() {
   document.getElementById('privKeyDisplay').textContent = 'Not yet generated';
   document.getElementById('dispBrightness').value = 180;
   document.getElementById('dispAutoDim').value = 30;
+  document.getElementById('dispDimBrightness').value = 20;
   document.getElementById('dispBootText').value = '';
+  document.getElementById('kbdBacklight').value = 'true';
+  document.getElementById('kbdBrightness').value = 127;
+  document.getElementById('kbdBrightness').disabled = false;
   document.getElementById('msgHistory').value = 'true';
   document.getElementById('msgMax').value = 100;
   document.getElementById('msgRetries').value = 3;

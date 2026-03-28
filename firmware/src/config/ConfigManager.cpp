@@ -21,6 +21,9 @@ void ConfigManager::applyDefaults() {
     _config.display.brightness    = defaults::DISPLAY_BRIGHTNESS;
     _config.display.autoDimSeconds = defaults::AUTO_DIM_SECONDS;
     _config.display.theme         = "dark";
+    _config.display.dimBrightness = defaults::DIM_BRIGHTNESS;
+    _config.display.kbdBacklight  = defaults::KBD_BACKLIGHT;
+    _config.display.kbdBrightness = defaults::KBD_BRIGHTNESS;
     _config.messaging.saveHistory      = defaults::SAVE_HISTORY;
     _config.messaging.maxHistoryPerChat = defaults::MAX_HISTORY_PER_CHAT;
     _config.messaging.locationFormat   = defaults::LOCATION_FORMAT;
@@ -141,6 +144,10 @@ bool ConfigManager::parseJson(const String& json) {
         _config.display.autoDimSeconds = disp["auto_dim_seconds"] | defaults::AUTO_DIM_SECONDS;
         _config.display.theme          = disp["theme"] | "dark";
         _config.display.bootText       = disp["boot_text"] | defaults::BOOT_TEXT;
+        _config.display.dimBrightness  = disp["dim_brightness"] | defaults::DIM_BRIGHTNESS;
+        _config.display.kbdBacklight   = disp["kbd_backlight"] | defaults::KBD_BACKLIGHT;
+        uint8_t kbdBr = disp["kbd_brightness"] | defaults::KBD_BRIGHTNESS;
+        _config.display.kbdBrightness  = constrain(kbdBr, 1, 255);
     }
 
     // Messaging
@@ -243,6 +250,9 @@ String ConfigManager::toJson() const {
     if (_config.display.bootText.length() > 0) {
         disp["boot_text"]    = _config.display.bootText;
     }
+    disp["dim_brightness"]   = _config.display.dimBrightness;
+    disp["kbd_backlight"]    = _config.display.kbdBacklight;
+    disp["kbd_brightness"]   = _config.display.kbdBrightness;
 
     JsonObject msg = doc["messaging"].to<JsonObject>();
     msg["save_history"]         = _config.messaging.saveHistory;
