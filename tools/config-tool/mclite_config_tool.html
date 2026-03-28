@@ -495,9 +495,15 @@ h1 {
     <input type="file" id="importInput" accept=".json" onchange="importConfig(event)">
   </div>
 
-  <div class="mode-toggle">
-    <button id="btnSingleMode" class="active" onclick="setFleetMode(false)">Single Device</button>
-    <button id="btnFleetMode" onclick="setFleetMode(true)">Fleet Mode</button>
+  <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
+    <div class="mode-toggle" style="margin-bottom:0;">
+      <button id="btnSingleMode" class="active" onclick="setFleetMode(false)">Single Device</button>
+      <button id="btnFleetMode" onclick="setFleetMode(true)">Fleet Mode</button>
+    </div>
+    <div class="mode-toggle" style="margin-bottom:0;">
+      <button id="btnBasicMode" class="active" onclick="setAdvancedMode(false)">Basic</button>
+      <button id="btnAdvancedMode" onclick="setAdvancedMode(true)">Advanced</button>
+    </div>
   </div>
 
   <!-- Device (single mode) -->
@@ -539,7 +545,7 @@ h1 {
   </div>
 
   <!-- Radio -->
-  <div class="section">
+  <div class="section hidden" data-mode="advanced">
     <div class="section-title">Radio <span id="presetLabel" class="preset-tag">EU/UK Narrow</span></div>
     <div class="field">
       <label>Preset</label>
@@ -622,7 +628,7 @@ h1 {
   </div>
 
   <!-- Display -->
-  <div class="section">
+  <div class="section hidden" data-mode="advanced">
     <div class="section-title">Display</div>
     <div class="row">
       <div class="field">
@@ -670,7 +676,7 @@ h1 {
   </div>
 
   <!-- Messaging -->
-  <div class="section">
+  <div class="section hidden" data-mode="advanced">
     <div class="section-title">Messaging</div>
     <div class="row">
       <div class="field">
@@ -712,7 +718,7 @@ h1 {
   </div>
 
   <!-- Sound -->
-  <div class="section">
+  <div class="section hidden" data-mode="advanced">
     <div class="section-title">Sound</div>
     <div class="row">
       <div class="field">
@@ -750,7 +756,7 @@ h1 {
   <!-- Boot Logo (removed — boot screen is now LVGL-based with configurable boot_text) -->
 
   <!-- GPS -->
-  <div class="section">
+  <div class="section hidden" data-mode="advanced">
     <div class="section-title">GPS</div>
     <div class="field">
       <label>GPS Enabled</label>
@@ -784,7 +790,7 @@ h1 {
   </div>
 
   <!-- Battery -->
-  <div class="section">
+  <div class="section hidden" data-mode="advanced">
     <div class="section-title">Battery</div>
     <div class="row">
       <div class="field">
@@ -804,7 +810,7 @@ h1 {
   </div>
 
   <!-- Security -->
-  <div class="section">
+  <div class="section hidden" data-mode="advanced">
     <div class="section-title">Security</div>
     <div class="row">
       <div class="field">
@@ -1674,6 +1680,7 @@ function resetAll() {
   channels = [];
   fleetDevices = [];
   if (fleetMode) setFleetMode(false);
+  if (advancedMode) setAdvancedMode(false);
   document.getElementById('language').value = '';
   document.getElementById('deviceName').value = 'MCLite';
   document.getElementById('radioPreset').value = 'eu_narrow';
@@ -1718,6 +1725,17 @@ function toast(msg) {
   el.textContent = msg;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ===== Basic / Advanced Mode =====
+let advancedMode = false;
+function setAdvancedMode(enabled) {
+  advancedMode = enabled;
+  document.getElementById('btnBasicMode').classList.toggle('active', !enabled);
+  document.getElementById('btnAdvancedMode').classList.toggle('active', enabled);
+  document.querySelectorAll('[data-mode="advanced"]').forEach(el => {
+    el.classList.toggle('hidden', !enabled);
+  });
 }
 
 // ===== Fleet Mode =====
