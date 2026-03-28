@@ -74,7 +74,7 @@ private:
     OnTelemetryCallback _onTelemetry;
 
     // Advertisement
-    uint32_t _advertIntervalMs = 300000;  // Default: every 5 minutes
+    uint32_t _advertIntervalMs = 540000;  // Default: every 9 minutes (under 10-min "recently seen" threshold)
     uint32_t _lastAdvertMs     = 0;
     bool     _firstAdvert      = true;   // Send first advert immediately on boot
 
