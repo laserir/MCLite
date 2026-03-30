@@ -70,14 +70,15 @@ uint32_t GPS::currentTimestamp() const {
     if (y < 2024 || m == 0 || d == 0) return 0;  // Invalid date
 
     // Days from 1970-01-01 to this date
+    auto isLeap = [](uint16_t yr) { return yr % 4 == 0 && (yr % 100 != 0 || yr % 400 == 0); };
     uint32_t days = 0;
     for (uint16_t yr = 1970; yr < y; yr++) {
-        days += (yr % 4 == 0 && (yr % 100 != 0 || yr % 400 == 0)) ? 366 : 365;
+        days += isLeap(yr) ? 366 : 365;
     }
     static const uint8_t daysInMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
     for (uint8_t mo = 1; mo < m; mo++) {
         days += daysInMonth[mo - 1];
-        if (mo == 2 && (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0))) days++;
+        if (mo == 2 && isLeap(y)) days++;
     }
     days += (d - 1);
 

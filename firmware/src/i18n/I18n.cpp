@@ -168,14 +168,16 @@ void I18n::init(const String& langCode) {
     }
 
     JsonObject obj = doc.as<JsonObject>();
-    _count = 0;
 
-    // First pass: measure total buffer size needed for all keys + values
+    // Measure total buffer size needed for all keys + values (single pass)
     size_t totalLen = 0;
+    size_t numStrings = 0;
     for (JsonPair kv : obj) {
         if (!kv.value().is<const char*>()) continue;
+        if (numStrings >= MAX_STRINGS) break;
         totalLen += strlen(kv.key().c_str()) + 1;
         totalLen += strlen(kv.value().as<const char*>()) + 1;
+        numStrings++;
     }
 
     // Single allocation for all strings (avoids heap fragmentation)
@@ -187,10 +189,10 @@ void I18n::init(const String& langCode) {
         return;
     }
 
-    // Second pass: copy strings into our buffer
+    // Copy strings into our buffer (re-iterate; ArduinoJson iterators are lightweight)
     char* cursor = _jsonBuf;
     for (JsonPair kv : obj) {
-        if (_count >= MAX_STRINGS) break;
+        if (_count >= numStrings) break;
         if (!kv.value().is<const char*>()) continue;
 
         const char* k = kv.key().c_str();

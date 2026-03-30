@@ -48,7 +48,10 @@ void MessageStore::loadHistory(const ConvoId& id) {
     if (json.isEmpty()) return;
 
     JsonDocument doc;
-    if (deserializeJson(doc, json)) return;
+    if (deserializeJson(doc, json)) {
+        Serial.printf("[MessageStore] Failed to parse history: %s\n", path.c_str());
+        return;
+    }
 
     // Find the conversation (must already exist)
     Conversation* convo = getConversation(id);
