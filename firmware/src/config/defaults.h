@@ -2,7 +2,7 @@
 
 // MCLite default configuration values
 
-#define MCLITE_VERSION "0.1.1"
+#define MCLITE_VERSION "0.1.2"
 
 namespace mclite {
 namespace defaults {
@@ -35,6 +35,7 @@ constexpr const char* LOCATION_FORMAT    = "decimal";
 constexpr uint8_t  MAX_RETRIES           = 3;   // DM retry attempts (1-5)
 constexpr bool     REQUEST_TELEMETRY     = true;
 constexpr const char* SHOW_TELEMETRY    = "both";  // "battery", "location", "both", "none"
+constexpr bool     CANNED_MESSAGES_ENABLED = false;
 
 // Sound
 constexpr bool     SOUND_ENABLED         = true;

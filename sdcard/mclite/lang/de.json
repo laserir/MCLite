@@ -84,5 +84,14 @@
     "telem_send_failed": "Anfrage fehlgeschlagen",
     "telem_stale": "(Daten evtl. veraltet)",
     "btn_refresh": "Laden",
-    "btn_close": "Schliessen"
+    "btn_close": "Schliessen",
+
+    "canned_1": "OK",
+    "canned_2": "Verstanden",
+    "canned_3": "Wo bist du?",
+    "canned_4": "Bitte antworten",
+    "canned_5": "Unterwegs",
+    "canned_6": "Warte",
+    "canned_7": "Brauche Hilfe",
+    "canned_8": "Alles klar"
 }

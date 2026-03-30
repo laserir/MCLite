@@ -84,5 +84,14 @@
     "telem_send_failed": "Richiesta fallita",
     "telem_stale": "(dati forse obsoleti)",
     "btn_refresh": "Aggiorna",
-    "btn_close": "Chiudi"
+    "btn_close": "Chiudi",
+
+    "canned_1": "OK",
+    "canned_2": "Ricevuto",
+    "canned_3": "Dove sei?",
+    "canned_4": "Rispondi per favore",
+    "canned_5": "In arrivo",
+    "canned_6": "Aspetta",
+    "canned_7": "Ho bisogno di aiuto",
+    "canned_8": "Tutto bene"
 }

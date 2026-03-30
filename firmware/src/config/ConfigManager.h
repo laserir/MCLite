@@ -52,6 +52,8 @@ struct MessagingConfig {
     uint8_t  maxRetries       = 3;   // DM retry attempts (1-5)
     bool     requestTelemetry = true;
     String   showTelemetry    = "both";  // "battery", "location", "both", "none"
+    bool     cannedMessages   = false;   // Enable canned message quick-reply picker
+    std::vector<String> cannedCustom;    // Optional custom texts from config array
 };
 
 struct BatteryConfig {

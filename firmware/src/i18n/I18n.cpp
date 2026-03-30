@@ -42,6 +42,16 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"loc_last_known_m",    "Last known position (~%dm ago)"},
     {"loc_last_known_h",    "Last known position (~%dh ago)"},
 
+    // Canned messages (quick replies)
+    {"canned_1",            "OK"},
+    {"canned_2",            "Copy"},
+    {"canned_3",            "Where are you?"},
+    {"canned_4",            "Please respond"},
+    {"canned_5",            "En route"},
+    {"canned_6",            "Stand by"},
+    {"canned_7",            "Need help"},
+    {"canned_8",            "All clear"},
+
     // Convo list
     {"no_contacts",         "No contacts configured.\nEdit config.json on SD card."},
     {"time_s",              "%ds"},

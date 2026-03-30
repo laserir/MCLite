@@ -45,7 +45,8 @@
     "location_format": "decimal",
     "max_retries": 3,
     "request_telemetry": true,
-    "show_telemetry": "both"
+    "show_telemetry": "both",
+    "canned_messages": false
   },
   "sound": {
     "enabled": true,

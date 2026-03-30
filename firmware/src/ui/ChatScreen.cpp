@@ -100,6 +100,22 @@ void ChatScreen::createInputBar() {
     lv_obj_set_flex_align(_inputBar, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(_inputBar, theme::PAD_SMALL, 0);
 
+    // Canned messages button (only if enabled)
+    if (ConfigManager::instance().config().messaging.cannedMessages) {
+        _cannedBtn = lv_btn_create(_inputBar);
+        lv_obj_set_size(_cannedBtn, 28, 28);
+        lv_obj_set_style_bg_opa(_cannedBtn, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_shadow_width(_cannedBtn, 0, 0);
+        lv_obj_set_style_border_width(_cannedBtn, 0, 0);
+        lv_obj_set_style_pad_all(_cannedBtn, 0, 0);
+        lv_obj_add_event_cb(_cannedBtn, cannedBtnCb, LV_EVENT_CLICKED, this);
+
+        lv_obj_t* cannedLbl = lv_label_create(_cannedBtn);
+        lv_label_set_text(cannedLbl, LV_SYMBOL_LIST);
+        lv_obj_set_style_text_color(cannedLbl, theme::TEXT_SECONDARY, 0);
+        lv_obj_center(cannedLbl);
+    }
+
     // Text input
     _textarea = lv_textarea_create(_inputBar);
     lv_obj_set_flex_grow(_textarea, 1);
@@ -344,6 +360,7 @@ void ChatScreen::show() {
     if (!lv_obj_has_flag(_inputBar, LV_OBJ_FLAG_HIDDEN)) {
         lv_group_t* grp = lv_group_get_default();
         if (grp) {
+            if (_cannedBtn) lv_group_add_obj(grp, _cannedBtn);
             lv_group_add_obj(grp, _textarea);
             lv_group_add_obj(grp, _gpsBtn);
             lv_group_add_obj(grp, _sendBtn);
@@ -356,11 +373,13 @@ void ChatScreen::hide() {
     // Remove widgets from input group so they don't steal focus while hidden
     // (only if input bar was visible — read-only channels never add them)
     if (!lv_obj_has_flag(_inputBar, LV_OBJ_FLAG_HIDDEN)) {
+        if (_cannedBtnm) hideCannedPicker();
         lv_group_t* grp = lv_group_get_default();
         if (grp) {
             lv_group_remove_obj(_sendBtn);
             lv_group_remove_obj(_gpsBtn);
             lv_group_remove_obj(_textarea);
+            if (_cannedBtn) lv_group_remove_obj(_cannedBtn);
         }
     }
     lv_obj_add_flag(_screen, LV_OBJ_FLAG_HIDDEN);
@@ -491,6 +510,151 @@ void ChatScreen::retryBtnCb(lv_event_t* e) {
     if (!rd) return;
 
     self->_onRetry(*self->_currentConvo, rd->text, rd->packetId);
+}
+
+void ChatScreen::cannedBtnCb(lv_event_t* e) {
+    ChatScreen* self = (ChatScreen*)lv_event_get_user_data(e);
+    if (self->_cannedBtnm) {
+        self->hideCannedPicker();
+    } else {
+        self->showCannedPicker();
+    }
+}
+
+void ChatScreen::showCannedPicker() {
+    const auto& cfg = ConfigManager::instance().config();
+    const auto& custom = cfg.messaging.cannedCustom;
+    bool isEnglish = cfg.language.isEmpty();
+
+    // Collect canned message texts
+    // Store in static array so btnmatrix labels remain valid
+    static const char* labels[9];  // max 8 + sentinel
+    static String stored[8];       // keep String storage alive
+    int count = 0;
+
+    if (isEnglish && !custom.empty()) {
+        // English + custom array: use ONLY the custom entries
+        for (size_t i = 0; i < custom.size() && i < 8; i++) {
+            stored[count] = custom[i];
+            labels[count] = stored[count].c_str();
+            count++;
+        }
+    } else {
+        // Non-English (lang file wins) or English with no custom array (defaults)
+        for (int i = 1; i <= 8; i++) {
+            char key[12];
+            snprintf(key, sizeof(key), "canned_%d", i);
+            const char* text = t(key);
+            if (strcmp(text, key) == 0) break;  // key not defined → stop
+            stored[count] = text;
+            labels[count] = stored[count].c_str();
+            count++;
+        }
+    }
+
+    if (count == 0) return;
+    labels[count] = "";  // sentinel
+
+    // Dark overlay
+    _cannedOverlay = lv_obj_create(_screen);
+    lv_obj_set_size(_cannedOverlay, 320, 240 - theme::STATUS_BAR_HEIGHT);
+    lv_obj_set_pos(_cannedOverlay, 0, 0);
+    lv_obj_set_style_bg_color(_cannedOverlay, lv_color_black(), 0);
+    lv_obj_set_style_bg_opa(_cannedOverlay, LV_OPA_50, 0);
+    lv_obj_set_style_border_width(_cannedOverlay, 0, 0);
+    lv_obj_clear_flag(_cannedOverlay, LV_OBJ_FLAG_SCROLLABLE);
+
+    // Btnmatrix — one button per row (each label followed by "\n" except last)
+    // Build map with newline separators for one-column layout
+    static const char* btnMap[17];  // max 8 labels + 7 newlines + sentinel
+    int mi = 0;
+    for (int i = 0; i < count; i++) {
+        if (i > 0) btnMap[mi++] = "\n";
+        btnMap[mi++] = labels[i];
+    }
+    btnMap[mi] = "";  // sentinel
+
+    _cannedBtnm = lv_btnmatrix_create(_screen);
+    lv_btnmatrix_set_map(_cannedBtnm, btnMap);
+    lv_coord_t pickerH = count * 24 + 8;  // 24px per button + padding
+    lv_coord_t maxH = 240 - theme::STATUS_BAR_HEIGHT - 16;  // leave margin
+    if (pickerH > maxH) pickerH = maxH;
+    lv_obj_set_size(_cannedBtnm, 280, pickerH);
+    lv_obj_align(_cannedBtnm, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_style_text_font(_cannedBtnm, FONT_NORMAL, 0);
+    lv_obj_set_style_text_color(_cannedBtnm, theme::TEXT_PRIMARY, 0);
+    lv_obj_set_style_bg_color(_cannedBtnm, theme::BG_SECONDARY, 0);
+    lv_obj_set_style_bg_opa(_cannedBtnm, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_color(_cannedBtnm, theme::ACCENT, 0);
+    lv_obj_set_style_border_width(_cannedBtnm, 1, 0);
+    lv_obj_set_style_radius(_cannedBtnm, 8, 0);
+    // Button items styling
+    lv_obj_set_style_bg_color(_cannedBtnm, theme::BG_INPUT, LV_PART_ITEMS);
+    lv_obj_set_style_text_color(_cannedBtnm, theme::TEXT_PRIMARY, LV_PART_ITEMS);
+    lv_obj_set_style_radius(_cannedBtnm, 4, LV_PART_ITEMS);
+    // Focused button highlight
+    lv_obj_set_style_bg_color(_cannedBtnm, theme::ACCENT, LV_PART_ITEMS | LV_STATE_FOCUSED);
+    lv_obj_set_style_text_color(_cannedBtnm, lv_color_white(), LV_PART_ITEMS | LV_STATE_FOCUSED);
+
+    lv_obj_add_event_cb(_cannedBtnm, cannedBtnmCb, LV_EVENT_VALUE_CHANGED, this);
+    // ESC key dismisses the picker without selecting
+    lv_obj_add_event_cb(_cannedBtnm, [](lv_event_t* ev) {
+        if (lv_event_get_key(ev) != LV_KEY_ESC) return;
+        ChatScreen* cs = (ChatScreen*)lv_event_get_user_data(ev);
+        cs->hideCannedPicker();
+        lv_group_t* grp = lv_group_get_default();
+        if (grp) lv_group_focus_obj(cs->_textarea);
+    }, LV_EVENT_KEY, this);
+
+    // Tap overlay to dismiss (deferred — same reason as cannedBtnmCb)
+    lv_obj_add_flag(_cannedOverlay, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(_cannedOverlay, [](lv_event_t* ev) {
+        ChatScreen* cs = (ChatScreen*)lv_event_get_user_data(ev);
+        lv_async_call([](void* ctx) {
+            ChatScreen* s = (ChatScreen*)ctx;
+            s->hideCannedPicker();
+            lv_group_t* grp = lv_group_get_default();
+            if (grp) lv_group_focus_obj(s->_textarea);
+        }, cs);
+    }, LV_EVENT_CLICKED, this);
+
+    // Switch to modal group so trackball is isolated to btnmatrix
+    UIManager::instance().switchToModalGroup(_cannedBtnm);
+}
+
+void ChatScreen::cannedBtnmCb(lv_event_t* e) {
+    ChatScreen* self = (ChatScreen*)lv_event_get_user_data(e);
+    uint16_t idx = lv_btnmatrix_get_selected_btn(self->_cannedBtnm);
+    if (idx == LV_BTNMATRIX_BTN_NONE) return;
+
+    const char* text = lv_btnmatrix_get_btn_text(self->_cannedBtnm, idx);
+    if (!text) return;
+
+    lv_textarea_set_text(self->_textarea, text);
+
+    // Defer dismiss — touch input fires VALUE_CHANGED mid-event-chain
+    // (PRESSED→VALUE_CHANGED→RELEASED→CLICKED).  Synchronous group
+    // deletion inside restoreFromModalGroup() crashes because LVGL still
+    // references the modal group for the remaining touch events.
+    lv_async_call([](void* ctx) {
+        ChatScreen* cs = (ChatScreen*)ctx;
+        cs->hideCannedPicker();
+        lv_group_t* grp = lv_group_get_default();
+        if (grp) lv_group_focus_obj(cs->_textarea);
+    }, self);
+}
+
+void ChatScreen::hideCannedPicker() {
+    if (!_cannedBtnm) return;
+
+    UIManager::instance().restoreFromModalGroup();
+
+    // Use del_async — this may be called from within the btnmatrix's
+    // own event callback; synchronous delete would corrupt the event loop
+    lv_obj_del_async(_cannedBtnm);
+    _cannedBtnm = nullptr;
+    lv_obj_del_async(_cannedOverlay);
+    _cannedOverlay = nullptr;
 }
 
 }  // namespace mclite

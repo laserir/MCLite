@@ -39,6 +39,9 @@ private:
     lv_obj_t* _textarea  = nullptr;
     lv_obj_t* _sendBtn   = nullptr;
     lv_obj_t* _gpsBtn    = nullptr;
+    lv_obj_t* _cannedBtn     = nullptr;
+    lv_obj_t* _cannedBtnm    = nullptr;  // btnmatrix picker overlay
+    lv_obj_t* _cannedOverlay = nullptr;
     lv_obj_t* _headerName = nullptr;
 
     std::unique_ptr<ConvoId> _currentConvo;
@@ -52,6 +55,8 @@ private:
     void createChatArea();
     void createInputBar();
     void updateGpsButtonColor();
+    void showCannedPicker();
+    void hideCannedPicker();
 
     void addBubble(const Message& msg);
     void scrollToBottom();
@@ -62,6 +67,8 @@ private:
     static void textareaCb(lv_event_t* e);
     static void headerNameCb(lv_event_t* e);
     static void retryBtnCb(lv_event_t* e);
+    static void cannedBtnCb(lv_event_t* e);
+    static void cannedBtnmCb(lv_event_t* e);
 };
 
 }  // namespace mclite

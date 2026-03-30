@@ -24,6 +24,7 @@ Most features below are optional. The primary goal is to keep things extremely s
 - **GPS location sharing** -- manually send your position in lat/lon or UTMREF/MGRS (military grid) format, used by search and rescue worldwide. Last-known position support when GPS signal is temporarily lost
 - **Telemetry** -- responds to MeshCore-standard telemetry requests (battery, GPS) with per-contact permissions. Compatible with MeshCore companion apps. Optionally request telemetry from contacts to see their battery, location, and distance
 - **Message history** -- conversations saved to SD card and restored on reboot
+- **Quick replies** -- optional canned message picker for fast responses (OK, Copy, Need help, etc.), translatable and customizable
 - **Multi-language** -- English, German, French, and Italian included. Add your own translations via SD card
 - **Notification sounds** -- chime on incoming messages, alarm on SOS. Supports custom WAV files from SD card
 - **Auto-dim** -- screen and keyboard backlight dim after inactivity to save battery
@@ -41,7 +42,7 @@ Visit the [MCLite Web Flasher](https://laserir.github.io/MCLite/tools/web-flashe
 
 **Option 2: Manual**
 
-Download the latest `mclite-v*.bin` from the [Releases](../../releases) page and flash with esptool: `esptool.py write_flash 0x0 mclite-v0.1.1.bin`
+Download the latest `mclite-v*.bin` from the [Releases](../../releases) page and flash with esptool: `esptool.py write_flash 0x0 mclite-v0.1.2.bin`
 
 ### Set up your config
 
@@ -148,7 +149,9 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
     "location_format": "decimal",       // "decimal" = lat/lon, "mgrs" = UTMREF/MGRS, "both"
     "max_retries": 3,                  // DM delivery retry attempts (1-5)
     "request_telemetry": true,         // Tap contact name to see battery/location (optional)
-    "show_telemetry": "both"           // Badges on convo list: "battery", "location", "both", "none"
+    "show_telemetry": "both",          // Badges on convo list: "battery", "location", "both", "none"
+    "canned_messages": false           // Quick-reply picker: false = off, true = on (default messages),
+                                       //   or ["Reply 1", "Reply 2"] = on with custom messages (max 8)
   },
 
   "sound": {
@@ -190,6 +193,7 @@ You don't need to write this by hand -- use the Config Tool. This example shows 
 | Mute / unmute | Tap speaker icon in status bar |
 | Contact telemetry | Tap contact name in chat header |
 | Retry failed message | Tap the X on a failed message |
+| Quick reply | Tap the list icon (≡) left of the text input |
 | SOS broadcast | Hold trackball for 6 seconds |
 
 **Conversation list icons**

@@ -30,6 +30,8 @@ void ConfigManager::applyDefaults() {
     _config.messaging.maxRetries       = defaults::MAX_RETRIES;
     _config.messaging.requestTelemetry = defaults::REQUEST_TELEMETRY;
     _config.messaging.showTelemetry    = defaults::SHOW_TELEMETRY;
+    _config.messaging.cannedMessages   = defaults::CANNED_MESSAGES_ENABLED;
+    _config.messaging.cannedCustom.clear();
     _config.soundEnabled = defaults::SOUND_ENABLED;
     _config.sosKeyword   = defaults::SOS_KEYWORD;
     _config.sosRepeat    = defaults::SOS_REPEAT;
@@ -165,6 +167,20 @@ bool ConfigManager::parseJson(const String& json) {
         } else {
             _config.messaging.showTelemetry = defaults::SHOW_TELEMETRY;
         }
+
+        // Canned messages: bool = toggle, array = custom messages (implies enabled)
+        JsonVariant cm = msg["canned_messages"];
+        if (cm.is<bool>()) {
+            _config.messaging.cannedMessages = cm.as<bool>();
+        } else if (cm.is<JsonArray>()) {
+            _config.messaging.cannedMessages = true;
+            JsonArray arr = cm.as<JsonArray>();
+            for (size_t i = 0; i < arr.size() && i < 8; i++) {
+                _config.messaging.cannedCustom.push_back(arr[i].as<String>());
+            }
+        } else {
+            _config.messaging.cannedMessages = defaults::CANNED_MESSAGES_ENABLED;
+        }
     }
 
     // Sound
@@ -261,6 +277,7 @@ String ConfigManager::toJson() const {
     msg["max_retries"]          = _config.messaging.maxRetries;
     msg["request_telemetry"]    = _config.messaging.requestTelemetry;
     msg["show_telemetry"]       = _config.messaging.showTelemetry;
+    msg["canned_messages"]      = _config.messaging.cannedMessages;
 
     doc["sound"]["enabled"]     = _config.soundEnabled;
     doc["sound"]["sos_keyword"] = _config.sosKeyword;
