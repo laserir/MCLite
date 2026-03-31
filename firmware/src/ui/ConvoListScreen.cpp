@@ -189,8 +189,8 @@ void ConvoListScreen::addConvoRow(Conversation* convo) {
             if (c->lastSeen > 0) {
                 uint32_t age = millis() - c->lastSeen;
 
-                // Eye icon if < 10min
-                if (age < 600000) {
+                // Eye icon if < 20min (tolerates one missed advert cycle)
+                if (age < 1200000) {
                     lv_obj_t* seenIcon = lv_label_create(topLine);
                     lv_obj_set_style_text_font(seenIcon, FONT_SMALL, 0);
                     lv_obj_set_style_text_color(seenIcon, theme::ONLINE_DOT, 0);
