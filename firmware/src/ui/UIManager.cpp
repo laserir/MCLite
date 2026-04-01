@@ -391,7 +391,7 @@ void UIManager::dismissSOSAlert(bool sendReply) {
 
     // Send "SOS acknowledged" reply to the conversation it came from
     if (sendReply) {
-        const String replyText = "SOS acknowledged";  // Always English — recipient may use different language
+        const String replyText = "Acknowledged SOS";  // Always English — must NOT start with SOS keyword to avoid retriggering alert
         Message reply;
         reply.fromSelf  = true;
         reply.text      = replyText;
