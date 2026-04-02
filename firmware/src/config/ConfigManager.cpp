@@ -37,6 +37,7 @@ void ConfigManager::applyDefaults() {
     _config.sosRepeat    = defaults::SOS_REPEAT;
     _config.gpsEnabled     = defaults::GPS_ENABLED;
     _config.gpsClockOffset = defaults::GPS_CLOCK_OFFSET;
+    _config.gpsTimezone    = defaults::GPS_TIMEZONE;
     _config.gpsLastKnownMaxAge = defaults::GPS_LAST_KNOWN_MAX_AGE;
     _config.battery.lowAlertEnabled   = defaults::BATTERY_LOW_ALERT_ENABLED;
     _config.battery.lowAlertThreshold = defaults::BATTERY_LOW_ALERT_THRESHOLD;
@@ -193,6 +194,7 @@ bool ConfigManager::parseJson(const String& json) {
     _config.gpsEnabled = doc["gps"]["enabled"] | defaults::GPS_ENABLED;
     int8_t clockOff = doc["gps"]["clock_offset"] | defaults::GPS_CLOCK_OFFSET;
     _config.gpsClockOffset = constrain(clockOff, -12, 14);
+    _config.gpsTimezone = doc["gps"]["timezone"] | defaults::GPS_TIMEZONE;
     uint16_t lastKnownAge = doc["gps"]["last_known_max_age"] | defaults::GPS_LAST_KNOWN_MAX_AGE;
     _config.gpsLastKnownMaxAge = constrain(lastKnownAge, (uint16_t)60, (uint16_t)7200);
 
@@ -284,6 +286,9 @@ String ConfigManager::toJson() const {
     doc["sound"]["sos_repeat"]  = _config.sosRepeat;
     doc["gps"]["enabled"]            = _config.gpsEnabled;
     doc["gps"]["clock_offset"]       = _config.gpsClockOffset;
+    if (_config.gpsTimezone.length() > 0) {
+        doc["gps"]["timezone"]       = _config.gpsTimezone;
+    }
     doc["gps"]["last_known_max_age"] = _config.gpsLastKnownMaxAge;
 
     doc["battery"]["low_alert_enabled"]   = _config.battery.lowAlertEnabled;

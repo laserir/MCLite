@@ -777,10 +777,46 @@ h1 {
         <option value="false">No</option>
       </select>
     </div>
-    <div class="field">
-      <label>Clock Offset (UTC)</label>
-      <input type="number" id="gpsClockOffset" value="0" min="-12" max="14">
-      <div class="hint">Hours offset from UTC (-12 to +14)</div>
+    <div class="row">
+      <div class="field" style="flex:2">
+        <label>Timezone</label>
+        <select id="gpsTimezone">
+          <option value="">Manual offset (no auto-DST)</option>
+          <option value="UTC0">UTC</option>
+          <option value="GMT0BST,M3.5.0/1,M10.5.0/2">UK / Ireland (GMT/BST)</option>
+          <option value="WET0WEST,M3.5.0/1,M10.5.0/2">Portugal (WET/WEST)</option>
+          <option value="CET-1CEST,M3.5.0/2,M10.5.0/3">Central Europe (CET/CEST)</option>
+          <option value="EET-2EEST,M3.5.0/3,M10.5.0/4">Eastern Europe (EET/EEST)</option>
+          <option value="MSK-3">Moscow (MSK, no DST)</option>
+          <option value="EST5EDT,M3.2.0,M11.1.0">US / Canada Eastern (EST/EDT)</option>
+          <option value="CST6CDT,M3.2.0,M11.1.0">US / Canada Central (CST/CDT)</option>
+          <option value="MST7MDT,M3.2.0,M11.1.0">US / Canada Mountain (MST/MDT)</option>
+          <option value="PST8PDT,M3.2.0,M11.1.0">US / Canada Pacific (PST/PDT)</option>
+          <option value="MST7">US Arizona (MST, no DST)</option>
+          <option value="AKST9AKDT,M3.2.0,M11.1.0">Alaska (AKST/AKDT)</option>
+          <option value="HST10">Hawaii (HST, no DST)</option>
+          <option value="AST4ADT,M3.2.0,M11.1.0">Atlantic Canada (AST/ADT)</option>
+          <option value="NST3:30NDT,M3.2.0,M11.1.0">Newfoundland (NST/NDT)</option>
+          <option value="BRT3">Brazil East (BRT, no DST)</option>
+          <option value="ART3">Argentina (ART, no DST)</option>
+          <option value="IST-5:30">India (IST, no DST)</option>
+          <option value="NPT-5:45">Nepal (NPT, no DST)</option>
+          <option value="CST-8">China / Singapore / HK (CST, no DST)</option>
+          <option value="JST-9">Japan / Korea (JST, no DST)</option>
+          <option value="AWST-8">Australia Western (AWST, no DST)</option>
+          <option value="ACST-9:30ACDT,M10.1.0,M4.1.0/3">Australia Central (ACST/ACDT)</option>
+          <option value="AEST-10AEDT,M10.1.0,M4.1.0/3">Australia Eastern (AEST/AEDT)</option>
+          <option value="AEST-10">Australia Queensland (AEST, no DST)</option>
+          <option value="NZST-12NZDT,M9.5.0,M4.1.0/3">New Zealand (NZST/NZDT)</option>
+          <option value="SAST-2">South Africa (SAST, no DST)</option>
+        </select>
+        <div class="hint">Auto-DST: set and forget</div>
+      </div>
+      <div class="field">
+        <label>UTC Offset (fallback)</label>
+        <input type="number" id="gpsClockOffset" value="0" min="-12" max="14">
+        <div class="hint">Only used when no timezone selected</div>
+      </div>
     </div>
     <div class="row">
       <div class="field">
@@ -1367,6 +1403,85 @@ function togglePinField() {
   document.getElementById('pinCodeField').style.display = enabled ? '' : 'none';
 }
 
+// ===== Timezone helpers =====
+// Set timezone dropdown, adding a custom option if the value isn't in the list
+function setTimezoneDropdown(tz) {
+  const sel = document.getElementById('gpsTimezone');
+  // Remove any previously added custom option
+  const old = sel.querySelector('option[data-custom]');
+  if (old) old.remove();
+  sel.value = tz;
+  if (sel.value !== tz && tz) {
+    const opt = document.createElement('option');
+    opt.value = tz;
+    opt.textContent = 'Custom: ' + tz;
+    opt.setAttribute('data-custom', '1');
+    sel.appendChild(opt);
+    sel.value = tz;
+  }
+}
+
+function autoDetectPosixTz() {
+  try {
+    const iana = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const map = {
+      'America/New_York': 'EST5EDT,M3.2.0,M11.1.0',
+      'America/Detroit': 'EST5EDT,M3.2.0,M11.1.0',
+      'America/Indiana/Indianapolis': 'EST5EDT,M3.2.0,M11.1.0',
+      'America/Chicago': 'CST6CDT,M3.2.0,M11.1.0',
+      'America/Denver': 'MST7MDT,M3.2.0,M11.1.0',
+      'America/Boise': 'MST7MDT,M3.2.0,M11.1.0',
+      'America/Los_Angeles': 'PST8PDT,M3.2.0,M11.1.0',
+      'America/Phoenix': 'MST7',
+      'America/Anchorage': 'AKST9AKDT,M3.2.0,M11.1.0',
+      'Pacific/Honolulu': 'HST10',
+      'America/Halifax': 'AST4ADT,M3.2.0,M11.1.0',
+      'America/St_Johns': 'NST3:30NDT,M3.2.0,M11.1.0',
+      'America/Sao_Paulo': 'BRT3',
+      'America/Argentina/Buenos_Aires': 'ART3',
+      'Europe/London': 'GMT0BST,M3.5.0/1,M10.5.0/2',
+      'Europe/Dublin': 'GMT0BST,M3.5.0/1,M10.5.0/2',
+      'Europe/Lisbon': 'WET0WEST,M3.5.0/1,M10.5.0/2',
+      'Europe/Berlin': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Paris': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Rome': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Madrid': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Amsterdam': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Brussels': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Vienna': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Zurich': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Warsaw': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Stockholm': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Oslo': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Copenhagen': 'CET-1CEST,M3.5.0/2,M10.5.0/3',
+      'Europe/Helsinki': 'EET-2EEST,M3.5.0/3,M10.5.0/4',
+      'Europe/Bucharest': 'EET-2EEST,M3.5.0/3,M10.5.0/4',
+      'Europe/Athens': 'EET-2EEST,M3.5.0/3,M10.5.0/4',
+      'Europe/Kiev': 'EET-2EEST,M3.5.0/3,M10.5.0/4',
+      'Europe/Moscow': 'MSK-3',
+      'Asia/Kolkata': 'IST-5:30',
+      'Asia/Kathmandu': 'NPT-5:45',
+      'Asia/Shanghai': 'CST-8',
+      'Asia/Hong_Kong': 'CST-8',
+      'Asia/Singapore': 'CST-8',
+      'Asia/Taipei': 'CST-8',
+      'Asia/Tokyo': 'JST-9',
+      'Asia/Seoul': 'JST-9',
+      'Australia/Perth': 'AWST-8',
+      'Australia/Adelaide': 'ACST-9:30ACDT,M10.1.0,M4.1.0/3',
+      'Australia/Darwin': 'ACST-9:30',
+      'Australia/Sydney': 'AEST-10AEDT,M10.1.0,M4.1.0/3',
+      'Australia/Melbourne': 'AEST-10AEDT,M10.1.0,M4.1.0/3',
+      'Australia/Brisbane': 'AEST-10',
+      'Pacific/Auckland': 'NZST-12NZDT,M9.5.0,M4.1.0/3',
+      'Africa/Johannesburg': 'SAST-2',
+    };
+    return map[iana] || '';
+  } catch (e) {
+    return '';
+  }
+}
+
 // ===== Validation =====
 function validate() {
   let valid = true;
@@ -1533,6 +1648,7 @@ function buildConfig() {
     },
     gps: {
       enabled: document.getElementById('gpsEnabled').value === 'true',
+      ...(document.getElementById('gpsTimezone').value ? { timezone: document.getElementById('gpsTimezone').value } : {}),
       clock_offset: parseInt(document.getElementById('gpsClockOffset').value) || 0,
       last_known_max_age: parseInt(document.getElementById('gpsLastKnownMaxAge').value) || 1800
     },
@@ -1675,6 +1791,7 @@ function loadConfig(cfg) {
 
   // GPS
   document.getElementById('gpsEnabled').value = String(cfg.gps?.enabled ?? true);
+  setTimezoneDropdown(cfg.gps?.timezone ?? '');
   document.getElementById('gpsClockOffset').value = cfg.gps?.clock_offset ?? 0;
   document.getElementById('gpsCoordFormat').value = cfg.messaging?.location_format || 'decimal';
   document.getElementById('gpsLastKnownMaxAge').value = cfg.gps?.last_known_max_age ?? 1800;
@@ -1725,6 +1842,7 @@ function resetAll() {
   document.getElementById('sosKeyword').value = 'SOS';
   document.getElementById('sosRepeat').value = 3;
   document.getElementById('gpsEnabled').value = 'true';
+  document.getElementById('gpsTimezone').value = autoDetectPosixTz();
   document.getElementById('gpsClockOffset').value = 0;
   document.getElementById('gpsCoordFormat').value = 'decimal';
   document.getElementById('gpsLastKnownMaxAge').value = 1800;
@@ -2191,7 +2309,8 @@ function wizStartFromScratch() {
   document.getElementById('sosKeyword').value = 'SOS';
   document.getElementById('sosRepeat').value = 3;
   document.getElementById('gpsEnabled').value = 'true';
-  document.getElementById('gpsClockOffset').value = -(new Date().getTimezoneOffset() / 60);
+  document.getElementById('gpsTimezone').value = autoDetectPosixTz();
+  document.getElementById('gpsClockOffset').value = 0;
   document.getElementById('gpsCoordFormat').value = 'decimal';
   document.getElementById('gpsLastKnownMaxAge').value = 1800;
   document.getElementById('batteryAlertEnabled').value = 'false';
@@ -2381,7 +2500,8 @@ async function wizApplyAndShowSummary() {
 
   // GPS
   document.getElementById('gpsEnabled').value = String(wizState.gpsEnabled);
-  document.getElementById('gpsClockOffset').value = -(new Date().getTimezoneOffset() / 60);
+  document.getElementById('gpsTimezone').value = autoDetectPosixTz();
+  document.getElementById('gpsClockOffset').value = 0;
 
   // Channels — rebuild from wizard state, preserving any existing private channels
   const existingPrivate = channels.filter(c => c.type === 'private');

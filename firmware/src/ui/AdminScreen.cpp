@@ -10,6 +10,7 @@
 #include "../hal/Speaker.h"
 #include "../config/defaults.h"
 #include "../i18n/I18n.h"
+#include "../util/TimeHelper.h"
 
 namespace mclite {
 
@@ -216,7 +217,16 @@ void AdminScreen::show() {
         }
         addRow(t("gps_coord_format"), cfg.messaging.locationFormat);
         addRow("Last Known Max", String(cfg.gpsLastKnownMaxAge) + "s");
-        if (cfg.gpsClockOffset != 0) {
+        if (cfg.gpsTimezone.length() > 0 && TimeHelper::isValidPosixTz(cfg.gpsTimezone)) {
+            // Show abbreviation (chars before first digit/sign) + "(auto-DST)"
+            String abbr;
+            for (size_t i = 0; i < cfg.gpsTimezone.length(); i++) {
+                char c = cfg.gpsTimezone[i];
+                if (c == '-' || c == '+' || (c >= '0' && c <= '9')) break;
+                abbr += c;
+            }
+            addRow("Timezone", abbr + " (auto-DST)");
+        } else if (cfg.gpsClockOffset != 0) {
             addRow("Clock Offset", String(cfg.gpsClockOffset) + "h");
         }
     }

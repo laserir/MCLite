@@ -5,6 +5,7 @@
 #include "../storage/MessageStore.h"
 #include "../config/ConfigManager.h"
 #include "../i18n/I18n.h"
+#include "../util/TimeHelper.h"
 
 namespace mclite {
 
@@ -293,19 +294,14 @@ void ChatScreen::addBubble(const Message& msg) {
     lv_obj_set_flex_flow(meta, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_column(meta, 4, 0);
 
-    // Timestamp — show HH:MM if it's a real Unix epoch (no live GPS needed)
+    // Timestamp — show HH:MM in local time (auto-DST via POSIX TZ)
     if (msg.timestamp > 1700000000) {
         lv_obj_t* ts = lv_label_create(meta);
         lv_obj_set_style_text_font(ts, FONT_SMALL, 0);
         lv_obj_set_style_text_color(ts,
             msg.fromSelf ? theme::BUBBLE_SELF_META : theme::TEXT_TIMESTAMP, 0);
-        uint32_t secOfDay = msg.timestamp % 86400;
-        int h = (int)(secOfDay / 3600) + ConfigManager::instance().config().gpsClockOffset;
-        if (h < 0) h += 24;
-        else if (h >= 24) h -= 24;
-        int m = (secOfDay % 3600) / 60;
         char timeStr[8];
-        snprintf(timeStr, sizeof(timeStr), "%02u:%02u", (unsigned)h, (unsigned)m);
+        TimeHelper::instance().formatHHMM(msg.timestamp, timeStr, sizeof(timeStr));
         lv_label_set_text(ts, timeStr);
     }
 

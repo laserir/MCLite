@@ -17,6 +17,7 @@
 #include "ui/UIManager.h"
 #include "i18n/I18n.h"
 #include "storage/TelemetryCache.h"
+#include "util/TimeHelper.h"
 
 using namespace mclite;
 
@@ -67,6 +68,9 @@ void setup() {
     // Apply config-dependent settings
     const auto& cfg = ConfigManager::instance().config();
     Display::instance().setBrightness(cfg.display.brightness);
+
+    // Apply timezone for auto-DST (before UI init)
+    mclite::TimeHelper::instance().applyTimezone();
 
     // Load language translations (before UI init)
     I18n::instance().init(cfg.language);
@@ -170,6 +174,9 @@ void setup() {
 
 void loop() {
     GPS::instance().update();
+    if (GPS::instance().isTimeSynced()) {
+        mclite::TimeHelper::instance().syncSystemClock(GPS::instance().currentTimestamp());
+    }
     MeshManager::instance().update();
     UIManager::instance().update();
     Speaker::instance().update();

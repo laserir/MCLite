@@ -81,7 +81,8 @@ struct AppConfig {
     String          sosKeyword   = "SOS";
     uint8_t         sosRepeat    = 3;
     bool            gpsEnabled = true;
-    int8_t          gpsClockOffset = 0;  // UTC offset in hours
+    int8_t          gpsClockOffset = 0;  // UTC offset in hours (legacy fallback)
+    String          gpsTimezone;         // POSIX TZ string for auto-DST (e.g. "CET-1CEST,M3.5.0/2,M10.5.0/3")
     uint16_t        gpsLastKnownMaxAge = 1800;  // Seconds before last-known expires
     BatteryConfig   battery;
     SecurityConfig  security;

@@ -44,7 +44,8 @@ constexpr uint8_t  SOS_REPEAT            = 3;
 
 // GPS
 constexpr bool     GPS_ENABLED           = true;
-constexpr int8_t   GPS_CLOCK_OFFSET      = 0;    // UTC offset in hours (-12 to +14)
+constexpr int8_t   GPS_CLOCK_OFFSET      = 0;    // UTC offset in hours (-12 to +14) — legacy fallback
+constexpr const char* GPS_TIMEZONE        = "";   // POSIX TZ string (empty = use clock_offset)
 constexpr uint16_t GPS_LAST_KNOWN_MAX_AGE = 1800; // Seconds (30 min) before last-known becomes NO_FIX
 
 // Battery

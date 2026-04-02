@@ -4,6 +4,7 @@
 #include "../hal/GPS.h"
 #include "../hal/Speaker.h"
 #include "../config/ConfigManager.h"
+#include "../util/TimeHelper.h"
 
 namespace mclite {
 
@@ -99,15 +100,12 @@ void StatusBar::update() {
     lv_obj_set_style_text_color(_lblBatt,
         pct <= 20 ? theme::BATTERY_LOW : theme::TEXT_PRIMARY, 0);
 
-    // Clock — show HH:MM only when GPS has real time data, apply UTC offset
+    // Clock — show HH:MM in local time (auto-DST via POSIX TZ)
     auto& gps = GPS::instance();
     if (gps.isTimeSynced() && gps.hasTime()) {
-        int h = gps.hour() + cfg.gpsClockOffset;
-        if (h < 0) h += 24;
-        else if (h >= 24) h -= 24;
         char timeStr[8];
-        snprintf(timeStr, sizeof(timeStr), "%02d:%02d", h, gps.minute());
-        lv_label_set_text(_lblTime, timeStr);
+        TimeHelper::instance().formatHHMM(gps.currentTimestamp(), timeStr, sizeof(timeStr));
+        lv_label_set_text(_lblTime, timeStr[0] ? timeStr : "");
     } else {
         lv_label_set_text(_lblTime, "");
     }
