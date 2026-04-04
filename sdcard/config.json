@@ -55,6 +55,7 @@
   },
   "gps": {
     "enabled": true,
+    "timezone": "",
     "clock_offset": 0,
     "last_known_max_age": 1800
   },

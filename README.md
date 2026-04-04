@@ -162,7 +162,8 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
 
   "gps": {
     "enabled": true,
-    "clock_offset": 0,                 // UTC offset in hours for clock display (-12 to +14)
+    "timezone": "",                    // POSIX TZ string for automatic DST (e.g. "CET-1CEST,M3.5.0/2,M10.5.0/3")
+    "clock_offset": 0,                 // UTC offset in hours, no DST (-12 to +14). Ignored if timezone is set
     "last_known_max_age": 1800         // Seconds before last-known GPS position expires (60-7200)
   },
 
