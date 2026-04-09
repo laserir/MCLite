@@ -30,6 +30,11 @@ Conversation& MessageStore::getOrCreate(const ConvoId& id, const String& display
     c.displayName = displayName;
     c.isPrivate = isPrivate;
     c.readOnly = readOnly;
+    // MAX_CONVERSATIONS == MAX_CONTACTS + MAX_GROUP_CHANNELS, so this cap
+    // can only be reached if those build flags are increased without updating
+    // MAX_CONVERSATIONS. Guard kept as defensive fallback — returns last
+    // conversation which would corrupt it; acceptable since this path is
+    // unreachable under current config limits.
     if (_convos.size() >= MAX_CONVERSATIONS) {
         Serial.println("[MessageStore] ERROR: max conversations reached, reusing last");
         return _convos.back();

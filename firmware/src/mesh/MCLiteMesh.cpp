@@ -549,7 +549,7 @@ void MCLiteMesh::onContactResponse(const ContactInfo& contact,
     telem.receivedAt = millis();
 
     uint8_t pos = 0;
-    while (pos + 2 < lppLen) {
+    while (pos + 2 <= lppLen) {
         // uint8_t channel = lpp[pos]; // not needed
         uint8_t type = lpp[pos + 1];
         pos += 2;
