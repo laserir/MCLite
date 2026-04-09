@@ -1,0 +1,12 @@
+#!/bin/bash
+# Pre-commit hook: run native unit tests before allowing a commit.
+# Bypass with: git commit --no-verify
+
+echo "Running unit tests..."
+cd firmware && pio test -e native_test 2>&1
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "Tests failed — commit blocked. Fix the failures and try again."
+    exit 1
+fi

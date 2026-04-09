@@ -1,5 +1,6 @@
 #include "GPS.h"
 #include "../util/mgrs.h"
+#include "../util/epoch.h"
 #include "../config/ConfigManager.h"
 #include <Arduino.h>
 
@@ -62,28 +63,8 @@ uint32_t GPS::fixAgeSeconds() const {
 
 uint32_t GPS::currentTimestamp() const {
     if (!hasTime()) return 0;
-    // Convert GPS date+time to Unix epoch seconds (seconds since 1970-01-01 00:00 UTC)
-    // This matches MeshCore's expected timestamp format used by all companion apps.
-    uint16_t y = _gps.date.year();
-    uint8_t  m = _gps.date.month();
-    uint8_t  d = _gps.date.day();
-    if (y < 2024 || m == 0 || d == 0) return 0;  // Invalid date
-
-    // Days from 1970-01-01 to this date
-    auto isLeap = [](uint16_t yr) { return yr % 4 == 0 && (yr % 100 != 0 || yr % 400 == 0); };
-    uint32_t days = 0;
-    for (uint16_t yr = 1970; yr < y; yr++) {
-        days += isLeap(yr) ? 366 : 365;
-    }
-    static const uint8_t daysInMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-    for (uint8_t mo = 1; mo < m; mo++) {
-        days += daysInMonth[mo - 1];
-        if (mo == 2 && isLeap(y)) days++;
-    }
-    days += (d - 1);
-
-    // Convert to seconds
-    return days * 86400UL + (uint32_t)hour() * 3600 + (uint32_t)minute() * 60 + (uint32_t)second();
+    return dateToEpoch(_gps.date.year(), _gps.date.month(), _gps.date.day(),
+                       hour(), minute(), second());
 }
 
 String GPS::formatLocation() const {
