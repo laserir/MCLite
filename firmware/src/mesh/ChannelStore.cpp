@@ -32,6 +32,7 @@ void ChannelStore::loadFromConfig() {
         ch.allowSos = cc.allowSos;
         ch.sendSos = cc.sendSos;
         ch.readOnly = cc.readOnly;
+        ch.scope    = cc.scope;
         memset(ch.psk, 0, sizeof(ch.psk));
 
         if (cc.psk.length() > 0) {

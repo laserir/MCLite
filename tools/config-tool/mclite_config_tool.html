@@ -603,6 +603,12 @@ h1 {
         <option value="8" selected>4/8</option>
       </select>
     </div>
+    <div class="field">
+      <label>Region Scope</label>
+      <input type="text" id="radioScope" value="*" maxlength="32"
+             pattern="\*|#[a-z0-9\-]+" title="Enter * for no filtering, or #name for a region (e.g. #europe)">
+      <div class="hint">Transport code region for repeater filtering. <code>*</code> = no filtering, <code>#name</code> = hashtag region.</div>
+    </div>
   </div>
 
   <!-- Contacts -->
@@ -1303,6 +1309,15 @@ function renderChannels() {
           </select>
           <div class="hint">Listen-only mode (hides input bar)</div>
         </div>
+        <div class="field">
+          <label>Scope Override</label>
+          <input type="text" value="${esc(ch.scope || '')}" maxlength="32"
+                 pattern="|\*|#[a-z0-9\-]+"
+                 onchange="channels[${i}].scope=this.value"
+                 placeholder="(inherit global)"
+                 title="Leave empty to use global scope, * for wildcard, or #name for a region">
+          <div class="hint">Override global radio scope for this channel</div>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -1310,7 +1325,7 @@ function renderChannels() {
 
 async function addChannel(type) {
   if (channels.length >= 16) { toast('Maximum 16 channels reached (firmware limit)'); return; }
-  const ch = { name: '', type: type, psk: '', index: channels.length, allow_sos: true, send_sos: true, read_only: false };
+  const ch = { name: '', type: type, psk: '', index: channels.length, allow_sos: true, send_sos: true, read_only: false, scope: '' };
   channels.push(ch);
   renderChannels();
   setTimeout(() => {
@@ -1326,7 +1341,7 @@ function addPublicChannel() {
     name: 'Public', type: 'public',
     psk: '8b3387e9c5cdea6ac9e5edbaa115cd72',
     index: channels.length,
-    allow_sos: false, send_sos: false, read_only: false
+    allow_sos: false, send_sos: false, read_only: false, scope: ''
   });
   renderChannels();
 }
@@ -1599,7 +1614,8 @@ function buildConfig() {
       spreading_factor: parseInt(document.getElementById('radioSF').value),
       bandwidth: parseFloat(document.getElementById('radioBW').value),
       tx_power: parseInt(document.getElementById('radioTX').value),
-      coding_rate: parseInt(document.getElementById('radioCR').value)
+      coding_rate: parseInt(document.getElementById('radioCR').value),
+      ...(document.getElementById('radioScope').value !== '*' ? { scope: document.getElementById('radioScope').value } : {})
     },
     identity: {
       private_key: identity.privateKey,
@@ -1621,6 +1637,7 @@ function buildConfig() {
       // but we include it for compatibility with tools that expect it
       if (ch.psk) obj.psk = ch.psk;
       if (ch.read_only) obj.read_only = true;
+      if (ch.scope) obj.scope = ch.scope;
       return obj;
     }),
     display: {
@@ -1722,6 +1739,7 @@ function loadConfig(cfg) {
     document.getElementById('radioBW').value   = cfg.radio.bandwidth ?? 62.5;
     document.getElementById('radioTX').value   = cfg.radio.tx_power ?? 22;
     document.getElementById('radioCR').value   = cfg.radio.coding_rate ?? 8;
+    document.getElementById('radioScope').value = cfg.radio.scope ?? '*';
     detectPreset();
   }
 
@@ -1757,7 +1775,8 @@ function loadConfig(cfg) {
     index: ch.index ?? i,
     allow_sos: ch.allow_sos !== false,
     send_sos: ch.send_sos !== false,
-    read_only: ch.read_only === true
+    read_only: ch.read_only === true,
+    scope: ch.scope || ''
   }));
   renderChannels();
 
@@ -1823,6 +1842,7 @@ function resetAll() {
   document.getElementById('deviceName').value = 'MCLite';
   document.getElementById('radioPreset').value = 'eu_narrow';
   applyPreset();
+  document.getElementById('radioScope').value = '*';
   document.getElementById('pubKeyDisplay').textContent = 'Not yet generated';
   document.getElementById('privKeyDisplay').textContent = 'Not yet generated';
   document.getElementById('dispBrightness').value = 180;
@@ -1923,7 +1943,7 @@ function setFleetMode(enabled) {
         name: 'private', type: 'private',
         psk: bytesToHex(pskBytes),
         index: channels.length,
-        allow_sos: true, send_sos: true, read_only: false
+        allow_sos: true, send_sos: true, read_only: false, scope: ''
       });
       renderChannels();
     }
@@ -2290,6 +2310,7 @@ function wizStartFromScratch() {
   document.getElementById('deviceName').value = 'MCLite';
   document.getElementById('radioPreset').value = 'eu_narrow';
   applyPreset();
+  document.getElementById('radioScope').value = '*';
   document.getElementById('pubKeyDisplay').textContent = 'Not yet generated';
   document.getElementById('privKeyDisplay').textContent = 'Not yet generated';
   document.getElementById('dispBrightness').value = 180;
@@ -2330,7 +2351,7 @@ function wizStartFromScratch() {
 async function addDefaultHashtag() {
   const name = '#mclite';
   const psk = await deriveHashtagPSK(name);
-  channels.push({ name, type: 'hashtag', psk, index: channels.length, allow_sos: true, send_sos: true, read_only: false });
+  channels.push({ name, type: 'hashtag', psk, index: channels.length, allow_sos: true, send_sos: true, read_only: false, scope: '' });
   renderChannels();
 }
 
@@ -2510,12 +2531,12 @@ async function wizApplyAndShowSummary() {
     channels.push({
       name: 'Public', type: 'public',
       psk: '8b3387e9c5cdea6ac9e5edbaa115cd72',
-      index: 0, allow_sos: false, send_sos: false, read_only: false
+      index: 0, allow_sos: false, send_sos: false, read_only: false, scope: ''
     });
   }
   for (const tag of wizState.hashtags) {
     const psk = await deriveHashtagPSK(tag);
-    channels.push({ name: tag, type: 'hashtag', psk, index: channels.length, allow_sos: true, send_sos: true, read_only: false });
+    channels.push({ name: tag, type: 'hashtag', psk, index: channels.length, allow_sos: true, send_sos: true, read_only: false, scope: '' });
   }
   // Auto-create fleet private channel
   if (isFleet && wizState.fleetPrivateChannel) {
@@ -2533,7 +2554,7 @@ async function wizApplyAndShowSummary() {
         name: 'private', type: 'private',
         psk: bytesToHex(pskBytes),
         index: channels.length,
-        allow_sos: true, send_sos: true, read_only: false
+        allow_sos: true, send_sos: true, read_only: false, scope: ''
       });
     }
   } else if (isFleet && !wizState.fleetPrivateChannel) {

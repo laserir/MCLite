@@ -6,6 +6,7 @@
 #include <CayenneLPP.h>
 #include <helpers/BaseChatMesh.h>
 #include <helpers/SimpleMeshTables.h>
+#include <helpers/TransportKeyStore.h>
 #include <helpers/StaticPoolPacketManager.h>
 #include <helpers/ArduinoHelpers.h>
 #include <helpers/radiolib/CustomSX1262.h>
@@ -128,6 +129,9 @@ protected:
     void onContactResponse(const ContactInfo& contact,
                            const uint8_t* data, uint8_t len) override;
 
+    void sendFloodScoped(const ContactInfo& recipient, mesh::Packet* pkt, uint32_t delay_millis=0) override;
+    void sendFloodScoped(const mesh::GroupChannel& channel, mesh::Packet* pkt, uint32_t delay_millis=0) override;
+
     // ---- Optional overrides ----
     bool shouldAutoAddContactType(uint8_t type) const override { return false; }  // MCLite uses config-defined contacts only
 
@@ -138,6 +142,8 @@ protected:
 private:
     bool _ready = false;
     float _frequency = 0.0f;  // Configured radio frequency (MHz)
+    TransportKey _globalScope;  // Derived from RadioConfig::scope at begin()
+    void sendWithScope(const TransportKey& scope, mesh::Packet* pkt, uint32_t delay_millis);
 
     // Callbacks
     MeshMessageCb  _onMessage;

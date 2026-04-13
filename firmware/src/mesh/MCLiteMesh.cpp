@@ -8,6 +8,7 @@
 #include <helpers/ESP32Board.h>
 #include <helpers/radiolib/CustomSX1262Wrapper.h>
 #include <mbedtls/base64.h>
+#include <mbedtls/sha256.h>
 #include <cstring>
 
 namespace mclite {
@@ -25,6 +26,17 @@ static ESP32RTCClock sRtcClock;
 static StaticPoolPacketManager sPktMgr(PACKET_POOL_SIZE);
 static MCLiteBoard sBoard;
 
+// Derive a TransportKey from a scope string ("*"/empty → null key, "#name" → SHA256)
+static TransportKey scopeToTransportKey(const String& scope) {
+    TransportKey tk;
+    memset(tk.key, 0, sizeof(tk.key));
+    if (scope == "*" || scope.length() == 0) return tk;
+    uint8_t hash[32];
+    mbedtls_sha256((const uint8_t*)scope.c_str(), scope.length(), hash, 0);
+    memcpy(tk.key, hash, 16);
+    return tk;
+}
+
 MCLiteMesh::MCLiteMesh(CustomSX1262& radio, SimpleMeshTables& tables)
     : BaseChatMesh(
           *(new CustomSX1262Wrapper(radio, sBoard)),
@@ -32,6 +44,7 @@ MCLiteMesh::MCLiteMesh(CustomSX1262& radio, SimpleMeshTables& tables)
       _telemetry(32)
 {
     memset(_acks, 0, sizeof(_acks));
+    memset(_globalScope.key, 0, sizeof(_globalScope.key));
 }
 
 MCLiteMesh::~MCLiteMesh() {
@@ -109,7 +122,13 @@ bool MCLiteMesh::begin(const char* deviceName) {
     }
     Serial.printf("[MCLiteMesh] Registered %d channels\n", (int)channels.count());
 
-    // 4. Start the mesh
+    // 4. Derive global scope transport key
+    _globalScope = scopeToTransportKey(cfg.radio.scope);
+    if (!_globalScope.isNull()) {
+        Serial.printf("[MCLiteMesh] Global scope: %s\n", cfg.radio.scope.c_str());
+    }
+
+    // 5. Start the mesh
     Mesh::begin();
 
     _ready = true;
@@ -155,9 +174,38 @@ bool MCLiteMesh::advertise(const char* name) {
     mesh::Packet* pkt = createSelfAdvert(name);
     if (!pkt) return false;
 
-    sendFlood(pkt);
+    sendWithScope(_globalScope, pkt, 0);
     Serial.printf("[MCLiteMesh] Advertised as %s\n", name);
     return true;
+}
+
+void MCLiteMesh::sendWithScope(const TransportKey& scope, mesh::Packet* pkt, uint32_t delay_millis) {
+    if (scope.isNull()) {
+        sendFlood(pkt, delay_millis);
+    } else {
+        uint16_t codes[2];
+        codes[0] = scope.calcTransportCode(pkt);
+        codes[1] = 0;
+        sendFlood(pkt, codes, delay_millis);
+    }
+}
+
+void MCLiteMesh::sendFloodScoped(const ContactInfo& recipient, mesh::Packet* pkt, uint32_t delay_millis) {
+    sendWithScope(_globalScope, pkt, delay_millis);
+}
+
+void MCLiteMesh::sendFloodScoped(const mesh::GroupChannel& channel, mesh::Packet* pkt, uint32_t delay_millis) {
+    // Look up per-channel scope override via MeshCore channel index → ChannelStore
+    int idx = findChannelIdx(channel);
+    if (idx >= 0) {
+        auto& store = ChannelStore::instance();
+        const auto& all = store.all();
+        if ((size_t)idx < all.size() && all[idx].scope.length() > 0) {
+            sendWithScope(scopeToTransportKey(all[idx].scope), pkt, delay_millis);
+            return;
+        }
+    }
+    sendWithScope(_globalScope, pkt, delay_millis);
 }
 
 uint32_t MCLiteMesh::sendDM(size_t contactIdx, const char* text, uint32_t timestamp,

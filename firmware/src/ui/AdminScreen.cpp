@@ -120,6 +120,7 @@ void AdminScreen::show() {
     addRow("SF / BW", String(cfg.radio.spreadingFactor) + " / " + String(cfg.radio.bandwidth, 1));
     addRow("Coding Rate", String(cfg.radio.codingRate));
     addRow("TX Power", String(cfg.radio.txPower) + " dBm");
+    addRow("Scope", cfg.radio.scope);
     addRow("Status", MeshManager::instance().isRadioReady() ? t("ready") : t("error"));
 
     // Channel utilization (TX duty cycle over last hour)

@@ -22,6 +22,7 @@ struct Channel {
     bool    allowSos = true;  // Allow SOS alerts from this channel
     bool    sendSos = true;   // Include in outgoing SOS broadcast
     bool    readOnly = false;  // Hide input bar in chat view
+    String  scope;             // Region scope override ("" = inherit global)
 
     bool isPrivate() const { return type == ChannelType::PRIVATE; }
 };

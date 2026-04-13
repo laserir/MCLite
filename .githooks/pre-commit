@@ -3,7 +3,7 @@
 # Bypass with: git commit --no-verify
 
 echo "Running unit tests..."
-cd firmware && pio test -e native_test 2>&1
+cd firmware && ~/.platformio/penv/bin/pio test -e native_test 2>&1
 
 if [ $? -ne 0 ]; then
     echo ""

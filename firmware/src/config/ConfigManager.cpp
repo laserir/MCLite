@@ -18,6 +18,7 @@ void ConfigManager::applyDefaults() {
     _config.radio.bandwidth       = defaults::RADIO_BANDWIDTH;
     _config.radio.txPower         = defaults::RADIO_TX_POWER;
     _config.radio.codingRate      = defaults::RADIO_CODING_RATE;
+    _config.radio.scope           = defaults::RADIO_SCOPE;
     _config.display.brightness    = defaults::DISPLAY_BRIGHTNESS;
     _config.display.autoDimSeconds = defaults::AUTO_DIM_SECONDS;
     _config.display.theme         = "dark";
@@ -82,6 +83,7 @@ bool ConfigManager::parseJson(const String& json) {
             _config.radio.txPower = defaults::RADIO_TX_POWER;
         if (_config.radio.codingRate < 5 || _config.radio.codingRate > 8)
             _config.radio.codingRate = defaults::RADIO_CODING_RATE;
+        _config.radio.scope           = radio["scope"] | defaults::RADIO_SCOPE;
     }
 
     // Identity
@@ -123,6 +125,7 @@ bool ConfigManager::parseJson(const String& json) {
             cc.allowSos = ch["allow_sos"] | true;
             cc.sendSos  = ch["send_sos"] | true;
             cc.readOnly = ch["read_only"] | false;
+            cc.scope    = ch["scope"] | "";
             // Private channels require a PSK; hashtag channels can derive from name
             if (cc.psk.length() > 0 || cc.type == "hashtag") {
                 // Skip channels with duplicate indices
@@ -230,6 +233,9 @@ String ConfigManager::toJson() const {
     radio["bandwidth"]        = _config.radio.bandwidth;
     radio["tx_power"]         = _config.radio.txPower;
     radio["coding_rate"]      = _config.radio.codingRate;
+    if (_config.radio.scope != "*") {
+        radio["scope"]        = _config.radio.scope;
+    }
 
     doc["identity"]["private_key"] = _config.privateKey;
     doc["identity"]["public_key"]  = _config.publicKey;
@@ -258,6 +264,9 @@ String ConfigManager::toJson() const {
         obj["send_sos"] = ch.sendSos;
         if (ch.readOnly) {
             obj["read_only"] = true;
+        }
+        if (ch.scope.length() > 0) {
+            obj["scope"] = ch.scope;
         }
     }
 

@@ -2,7 +2,7 @@
 
 // MCLite default configuration values
 
-#define MCLITE_VERSION "0.1.2"
+#define MCLITE_VERSION "0.1.3"
 
 namespace mclite {
 namespace defaults {
@@ -19,6 +19,7 @@ constexpr uint8_t  RADIO_SPREADING_FACTOR = 8;
 constexpr float    RADIO_BANDWIDTH       = 62.5f;
 constexpr int8_t   RADIO_TX_POWER        = 22;
 constexpr uint8_t  RADIO_CODING_RATE     = 8;
+constexpr const char* RADIO_SCOPE        = "*";  // No transport codes (wildcard)
 
 // Display
 constexpr uint8_t  DISPLAY_BRIGHTNESS    = 180;

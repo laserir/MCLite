@@ -255,6 +255,39 @@ void test_canned_messages_array_max_8() {
     TEST_ASSERT_EQUAL(8, cfg->config().messaging.cannedCustom.size());
 }
 
+// ═══ Radio scope ═══
+
+void test_radio_scope_default_wildcard() {
+    parse("{}");
+    TEST_ASSERT_EQUAL_STRING("*", cfg->config().radio.scope.c_str());
+}
+
+void test_radio_scope_parsed() {
+    parse("{\"radio\":{\"scope\": \"#europe\"}}");
+    TEST_ASSERT_EQUAL_STRING("#europe", cfg->config().radio.scope.c_str());
+}
+
+void test_radio_scope_missing_uses_default() {
+    parse("{\"radio\":{\"frequency\": 915.0}}");
+    TEST_ASSERT_EQUAL_STRING("*", cfg->config().radio.scope.c_str());
+}
+
+void test_channel_scope_default_empty() {
+    parse("{\"channels\":[{\"name\":\"#test\",\"type\":\"hashtag\",\"index\":0}]}");
+    TEST_ASSERT_EQUAL(1, cfg->config().channels.size());
+    TEST_ASSERT_EQUAL_STRING("", cfg->config().channels[0].scope.c_str());
+}
+
+void test_channel_scope_parsed() {
+    parse("{\"channels\":[{\"name\":\"#test\",\"type\":\"hashtag\",\"index\":0,\"scope\":\"#local\"}]}");
+    TEST_ASSERT_EQUAL_STRING("#local", cfg->config().channels[0].scope.c_str());
+}
+
+void test_channel_scope_wildcard_override() {
+    parse("{\"channels\":[{\"name\":\"#test\",\"type\":\"hashtag\",\"index\":0,\"scope\":\"*\"}]}");
+    TEST_ASSERT_EQUAL_STRING("*", cfg->config().channels[0].scope.c_str());
+}
+
 // ═══ Missing sections use defaults ═══
 
 void test_missing_radio_uses_defaults() {
@@ -326,6 +359,14 @@ int main() {
     RUN_TEST(test_canned_messages_bool_false);
     RUN_TEST(test_canned_messages_array_enables_and_stores);
     RUN_TEST(test_canned_messages_array_max_8);
+
+    // Radio scope
+    RUN_TEST(test_radio_scope_default_wildcard);
+    RUN_TEST(test_radio_scope_parsed);
+    RUN_TEST(test_radio_scope_missing_uses_default);
+    RUN_TEST(test_channel_scope_default_empty);
+    RUN_TEST(test_channel_scope_parsed);
+    RUN_TEST(test_channel_scope_wildcard_override);
 
     // Missing sections
     RUN_TEST(test_missing_radio_uses_defaults);

@@ -25,6 +25,7 @@ struct ChannelConfig {
     bool    allowSos = true;  // Allow SOS alerts from this channel
     bool    sendSos = true;   // Include in outgoing SOS broadcast
     bool    readOnly = false;  // Hide input bar in chat view
+    String  scope;             // Region scope override ("" = inherit global, "*" = wildcard, "#name" = region)
 };
 
 struct RadioConfig {
@@ -33,6 +34,7 @@ struct RadioConfig {
     float   bandwidth       = 62.5f;
     int8_t  txPower         = 22;
     uint8_t codingRate      = 8;
+    String  scope           = "*";  // Region scope ("*" = no transport codes, "#name" = region)
 };
 
 struct DisplayConfig {
