@@ -32,6 +32,10 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"pin_hint",            "Enter your PIN code"},
     {"pin_wrong",           "Incorrect PIN"},
 
+    // Key lock
+    {"key_locked",          "Keys locked"},
+    {"key_lock_hint",       "Hold trackball 1s to unlock"},
+
     // Chat
     {"chat_placeholder",    "Type message..."},
     {"btn_send",            "SEND"},

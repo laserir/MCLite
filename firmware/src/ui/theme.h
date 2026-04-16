@@ -7,6 +7,7 @@
 #define ICON_CHANNEL  "#"                  // Public channel
 #define ICON_PRIVATE  "*"                  // Private channel
 #define ICON_LOCK     LV_SYMBOL_CLOSE      // PIN lock screen
+#define ICON_KEY_LOCK LV_SYMBOL_KEYBOARD   // Key lock indicator
 
 namespace mclite {
 namespace theme {

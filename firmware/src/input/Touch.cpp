@@ -1,4 +1,5 @@
 #include "Touch.h"
+#include "../ui/UIManager.h"
 #include "../hal/Display.h"
 #include <Wire.h>
 #include <Arduino.h>
@@ -126,6 +127,11 @@ void Touch::readCb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
         self->_touched = false;
+    }
+
+    // Key-locked: suppress LVGL pointer events but keep _touched for dim timer reset
+    if (UIManager::instance().isKeyLocked()) {
+        data->state = LV_INDEV_STATE_RELEASED;
     }
 
     // Clear status register for next reading

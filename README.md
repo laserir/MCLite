@@ -30,6 +30,7 @@ Most features below are optional. The primary goal is to keep things extremely s
 - **Auto-dim** -- screen and keyboard backlight dim after inactivity to save battery
 - **Multiple input methods** -- QWERTY keyboard, trackball, and touchscreen
 - **PIN lock** -- optional screen lock to prevent unauthorized use
+- **Key lock** -- hold the trackball for 1 second to lock/unlock all input. Lighter than PIN lock for preventing accidental presses
 - **Region scope** -- tag outgoing packets with MeshCore transport codes so repeaters can filter by region. Set a global scope or override per channel
 - **Zero-config for end users** -- all settings live in one JSON file on the SD card. Set it up once, copy to every device in your group
 
@@ -178,7 +179,9 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
   "security": {
     "pin_enabled": false,              // Require PIN to unlock the device
     "pin_code": "",                    // PIN code (4-8 alphanumeric characters)
-    "admin_enabled": true              // Allow access to device info screen (press 0)
+    "admin_enabled": true,             // Allow access to device info screen (press 0)
+    "key_lock": true,                  // Enable key lock (hold trackball 1s to lock/unlock)
+    "auto_key_lock": false             // Automatically lock keys when display dims
   }
 }
 ```

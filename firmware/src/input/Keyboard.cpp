@@ -1,4 +1,5 @@
 #include "Keyboard.h"
+#include "../ui/UIManager.h"
 #include <Wire.h>
 #include <Arduino.h>
 
@@ -43,8 +44,13 @@ void Keyboard::readCb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
     char c = self->readI2C();
 
     if (c != 0) {
-        // Store for shortcut handler
         self->_lastKey = c;
+
+        // Key-locked: suppress LVGL keyboard input
+        if (UIManager::instance().isKeyLocked()) {
+            data->state = LV_INDEV_STATE_RELEASED;
+            return;
+        }
 
         data->state = LV_INDEV_STATE_PRESSED;
 

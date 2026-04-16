@@ -210,6 +210,8 @@ bool ConfigManager::parseJson(const String& json) {
     _config.security.pinEnabled  = doc["security"]["pin_enabled"] | defaults::PIN_ENABLED;
     _config.security.pinCode     = doc["security"]["pin_code"] | defaults::PIN_CODE;
     _config.security.adminEnabled = doc["security"]["admin_enabled"] | defaults::ADMIN_ENABLED;
+    _config.security.keyLockEnabled = doc["security"]["key_lock"] | defaults::KEY_LOCK_ENABLED;
+    _config.security.autoKeyLock    = doc["security"]["auto_key_lock"] | defaults::AUTO_KEY_LOCK;
 
     Serial.printf("[Config] Loaded: device=%s, contacts=%d, channels=%d\n",
                   _config.deviceName.c_str(),
@@ -306,6 +308,8 @@ String ConfigManager::toJson() const {
     doc["security"]["pin_enabled"]   = _config.security.pinEnabled;
     doc["security"]["pin_code"]      = _config.security.pinCode;
     doc["security"]["admin_enabled"] = _config.security.adminEnabled;
+    doc["security"]["key_lock"]      = _config.security.keyLockEnabled;
+    doc["security"]["auto_key_lock"] = _config.security.autoKeyLock;
 
     String output;
     serializeJsonPretty(doc, output);

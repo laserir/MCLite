@@ -22,6 +22,9 @@
     "pin_hint": "Inserire il codice PIN",
     "pin_wrong": "PIN errato",
 
+    "key_locked": "Tasti bloccati",
+    "key_lock_hint": "Tenere trackball 1s per sbloccare",
+
     "chat_placeholder": "Messaggio...",
     "btn_send": "INVIA",
     "location_title": "Inviare la posizione?",

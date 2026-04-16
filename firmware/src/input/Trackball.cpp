@@ -1,4 +1,5 @@
 #include "Trackball.h"
+#include "../ui/UIManager.h"
 #include <Arduino.h>
 
 namespace mclite {
@@ -43,6 +44,13 @@ void Trackball::readCb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
     _dy = 0;
     interrupts();
 
+    // Key-locked: suppress LVGL encoder events (_moved ISR flag still propagates to checkWake)
+    if (UIManager::instance().isKeyLocked()) {
+        data->enc_diff = 0;
+        data->state = LV_INDEV_STATE_RELEASED;
+        return;
+    }
+
     data->enc_diff = dy;
 
     // Click: read pin directly so PRESSED persists while physically held
@@ -73,7 +81,8 @@ void Trackball::updatePress() {
     if (pinDown && !_pressing) {
         _pressing = true;
         _pressStartMs = millis();
-    } else if (!pinDown) {
+    } else if (!pinDown && _pressing) {
+        _lastHoldMs = millis() - _pressStartMs;
         _pressing = false;
     }
 }

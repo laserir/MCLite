@@ -307,6 +307,26 @@ void test_missing_gps_uses_defaults() {
     TEST_ASSERT_EQUAL_INT8(0, cfg->config().gpsClockOffset);
 }
 
+// ═══ Key Lock Config ═══
+
+void test_key_lock_defaults() {
+    parse("{}");
+    TEST_ASSERT_TRUE(cfg->config().security.keyLockEnabled);
+    TEST_ASSERT_FALSE(cfg->config().security.autoKeyLock);
+}
+
+void test_key_lock_parsed_enabled() {
+    parse("{\"security\":{\"key_lock\":true,\"auto_key_lock\":true}}");
+    TEST_ASSERT_TRUE(cfg->config().security.keyLockEnabled);
+    TEST_ASSERT_TRUE(cfg->config().security.autoKeyLock);
+}
+
+void test_key_lock_parsed_disabled() {
+    parse("{\"security\":{\"key_lock\":false,\"auto_key_lock\":false}}");
+    TEST_ASSERT_FALSE(cfg->config().security.keyLockEnabled);
+    TEST_ASSERT_FALSE(cfg->config().security.autoKeyLock);
+}
+
 int main() {
     UNITY_BEGIN();
 
@@ -372,6 +392,11 @@ int main() {
     RUN_TEST(test_missing_radio_uses_defaults);
     RUN_TEST(test_missing_display_uses_defaults);
     RUN_TEST(test_missing_gps_uses_defaults);
+
+    // Key lock
+    RUN_TEST(test_key_lock_defaults);
+    RUN_TEST(test_key_lock_parsed_enabled);
+    RUN_TEST(test_key_lock_parsed_disabled);
 
     return UNITY_END();
 }

@@ -67,6 +67,8 @@ struct SecurityConfig {
     bool   pinEnabled   = false;
     String pinCode      = "";
     bool   adminEnabled = true;
+    bool   keyLockEnabled = true;
+    bool   autoKeyLock    = false;
 };
 
 struct AppConfig {

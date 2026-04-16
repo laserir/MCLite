@@ -110,6 +110,13 @@ void UIManager::update() {
             if (sec.pinEnabled && sec.pinCode.length() >= 4 && !_isLocked) {
                 showPinLock();
             }
+            // Auto key lock on dim (if enabled and no PIN lock active)
+            if (sec.keyLockEnabled && sec.autoKeyLock && !_isLocked && !_keyLocked) {
+                // Lock silently — no toast since screen is dimmed
+                _keyLocked = true;
+                _statusBar.setKeyLocked(true);
+                Serial.println("[UI] Key lock engaged (auto-dim)");
+            }
         }
     }
 
@@ -620,6 +627,8 @@ void UIManager::insertLocation() {
 }
 
 void UIManager::updateSOSHold() {
+    if (_keyLocked) return;  // No SOS trigger while key-locked
+
     auto& tb = Trackball::instance();
     uint32_t held = tb.holdDurationMs();
 
@@ -1261,6 +1270,97 @@ void UIManager::dismissTelemetryModal() {
     _telemContactId = "";
     _telemPending = false;
     _telemTimeout = 0;
+}
+
+// --- Key Lock ---
+
+void UIManager::engageKeyLock() {
+    if (_keyLocked || _isLocked) return;  // Already locked or PIN-locked
+    _keyLocked = true;
+    _statusBar.setKeyLocked(true);
+
+    // Show toast centered on screen with title + unlock hint
+    _keyLockToast = lv_obj_create(lv_layer_top());
+    lv_obj_set_size(_keyLockToast, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_color(_keyLockToast, theme::BG_SECONDARY, 0);
+    lv_obj_set_style_bg_opa(_keyLockToast, LV_OPA_COVER, 0);
+    lv_obj_set_style_pad_all(_keyLockToast, theme::PAD_LARGE, 0);
+    lv_obj_set_style_pad_row(_keyLockToast, theme::PAD_SMALL, 0);
+    lv_obj_set_style_radius(_keyLockToast, 8, 0);
+    lv_obj_set_style_border_width(_keyLockToast, 0, 0);
+    lv_obj_clear_flag(_keyLockToast, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_flex_flow(_keyLockToast, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(_keyLockToast, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_align(_keyLockToast, LV_ALIGN_CENTER, 0, 0);
+
+    lv_obj_t* title = lv_label_create(_keyLockToast);
+    lv_label_set_text(title, t("key_locked"));
+    lv_obj_set_style_text_font(title, FONT_LARGE, 0);
+    lv_obj_set_style_text_color(title, theme::TEXT_PRIMARY, 0);
+
+    lv_obj_t* hint = lv_label_create(_keyLockToast);
+    lv_label_set_text(hint, t("key_lock_hint"));
+    lv_obj_set_style_text_font(hint, FONT_SMALL, 0);
+    lv_obj_set_style_text_color(hint, theme::TEXT_SECONDARY, 0);
+
+    // Auto-dismiss timer (2 seconds, one-shot)
+    _keyLockToastTimer = lv_timer_create(keyLockToastTimerCb, 2000, this);
+    lv_timer_set_repeat_count(_keyLockToastTimer, 1);
+
+    Serial.println("[UI] Key lock engaged");
+}
+
+void UIManager::disengageKeyLock() {
+    if (!_keyLocked) return;
+    _keyLocked = false;
+    _statusBar.setKeyLocked(false);
+
+    // Clean up toast if still showing
+    if (_keyLockToast) {
+        lv_obj_del(_keyLockToast);
+        _keyLockToast = nullptr;
+    }
+    if (_keyLockToastTimer) {
+        lv_timer_del(_keyLockToastTimer);
+        _keyLockToastTimer = nullptr;
+    }
+
+    Serial.println("[UI] Key lock disengaged");
+}
+
+void UIManager::keyLockToastTimerCb(lv_timer_t* timer) {
+    UIManager* self = (UIManager*)timer->user_data;
+    if (self->_keyLockToast) {
+        lv_obj_del(self->_keyLockToast);
+        self->_keyLockToast = nullptr;
+    }
+    self->_keyLockToastTimer = nullptr;
+}
+
+void UIManager::updateKeyLockToggle() {
+    const auto& sec = ConfigManager::instance().config().security;
+    if (!sec.keyLockEnabled) return;
+    if (_isLocked) return;  // PIN lock active, key lock is redundant
+
+    // Trackball hold 1-2s then release = key lock toggle
+    // Uses Trackball::updatePress() state (runs just before this in loop)
+    auto& tb = Trackball::instance();
+    bool pressed = tb.isPressed();
+
+    if (pressed) {
+        _clickWasDown = true;
+    } else if (_clickWasDown) {
+        // Released — check hold duration
+        _clickWasDown = false;
+        uint32_t held = tb.lastHoldDuration();
+        if (held >= KEY_LOCK_HOLD_MS && held < SOS_HOLD_SHOW_MS) {
+            if (_keyLocked) {
+                disengageKeyLock();
+            } else {
+                engageKeyLock();
+            }
+        }
+    }
 }
 
 }  // namespace mclite

@@ -183,6 +183,7 @@ void loop() {
 
     handleKeyShortcuts();
     Trackball::instance().updatePress();
+    UIManager::instance().updateKeyLockToggle();
     UIManager::instance().updateSOSHold();
     UIManager::instance().checkBatteryAlert();
 
@@ -248,6 +249,12 @@ static void handleKeyShortcuts() {
 
     // Don't process shortcuts while PIN locked — keys go to PIN overlay via LVGL
     if (ui.isLocked()) {
+        kb.clearKey();
+        return;
+    }
+
+    // Don't process shortcuts while key-locked
+    if (ui.isKeyLocked()) {
         kb.clearKey();
         return;
     }

@@ -62,6 +62,12 @@ public:
     void dismissPinLock();
     bool isLocked() const { return _isLocked; }
 
+    // Key lock (lightweight input lock — no PIN required)
+    void engageKeyLock();
+    void disengageKeyLock();
+    bool isKeyLocked() const { return _keyLocked; }
+    void updateKeyLockToggle();  // Call from main loop after updatePress()
+
     // Telemetry modal
     void showTelemetryModal(const ConvoId& id);
     void updateTelemetryModal(const uint8_t* pubKey);
@@ -106,9 +112,10 @@ private:
     void dismissSOSAlert(bool sendReply);
     static void sosButtonCb(lv_event_t* e);
 
-    // SOS send countdown state
-    static constexpr uint32_t SOS_HOLD_SHOW_MS = 2000;  // Show countdown after 2s
-    static constexpr uint32_t SOS_HOLD_SEND_MS = 6000;  // Send after 6s total
+    // Trackball hold thresholds (shared between key lock and SOS)
+    static constexpr uint32_t KEY_LOCK_HOLD_MS = 1000;  // Key lock toggle after 1s
+    static constexpr uint32_t SOS_HOLD_SHOW_MS = 2000;  // Show SOS countdown after 2s
+    static constexpr uint32_t SOS_HOLD_SEND_MS = 6000;  // Send SOS after 6s total
     lv_obj_t* _sosCountdownLabel = nullptr;
     bool      _sosCountdownActive = false;
     bool      _sosSentThisHold = false;
@@ -128,6 +135,13 @@ private:
     void onPinKey(uint32_t key);
     static void pinKeyCb(lv_event_t* e);
     void checkWake();  // Wake display on any input while dimmed
+
+    // Key lock state
+    bool       _keyLocked = false;
+    bool       _clickWasDown = false; // Track press→release edge for hold detection
+    lv_obj_t*  _keyLockToast = nullptr;
+    lv_timer_t* _keyLockToastTimer = nullptr;
+    static void keyLockToastTimerCb(lv_timer_t* timer);
 
     // Modal input group — isolates trackball/keyboard to modal while open
     lv_group_t* _modalGroup = nullptr;

@@ -15,6 +15,7 @@ public:
     void updatePress();  // Poll click pin state
     bool isPressed() const { return _pressing; }
     uint32_t holdDurationMs() const;
+    uint32_t lastHoldDuration() const { return _lastHoldMs; }
 
     static Trackball& instance();
 
@@ -25,6 +26,7 @@ private:
 
     // Long-press tracking
     uint32_t _pressStartMs = 0;
+    uint32_t _lastHoldMs   = 0;      // Duration of last completed hold (set on release)
     bool     _pressing     = false;
     bool     _seenRelease  = false;  // GPIO 0 boot guard: ignore until first release
 

@@ -22,6 +22,9 @@
     "pin_hint": "PIN-Code eingeben",
     "pin_wrong": "Falsche PIN",
 
+    "key_locked": "Tasten gesperrt",
+    "key_lock_hint": "Trackball 1s halten zum Entsperren",
+
     "chat_placeholder": "Nachricht...",
     "btn_send": "SENDEN",
     "location_title": "Standort senden?",

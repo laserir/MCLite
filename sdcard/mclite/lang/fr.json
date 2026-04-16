@@ -22,6 +22,9 @@
     "pin_hint": "Entrez votre code PIN",
     "pin_wrong": "PIN incorrect",
 
+    "key_locked": "Touches verrouillees",
+    "key_lock_hint": "Maintenir trackball 1s pour deverrouiller",
+
     "chat_placeholder": "Message...",
     "btn_send": "ENVOYER",
     "location_title": "Envoyer la position?",
