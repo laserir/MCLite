@@ -33,13 +33,6 @@ void StatusBar::create(lv_obj_t* parent) {
 
     // --- Everything below is right-aligned (no flex_grow) ---
 
-    // Key lock indicator (hidden by default, leftmost of right-side icons)
-    _keyLockIcon = lv_label_create(_bar);
-    lv_obj_set_style_text_font(_keyLockIcon, FONT_SMALL, 0);
-    lv_obj_set_style_text_color(_keyLockIcon, theme::GPS_LAST_KNOWN, 0);
-    lv_label_set_text(_keyLockIcon, ICON_KEY_LOCK);
-    lv_obj_add_flag(_keyLockIcon, LV_OBJ_FLAG_HIDDEN);
-
     // Sound icon — clickable label, larger font for tap target
     _soundIcon = lv_label_create(_bar);
     lv_obj_set_style_text_font(_soundIcon, FONT_NORMAL, 0);
@@ -133,15 +126,6 @@ void StatusBar::update() {
                 lv_obj_set_style_text_color(_gpsIcon, theme::TEXT_SECONDARY, 0);
                 break;
         }
-    }
-}
-
-void StatusBar::setKeyLocked(bool locked) {
-    if (!_keyLockIcon) return;
-    if (locked) {
-        lv_obj_clear_flag(_keyLockIcon, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_add_flag(_keyLockIcon, LV_OBJ_FLAG_HIDDEN);
     }
 }
 

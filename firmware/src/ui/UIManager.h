@@ -138,10 +138,10 @@ private:
 
     // Key lock state
     bool       _keyLocked = false;
-    bool       _clickWasDown = false; // Track press→release edge for hold detection
-    lv_obj_t*  _keyLockToast = nullptr;
-    lv_timer_t* _keyLockToastTimer = nullptr;
-    static void keyLockToastTimerCb(lv_timer_t* timer);
+    bool       _keyLockActioned = false; // Already triggered lock/unlock for current hold
+    lv_obj_t*  _keyLockOverlay = nullptr;
+    void showKeyLockOverlay();
+    void hideKeyLockOverlay();
 
     // Modal input group — isolates trackball/keyboard to modal while open
     lv_group_t* _modalGroup = nullptr;

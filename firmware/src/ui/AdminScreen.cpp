@@ -249,7 +249,10 @@ void AdminScreen::show() {
 
     // --- Security ---
     addSection(t("sec_security"));
-    addRow("PIN Lock", cfg.security.pinEnabled ? t("enabled") : t("disabled"));
+    String lockLabel = t("off");
+    if (cfg.security.lockMode == "key") lockLabel = "Key Lock";
+    else if (cfg.security.lockMode == "pin") lockLabel = "PIN Lock";
+    addRow("Lock", lockLabel);
 
     // --- Language ---
     addSection(t("sec_language"));

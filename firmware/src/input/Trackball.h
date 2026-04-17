@@ -29,6 +29,9 @@ private:
     uint32_t _lastHoldMs   = 0;      // Duration of last completed hold (set on release)
     bool     _pressing     = false;
     bool     _seenRelease  = false;  // GPIO 0 boot guard: ignore until first release
+    bool     _deliverClick = false;  // One-shot: set on short release, consumed by readCb
+
+    static constexpr uint32_t CLICK_DELAY_MS = 1000;  // Clicks shorter than this are delivered to LVGL
 
     // Movement accumulators (set by ISR)
     static volatile int16_t _dx;

@@ -868,11 +868,13 @@ h1 {
     <div class="section-title">Security</div>
     <div class="row">
       <div class="field">
-        <label>PIN Lock</label>
-        <select id="pinEnabled" onchange="togglePinField()">
-          <option value="false" selected>Off</option>
-          <option value="true">On</option>
+        <label>Lock</label>
+        <select id="lockMode" onchange="toggleLockFields()">
+          <option value="none">None</option>
+          <option value="key" selected>Key Lock</option>
+          <option value="pin">PIN Lock</option>
         </select>
+        <div class="hint">Key Lock: hold trackball 1s to lock/unlock. PIN Lock: hold 1s to lock, enter PIN to unlock.</div>
       </div>
       <div class="field" id="pinCodeField" style="display:none">
         <label>PIN Code</label>
@@ -883,30 +885,21 @@ h1 {
     </div>
     <div class="row" style="margin-top:8px">
       <div class="field">
+        <label>Auto Lock</label>
+        <select id="autoLock">
+          <option value="none">None</option>
+          <option value="key" selected>Key Lock</option>
+          <option value="pin">PIN Lock</option>
+        </select>
+        <div class="hint">Automatically lock when display dims. Falls back if selected lock type isn't available.</div>
+      </div>
+      <div class="field">
         <label>Admin Screen</label>
         <select id="adminEnabled">
           <option value="true" selected>Enabled</option>
           <option value="false">Disabled</option>
         </select>
         <div class="hint">Press 0 on home screen to view device info. Disable to hide admin access.</div>
-      </div>
-    </div>
-    <div class="row" style="margin-top:8px">
-      <div class="field">
-        <label>Key Lock</label>
-        <select id="keyLockEnabled">
-          <option value="true" selected>Enabled</option>
-          <option value="false">Disabled</option>
-        </select>
-        <div class="hint">Hold trackball 1s to lock/unlock all input. Lighter than PIN lock.</div>
-      </div>
-      <div class="field">
-        <label>Auto Key Lock</label>
-        <select id="autoKeyLock">
-          <option value="false" selected>Off</option>
-          <option value="true">On</option>
-        </select>
-        <div class="hint">Automatically lock keys when display dims.</div>
       </div>
     </div>
   </div>
@@ -1430,10 +1423,10 @@ function copyKey(type) {
   navigator.clipboard.writeText(key).then(() => toast('Copied to clipboard'));
 }
 
-// ===== PIN field toggle =====
-function togglePinField() {
-  const enabled = document.getElementById('pinEnabled').value === 'true';
-  document.getElementById('pinCodeField').style.display = enabled ? '' : 'none';
+// ===== Lock field toggle =====
+function toggleLockFields() {
+  const mode = document.getElementById('lockMode').value;
+  document.getElementById('pinCodeField').style.display = mode === 'pin' ? '' : 'none';
 }
 
 // ===== Timezone helpers =====
@@ -1557,10 +1550,10 @@ function validate() {
   }
 
   // PIN validation
-  const pinEnabled = document.getElementById('pinEnabled').value === 'true';
+  const lockMode = document.getElementById('lockMode').value;
   const pinCode = document.getElementById('pinCode').value;
   const pinField = document.getElementById('pinCodeField');
-  if (pinEnabled) {
+  if (lockMode === 'pin') {
     if (!/^[a-zA-Z0-9]{4,8}$/.test(pinCode)) {
       pinField.classList.add('invalid');
       valid = false;
@@ -1692,11 +1685,10 @@ function buildConfig() {
       low_alert_threshold: parseInt(document.getElementById('batteryThreshold').value) || 10
     },
     security: {
-      pin_enabled: document.getElementById('pinEnabled').value === 'true',
+      lock: document.getElementById('lockMode').value,
       pin_code: document.getElementById('pinCode').value || '',
-      admin_enabled: document.getElementById('adminEnabled').value === 'true',
-      key_lock: document.getElementById('keyLockEnabled').value === 'true',
-      auto_key_lock: document.getElementById('autoKeyLock').value === 'true'
+      auto_lock: document.getElementById('autoLock').value,
+      admin_enabled: document.getElementById('adminEnabled').value === 'true'
     }
   };
   return cfg;
@@ -1839,13 +1831,24 @@ function loadConfig(cfg) {
   document.getElementById('batteryAlertEnabled').value = String(cfg.battery?.low_alert_enabled ?? false);
   document.getElementById('batteryThreshold').value = cfg.battery?.low_alert_threshold ?? 10;
 
-  // Security
-  document.getElementById('pinEnabled').value = String(cfg.security?.pin_enabled ?? false);
+  // Security — new format with backwards compat
+  if (cfg.security?.lock !== undefined) {
+    document.getElementById('lockMode').value = cfg.security.lock;
+  } else {
+    if (cfg.security?.pin_enabled) document.getElementById('lockMode').value = 'pin';
+    else if (cfg.security?.key_lock !== false) document.getElementById('lockMode').value = 'key';
+    else document.getElementById('lockMode').value = 'none';
+  }
   document.getElementById('pinCode').value = cfg.security?.pin_code ?? '';
+  if (cfg.security?.auto_lock !== undefined) {
+    document.getElementById('autoLock').value = cfg.security.auto_lock;
+  } else {
+    if (cfg.security?.pin_enabled) document.getElementById('autoLock').value = 'pin';
+    else if (cfg.security?.auto_key_lock) document.getElementById('autoLock').value = 'key';
+    else document.getElementById('autoLock').value = 'none';
+  }
   document.getElementById('adminEnabled').value = String(cfg.security?.admin_enabled ?? true);
-  document.getElementById('keyLockEnabled').value = String(cfg.security?.key_lock ?? true);
-  document.getElementById('autoKeyLock').value = String(cfg.security?.auto_key_lock ?? false);
-  togglePinField();
+  toggleLockFields();
 
   // Warn about firmware limits
   if (contacts.length > 32) toast('Warning: imported config has ' + contacts.length + ' contacts (firmware max 32)');
@@ -1890,12 +1893,11 @@ function resetAll() {
   document.getElementById('gpsLastKnownMaxAge').value = 1800;
   document.getElementById('batteryAlertEnabled').value = 'false';
   document.getElementById('batteryThreshold').value = 10;
-  document.getElementById('pinEnabled').value = 'false';
+  document.getElementById('lockMode').value = 'key';
   document.getElementById('pinCode').value = '';
+  document.getElementById('autoLock').value = 'key';
   document.getElementById('adminEnabled').value = 'true';
-  document.getElementById('keyLockEnabled').value = 'true';
-  document.getElementById('autoKeyLock').value = 'false';
-  togglePinField();
+  toggleLockFields();
   renderContacts();
   renderChannels();
   toast('Config reset');
@@ -2360,12 +2362,11 @@ function wizStartFromScratch() {
   document.getElementById('gpsLastKnownMaxAge').value = 1800;
   document.getElementById('batteryAlertEnabled').value = 'false';
   document.getElementById('batteryThreshold').value = 10;
-  document.getElementById('pinEnabled').value = 'false';
+  document.getElementById('lockMode').value = 'key';
   document.getElementById('pinCode').value = '';
+  document.getElementById('autoLock').value = 'key';
   document.getElementById('adminEnabled').value = 'true';
-  document.getElementById('keyLockEnabled').value = 'true';
-  document.getElementById('autoKeyLock').value = 'false';
-  togglePinField();
+  toggleLockFields();
   // Auto-generate keypair and add default channels
   generateIdentity().then(async () => {
     addPublicChannel();

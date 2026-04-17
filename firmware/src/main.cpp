@@ -164,7 +164,7 @@ void setup() {
     // 10. PIN lock
     if (configResult == ConfigManager::LOAD_OK) {
         const auto& sec = cfg.security;
-        if (sec.pinEnabled && sec.pinCode.length() >= 4) {
+        if (sec.lockMode == "pin" && sec.pinCode.length() >= 4) {
             UIManager::instance().showPinLock();
         }
     }

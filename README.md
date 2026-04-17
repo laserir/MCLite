@@ -29,8 +29,7 @@ Most features below are optional. The primary goal is to keep things extremely s
 - **Notification sounds** -- chime on incoming messages, alarm on SOS. Supports custom WAV files from SD card
 - **Auto-dim** -- screen and keyboard backlight dim after inactivity to save battery
 - **Multiple input methods** -- QWERTY keyboard, trackball, and touchscreen
-- **PIN lock** -- optional screen lock to prevent unauthorized use
-- **Key lock** -- hold the trackball for 1 second to lock/unlock all input. Lighter than PIN lock for preventing accidental presses
+- **Screen lock** -- hold the trackball for 1 second to lock. Key lock (`"lock": "key"`) blocks all input and unlocks with another 1s hold. PIN lock (`"lock": "pin"`) requires a code to unlock. Optional auto-lock on display dim
 - **Region scope** -- tag outgoing packets with MeshCore transport codes so repeaters can filter by region. Set a global scope or override per channel
 - **Zero-config for end users** -- all settings live in one JSON file on the SD card. Set it up once, copy to every device in your group
 
@@ -177,11 +176,10 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
   },
 
   "security": {
-    "pin_enabled": false,              // Require PIN to unlock the device
-    "pin_code": "",                    // PIN code (4-8 alphanumeric characters)
-    "admin_enabled": true,             // Allow access to device info screen (press 0)
-    "key_lock": true,                  // Enable key lock (hold trackball 1s to lock/unlock)
-    "auto_key_lock": false             // Automatically lock keys when display dims
+    "lock": "key",                     // "none" = no lock, "key" = key lock (1s hold), "pin" = PIN lock
+    "pin_code": "",                    // PIN code (4-8 alphanumeric characters, only for "pin" mode)
+    "auto_lock": "key",                // Lock on display dim: "none", "key", "pin" (falls back if unavailable)
+    "admin_enabled": true              // Allow access to device info screen (press 0)
   }
 }
 ```
@@ -201,6 +199,7 @@ You don't need to write this by hand -- use the Config Tool. This example shows 
 | Contact telemetry | Tap contact name in chat header |
 | Retry failed message | Tap the X on a failed message |
 | Quick reply | Tap the list icon (≡) left of the text input |
+| Lock / unlock | Hold trackball for 1 second |
 | SOS broadcast | Hold trackball for 6 seconds |
 
 **Conversation list icons**

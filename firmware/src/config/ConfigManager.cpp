@@ -42,8 +42,9 @@ void ConfigManager::applyDefaults() {
     _config.gpsLastKnownMaxAge = defaults::GPS_LAST_KNOWN_MAX_AGE;
     _config.battery.lowAlertEnabled   = defaults::BATTERY_LOW_ALERT_ENABLED;
     _config.battery.lowAlertThreshold = defaults::BATTERY_LOW_ALERT_THRESHOLD;
-    _config.security.pinEnabled  = defaults::PIN_ENABLED;
-    _config.security.pinCode     = defaults::PIN_CODE;
+    _config.security.lockMode     = defaults::LOCK_MODE;
+    _config.security.pinCode      = defaults::PIN_CODE;
+    _config.security.autoLock     = defaults::AUTO_LOCK;
     _config.security.adminEnabled = defaults::ADMIN_ENABLED;
     _config.language = defaults::LANGUAGE;
 }
@@ -206,12 +207,34 @@ bool ConfigManager::parseJson(const String& json) {
     uint8_t threshold = doc["battery"]["low_alert_threshold"] | defaults::BATTERY_LOW_ALERT_THRESHOLD;
     _config.battery.lowAlertThreshold = constrain(threshold, 5, 50);
 
-    // Security
-    _config.security.pinEnabled  = doc["security"]["pin_enabled"] | defaults::PIN_ENABLED;
-    _config.security.pinCode     = doc["security"]["pin_code"] | defaults::PIN_CODE;
+    // Security — new unified lock model with backwards compat for old booleans
+    if (doc["security"]["lock"].is<const char*>()) {
+        String mode = doc["security"]["lock"] | defaults::LOCK_MODE;
+        if (mode != "none" && mode != "key" && mode != "pin") mode = "none";
+        _config.security.lockMode = mode;
+    } else {
+        // Backwards compat: old pin_enabled / key_lock booleans
+        bool pinEnabled = doc["security"]["pin_enabled"] | false;
+        bool keyLock    = doc["security"]["key_lock"] | true;
+        if (pinEnabled)       _config.security.lockMode = "pin";
+        else if (keyLock)     _config.security.lockMode = "key";
+        else                  _config.security.lockMode = "none";
+    }
+    _config.security.pinCode      = doc["security"]["pin_code"] | defaults::PIN_CODE;
     _config.security.adminEnabled = doc["security"]["admin_enabled"] | defaults::ADMIN_ENABLED;
-    _config.security.keyLockEnabled = doc["security"]["key_lock"] | defaults::KEY_LOCK_ENABLED;
-    _config.security.autoKeyLock    = doc["security"]["auto_key_lock"] | defaults::AUTO_KEY_LOCK;
+
+    if (doc["security"]["auto_lock"].is<const char*>()) {
+        String mode = doc["security"]["auto_lock"] | defaults::AUTO_LOCK;
+        if (mode != "none" && mode != "key" && mode != "pin") mode = "none";
+        _config.security.autoLock = mode;
+    } else {
+        // Backwards compat: old auto_key_lock boolean
+        bool autoKeyLock = doc["security"]["auto_key_lock"] | false;
+        bool pinEnabled  = doc["security"]["pin_enabled"] | false;
+        if (pinEnabled)        _config.security.autoLock = "pin";
+        else if (autoKeyLock)  _config.security.autoLock = "key";
+        else                   _config.security.autoLock = "none";
+    }
 
     Serial.printf("[Config] Loaded: device=%s, contacts=%d, channels=%d\n",
                   _config.deviceName.c_str(),
@@ -305,11 +328,10 @@ String ConfigManager::toJson() const {
     doc["battery"]["low_alert_enabled"]   = _config.battery.lowAlertEnabled;
     doc["battery"]["low_alert_threshold"] = _config.battery.lowAlertThreshold;
 
-    doc["security"]["pin_enabled"]   = _config.security.pinEnabled;
+    doc["security"]["lock"]           = _config.security.lockMode;
     doc["security"]["pin_code"]      = _config.security.pinCode;
+    doc["security"]["auto_lock"]     = _config.security.autoLock;
     doc["security"]["admin_enabled"] = _config.security.adminEnabled;
-    doc["security"]["key_lock"]      = _config.security.keyLockEnabled;
-    doc["security"]["auto_key_lock"] = _config.security.autoKeyLock;
 
     String output;
     serializeJsonPretty(doc, output);

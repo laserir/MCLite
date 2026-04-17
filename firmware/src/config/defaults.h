@@ -54,11 +54,10 @@ constexpr bool     BATTERY_LOW_ALERT_ENABLED   = false;
 constexpr uint8_t  BATTERY_LOW_ALERT_THRESHOLD = 10;
 
 // Security
-constexpr bool     PIN_ENABLED           = false;
+constexpr const char* LOCK_MODE          = "key";   // "none", "key", "pin"
 constexpr const char* PIN_CODE           = "";
+constexpr const char* AUTO_LOCK          = "key";   // "none", "key", "pin"
 constexpr bool     ADMIN_ENABLED         = true;
-constexpr bool     KEY_LOCK_ENABLED      = true;
-constexpr bool     AUTO_KEY_LOCK         = false;
 
 // Language
 constexpr const char* LANGUAGE = "";  // "" = English (default)

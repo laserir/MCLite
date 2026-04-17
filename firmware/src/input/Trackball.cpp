@@ -38,6 +38,8 @@ bool Trackball::init() {
 }
 
 void Trackball::readCb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
+    Trackball* self = (Trackball*)drv->user_data;
+
     noInterrupts();
     int16_t dy = _dy;
     _dx = 0;
@@ -46,6 +48,7 @@ void Trackball::readCb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
 
     // Key-locked: suppress LVGL encoder events (_moved ISR flag still propagates to checkWake)
     if (UIManager::instance().isKeyLocked()) {
+        self->_deliverClick = false;  // Don't leak clicks on unlock
         data->enc_diff = 0;
         data->state = LV_INDEV_STATE_RELEASED;
         return;
@@ -53,11 +56,12 @@ void Trackball::readCb(lv_indev_drv_t* drv, lv_indev_data_t* data) {
 
     data->enc_diff = dy;
 
-    // Click: read pin directly so PRESSED persists while physically held
-    Trackball* self = (Trackball*)drv->user_data;
-    bool pinDown = (digitalRead(TDECK_TRACKBALL_CLICK) == LOW);
-    if (pinDown && self->_seenRelease) {
+    // Deferred click: suppress PRESSED while held, deliver one-shot on short release.
+    // updatePress() sets _deliverClick when a press < CLICK_DELAY_MS ends.
+    // This prevents long holds (key lock, SOS) from triggering LVGL selection.
+    if (self->_deliverClick) {
         data->state = LV_INDEV_STATE_PRESSED;
+        self->_deliverClick = false;
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
     }
@@ -84,6 +88,9 @@ void Trackball::updatePress() {
     } else if (!pinDown && _pressing) {
         _lastHoldMs = millis() - _pressStartMs;
         _pressing = false;
+        if (_lastHoldMs < CLICK_DELAY_MS) {
+            _deliverClick = true;  // Short press — deliver to LVGL
+        }
     }
 }
 

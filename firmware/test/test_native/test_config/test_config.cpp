@@ -307,24 +307,58 @@ void test_missing_gps_uses_defaults() {
     TEST_ASSERT_EQUAL_INT8(0, cfg->config().gpsClockOffset);
 }
 
-// ═══ Key Lock Config ═══
+// ═══ Unified Lock Config ═══
 
-void test_key_lock_defaults() {
+void test_lock_defaults() {
     parse("{}");
-    TEST_ASSERT_TRUE(cfg->config().security.keyLockEnabled);
-    TEST_ASSERT_FALSE(cfg->config().security.autoKeyLock);
+    // Backwards compat: no "lock" field, old default key_lock=true → "key"
+    TEST_ASSERT_EQUAL_STRING("key", cfg->config().security.lockMode.c_str());
+    TEST_ASSERT_EQUAL_STRING("none", cfg->config().security.autoLock.c_str());
 }
 
-void test_key_lock_parsed_enabled() {
+void test_lock_mode_pin() {
+    parse("{\"security\":{\"lock\":\"pin\",\"pin_code\":\"1234\"}}");
+    TEST_ASSERT_EQUAL_STRING("pin", cfg->config().security.lockMode.c_str());
+    TEST_ASSERT_EQUAL_STRING("1234", cfg->config().security.pinCode.c_str());
+}
+
+void test_lock_mode_none() {
+    parse("{\"security\":{\"lock\":\"none\"}}");
+    TEST_ASSERT_EQUAL_STRING("none", cfg->config().security.lockMode.c_str());
+}
+
+void test_lock_invalid_falls_back() {
+    parse("{\"security\":{\"lock\":\"invalid\"}}");
+    TEST_ASSERT_EQUAL_STRING("none", cfg->config().security.lockMode.c_str());
+}
+
+void test_lock_backwards_compat_pin() {
+    parse("{\"security\":{\"pin_enabled\":true,\"pin_code\":\"abcd\"}}");
+    TEST_ASSERT_EQUAL_STRING("pin", cfg->config().security.lockMode.c_str());
+    TEST_ASSERT_EQUAL_STRING("pin", cfg->config().security.autoLock.c_str());
+    TEST_ASSERT_EQUAL_STRING("abcd", cfg->config().security.pinCode.c_str());
+}
+
+void test_lock_backwards_compat_key() {
     parse("{\"security\":{\"key_lock\":true,\"auto_key_lock\":true}}");
-    TEST_ASSERT_TRUE(cfg->config().security.keyLockEnabled);
-    TEST_ASSERT_TRUE(cfg->config().security.autoKeyLock);
+    TEST_ASSERT_EQUAL_STRING("key", cfg->config().security.lockMode.c_str());
+    TEST_ASSERT_EQUAL_STRING("key", cfg->config().security.autoLock.c_str());
 }
 
-void test_key_lock_parsed_disabled() {
-    parse("{\"security\":{\"key_lock\":false,\"auto_key_lock\":false}}");
-    TEST_ASSERT_FALSE(cfg->config().security.keyLockEnabled);
-    TEST_ASSERT_FALSE(cfg->config().security.autoKeyLock);
+void test_lock_backwards_compat_none() {
+    parse("{\"security\":{\"key_lock\":false,\"pin_enabled\":false}}");
+    TEST_ASSERT_EQUAL_STRING("none", cfg->config().security.lockMode.c_str());
+    TEST_ASSERT_EQUAL_STRING("none", cfg->config().security.autoLock.c_str());
+}
+
+void test_auto_lock_values() {
+    parse("{\"security\":{\"lock\":\"pin\",\"auto_lock\":\"key\"}}");
+    TEST_ASSERT_EQUAL_STRING("key", cfg->config().security.autoLock.c_str());
+}
+
+void test_auto_lock_invalid_falls_back() {
+    parse("{\"security\":{\"auto_lock\":\"bogus\"}}");
+    TEST_ASSERT_EQUAL_STRING("none", cfg->config().security.autoLock.c_str());
 }
 
 int main() {
@@ -393,10 +427,16 @@ int main() {
     RUN_TEST(test_missing_display_uses_defaults);
     RUN_TEST(test_missing_gps_uses_defaults);
 
-    // Key lock
-    RUN_TEST(test_key_lock_defaults);
-    RUN_TEST(test_key_lock_parsed_enabled);
-    RUN_TEST(test_key_lock_parsed_disabled);
+    // Unified lock config
+    RUN_TEST(test_lock_defaults);
+    RUN_TEST(test_lock_mode_pin);
+    RUN_TEST(test_lock_mode_none);
+    RUN_TEST(test_lock_invalid_falls_back);
+    RUN_TEST(test_lock_backwards_compat_pin);
+    RUN_TEST(test_lock_backwards_compat_key);
+    RUN_TEST(test_lock_backwards_compat_none);
+    RUN_TEST(test_auto_lock_values);
+    RUN_TEST(test_auto_lock_invalid_falls_back);
 
     return UNITY_END();
 }

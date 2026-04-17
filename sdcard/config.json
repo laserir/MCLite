@@ -64,8 +64,9 @@
     "low_alert_threshold": 10
   },
   "security": {
-    "pin_enabled": false,
+    "lock": "key",
     "pin_code": "",
+    "auto_lock": "key",
     "admin_enabled": true
   }
 }

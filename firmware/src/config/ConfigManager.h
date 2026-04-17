@@ -64,11 +64,10 @@ struct BatteryConfig {
 };
 
 struct SecurityConfig {
-    bool   pinEnabled   = false;
+    String lockMode     = "key";   // "none", "key", "pin"
     String pinCode      = "";
+    String autoLock     = "key";   // "none", "key", "pin"
     bool   adminEnabled = true;
-    bool   keyLockEnabled = true;
-    bool   autoKeyLock    = false;
 };
 
 struct AppConfig {
