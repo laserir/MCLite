@@ -311,9 +311,9 @@ void test_missing_gps_uses_defaults() {
 
 void test_lock_defaults() {
     parse("{}");
-    // Backwards compat: no "lock" field, old default key_lock=true → "key"
+    // No lock fields at all — uses new defaults
     TEST_ASSERT_EQUAL_STRING("key", cfg->config().security.lockMode.c_str());
-    TEST_ASSERT_EQUAL_STRING("none", cfg->config().security.autoLock.c_str());
+    TEST_ASSERT_EQUAL_STRING("key", cfg->config().security.autoLock.c_str());
 }
 
 void test_lock_mode_pin() {
@@ -346,9 +346,16 @@ void test_lock_backwards_compat_key() {
 }
 
 void test_lock_backwards_compat_none() {
-    parse("{\"security\":{\"key_lock\":false,\"pin_enabled\":false}}");
+    parse("{\"security\":{\"key_lock\":false,\"pin_enabled\":false,\"auto_key_lock\":false}}");
     TEST_ASSERT_EQUAL_STRING("none", cfg->config().security.lockMode.c_str());
     TEST_ASSERT_EQUAL_STRING("none", cfg->config().security.autoLock.c_str());
+}
+
+void test_lock_backwards_compat_missing_auto() {
+    // Old config without auto_key_lock field — should use new default "key"
+    parse("{\"security\":{\"key_lock\":true}}");
+    TEST_ASSERT_EQUAL_STRING("key", cfg->config().security.lockMode.c_str());
+    TEST_ASSERT_EQUAL_STRING("key", cfg->config().security.autoLock.c_str());
 }
 
 void test_auto_lock_values() {
@@ -435,6 +442,7 @@ int main() {
     RUN_TEST(test_lock_backwards_compat_pin);
     RUN_TEST(test_lock_backwards_compat_key);
     RUN_TEST(test_lock_backwards_compat_none);
+    RUN_TEST(test_lock_backwards_compat_missing_auto);
     RUN_TEST(test_auto_lock_values);
     RUN_TEST(test_auto_lock_invalid_falls_back);
 

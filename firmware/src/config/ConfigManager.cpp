@@ -228,12 +228,16 @@ bool ConfigManager::parseJson(const String& json) {
         if (mode != "none" && mode != "key" && mode != "pin") mode = "none";
         _config.security.autoLock = mode;
     } else {
-        // Backwards compat: old auto_key_lock boolean
-        bool autoKeyLock = doc["security"]["auto_key_lock"] | false;
+        // Backwards compat: old format
         bool pinEnabled  = doc["security"]["pin_enabled"] | false;
-        if (pinEnabled)        _config.security.autoLock = "pin";
-        else if (autoKeyLock)  _config.security.autoLock = "key";
-        else                   _config.security.autoLock = "none";
+        if (pinEnabled) {
+            // Old firmware always auto-locked to PIN on dim when pin_enabled
+            _config.security.autoLock = "pin";
+        } else if (doc["security"]["auto_key_lock"].is<bool>()) {
+            // Explicit auto_key_lock field — respect it
+            _config.security.autoLock = doc["security"]["auto_key_lock"].as<bool>() ? "key" : "none";
+        }
+        // else: field missing, not pin — keep default (AUTO_LOCK = "key")
     }
 
     Serial.printf("[Config] Loaded: device=%s, contacts=%d, channels=%d\n",
