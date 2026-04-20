@@ -23,6 +23,7 @@ Most features below are optional. The primary goal is to keep things extremely s
 - **Battery alerts** -- automatic low-battery warnings sent to your contacts
 - **GPS location sharing** -- manually send your position in lat/lon or UTMREF/MGRS (military grid) format, used by search and rescue worldwide. Last-known position support when GPS signal is temporarily lost
 - **Telemetry** -- responds to MeshCore-standard telemetry requests (battery, GPS) with per-contact permissions. Compatible with MeshCore companion apps. Optionally request telemetry from contacts to see their battery, location, and distance
+- **Map view** -- visualise a contact's position on a slippy map (optional, requires tile pack on SD card). Zoomable, with own-device marker overlaid
 - **Message history** -- conversations saved to SD card and restored on reboot
 - **Quick replies** -- optional canned message picker for fast responses (OK, Copy, Need help, etc.), translatable and customizable
 - **Multi-language** -- English, German, French, and Italian included. Add your own translations via SD card
@@ -199,8 +200,6 @@ If you want a visual map view when tapping a contact's name in chat (Telemetry â
 This is the same layout used by MeshCore's official T-Deck firmware, so any existing tile pack works unchanged. Zoom levels are auto-detected from the folder names present.
 
 **Getting tiles**: [map-tiles-downloader](https://github.com/tekk/map-tiles-downloader) is a simple browser-based tool that produces exactly this layout -- pick a bounding box, zoom range, tile source, and export.
-
-**Attribution**: include the source map's licence text when sharing the SD card. For OpenStreetMap tiles: "Â© OpenStreetMap contributors".
 
 ## Hints
 
