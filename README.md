@@ -199,7 +199,9 @@ If you want a visual map view when tapping a contact's name in chat (Telemetry â
 
 This is the same layout used by MeshCore's official T-Deck firmware, so any existing tile pack works unchanged. Zoom levels are auto-detected from the folder names present.
 
-**Getting tiles**: [map-tiles-downloader](https://github.com/tekk/map-tiles-downloader) is a simple browser-based tool that produces exactly this layout -- pick a bounding box, zoom range, tile source, and export.
+**Getting tiles**: [map-tiles-downloader](https://github.com/tekk/map-tiles-downloader) is a terminal tool (TUI) that produces exactly this layout -- pick a country/region, zoom range, tile source, and export.
+
+Region codes in that tool are GeoNames admin1 codes, not the local administrative numbers you may be familiar with. For Germany, a few common ones: `02` = Bayern, `04` = Hamburg, `07` = Nordrhein-Westfalen, `16` = Berlin. Check the [GeoNames admin1 codes list](https://download.geonames.org/export/dump/admin1CodesASCII.txt) for other countries.
 
 ## Hints
 
