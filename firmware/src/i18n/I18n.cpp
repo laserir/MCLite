@@ -113,6 +113,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"telem_stale",         "(data may be outdated)"},
     {"btn_refresh",         "Refresh"},
     {"btn_close",           "Close"},
+    {"btn_map",             "Map"},
 
     {nullptr, nullptr}  // sentinel
 };

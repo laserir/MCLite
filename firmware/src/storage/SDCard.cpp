@@ -33,6 +33,20 @@ bool SDCard::fileExists(const char* path) {
     return SD.exists(path);
 }
 
+bool SDCard::dirExists(const char* path) {
+    if (!_mounted) return false;
+    File f = SD.open(path);
+    if (!f) return false;
+    bool isDir = f.isDirectory();
+    f.close();
+    return isDir;
+}
+
+File SDCard::openRaw(const char* path) {
+    if (!_mounted) return File();
+    return SD.open(path, FILE_READ);
+}
+
 String SDCard::readFile(const char* path, size_t maxSize) {
     if (!_mounted) return "";
     File f = SD.open(path, FILE_READ);

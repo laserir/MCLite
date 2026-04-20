@@ -296,6 +296,10 @@ void AdminScreen::show() {
         "(c) 2025 Scott Powell / rippleradios.com\n\n"
         "base64 1.4.0 - MIT\n"
         "(c) 2016 Densaugeo\n\n"
+        "PNGdec 1.0.3 - Apache-2.0\n"
+        "(c) 2020-2024 Larry Bank\n\n"
+        "orlp/ed25519 - Zlib\n"
+        "(c) 2015 Orson Peters\n\n"
         "Crypto 0.4.0 - MIT\n"
         "(c) 2015, 2018 Southern Storm Software\n\n"
         "RTClib 2.1.4 - MIT\n"
@@ -310,10 +314,10 @@ void AdminScreen::show() {
         "(c) 2008-2024 Mikal Hart\n\n"
         "Arduino ESP32 core - LGPL-2.1\n"
         "(c) Espressif\n\n"
-        "MIT-licensed libraries are used under the terms\n"
-        "of the MIT License. LGPL-2.1 libraries are\n"
-        "dynamically linked; users may replace them by\n"
-        "rebuilding with PlatformIO.\n\n"
+        "MIT/Apache-2.0/Zlib libraries are used under\n"
+        "the terms of those licenses. LGPL-2.1 libraries\n"
+        "are dynamically linked; users may replace them\n"
+        "by rebuilding with PlatformIO.\n\n"
         "Full license texts: see LICENSES.md";
 
     lv_obj_t* licLabel = lv_label_create(licContainer);

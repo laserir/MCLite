@@ -10,6 +10,8 @@ MCLite uses the following open-source libraries. Their license terms apply to th
 | [ArduinoJson](https://github.com/bblanchon/ArduinoJson) | 7.4.3 | MIT | (c) 2014-2026 Benoit Blanchon |
 | [RadioLib](https://github.com/jgromes/RadioLib) | 7.3.0 | MIT | (c) 2018 Jan Gromes |
 | [base64](https://github.com/Densaugeo/base64_arduino) | 1.4.0 | MIT | (c) 2016 Densaugeo |
+| [PNGdec](https://github.com/bitbank2/PNGdec) | 1.0.3 | Apache-2.0 | (c) 2020-2024 Larry Bank |
+| [orlp/ed25519](https://github.com/orlp/ed25519) | bundled | Zlib | (c) 2015 Orson Peters |
 | [Crypto](https://github.com/rweather/arduinolibs) | 0.4.0 | MIT | (c) 2015, 2018 Southern Storm Software |
 | [RTClib](https://github.com/adafruit/RTClib) | 2.1.4 | MIT | (c) 2019 Adafruit Industries |
 | [Adafruit BusIO](https://github.com/adafruit/Adafruit_BusIO) | 1.17.4 | MIT | (c) 2017 Adafruit Industries |
@@ -27,5 +29,7 @@ MCLite uses the following open-source libraries. Their license terms apply to th
 ## License Notes
 
 - **MIT-licensed** libraries are used under the terms of the MIT License. See each project's repository for the full license text.
+- **Apache-2.0-licensed** libraries (PNGdec) are used under the terms of the Apache License 2.0.
+- **Zlib-licensed** libraries (orlp/ed25519) are used under the terms of the Zlib license.
 - **LGPL-2.1-licensed** libraries (TinyGPSPlus, Arduino ESP32 core) are dynamically linked. Users may replace them by rebuilding with PlatformIO.
 - MCLite itself is released under the **MIT License**. See [LICENSE](LICENSE).

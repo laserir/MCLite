@@ -14,6 +14,7 @@
 #include "../hal/Battery.h"
 #include "../i18n/I18n.h"
 #include "../storage/TelemetryCache.h"
+#include "../storage/TileLoader.h"
 #include "../util/distance.h"
 #include "../util/mgrs.h"
 
@@ -1137,37 +1138,9 @@ void UIManager::showTelemetryModal(const ConvoId& id) {
     const TelemetryData* td = TelemetryCache::instance().get(contact->publicKey);
     _telemText = buildTelemText(contact, td);
 
-    // Button labels
-    static const char* btns[3];
-    btns[0] = t("btn_close");
-    btns[1] = t("btn_refresh");
-    btns[2] = "";
-
-    String title = String(LV_SYMBOL_EYE_OPEN " ") + t("telem_title");
-    _telemMsgbox = lv_msgbox_create(NULL, title.c_str(), _telemText.c_str(), btns, false);
-    lv_obj_center(_telemMsgbox);
-    lv_obj_set_width(_telemMsgbox, 280);
-    lv_obj_set_height(_telemMsgbox, LV_SIZE_CONTENT);
-    lv_obj_set_style_max_height(_telemMsgbox, 200, 0);
-    lv_obj_set_style_bg_color(_telemMsgbox, theme::BG_SECONDARY, 0);
-    lv_obj_set_style_text_color(_telemMsgbox, theme::TEXT_PRIMARY, 0);
-    lv_obj_set_style_text_font(_telemMsgbox, FONT_NORMAL, 0);
-
-    // Enable vertical scroll on the content area (not entire msgbox, so buttons stay visible)
-    lv_obj_t* content = lv_msgbox_get_text(_telemMsgbox);
-    if (content) {
-        lv_obj_t* contentParent = lv_obj_get_parent(content);
-        lv_obj_set_style_max_height(contentParent, 140, 0);
-        lv_obj_add_flag(contentParent, LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_set_scroll_dir(contentParent, LV_DIR_VER);
-        lv_obj_set_scrollbar_mode(contentParent, LV_SCROLLBAR_MODE_AUTO);
-    }
-
-    // Switch to modal group so trackball/keyboard can only navigate modal buttons
-    lv_obj_t* btnm = lv_msgbox_get_btns(_telemMsgbox);
-    if (btnm) switchToModalGroup(btnm);
-
-    lv_obj_add_event_cb(_telemMsgbox, telemBtnCb, LV_EVENT_VALUE_CHANGED, this);
+    // Build widget via helper so updateTelemetryModal() can recreate with a
+    // different button count (re-layouting a live btnmatrix doesn't work).
+    buildTelemetryMsgbox(evalCanMap(contact->publicKey));
 
     // Auto-request if no cached data or stale
     if (!td || !TelemetryCache::instance().isFresh(contact->publicKey)) {
@@ -1213,13 +1186,85 @@ void UIManager::telemBtnCb(lv_event_t* e) {
                 break;
             }
         }
+    } else if (idx == 2) {
+        // Map — find contact's cached location and launch MapScreen
+        auto& contacts = ContactStore::instance();
+        for (size_t i = 0; i < contacts.count(); i++) {
+            const Contact* c = contacts.findByIndex(i);
+            if (c && c->shortId() == self->_telemContactId) {
+                const TelemetryData* td = TelemetryCache::instance().get(c->publicKey);
+                if (td && td->hasLocation) {
+                    self->_pendingMapLat  = td->lat;
+                    self->_pendingMapLon  = td->lon;
+                    self->_pendingMapName = c->name;
+                    self->dismissTelemetryModal();
+                    lv_async_call(&UIManager::openMapAsync, self);
+                }
+                break;
+            }
+        }
     }
+}
+
+void UIManager::openMapAsync(void* user) {
+    UIManager* self = static_cast<UIManager*>(user);
+    if (!self) return;
+    self->showMapScreen(self->_pendingMapLat, self->_pendingMapLon, self->_pendingMapName);
+}
+
+void UIManager::showMapScreen(double lat, double lon, const String& contactName) {
+    _mapScreen.open(lat, lon, contactName);
+}
+
+bool UIManager::evalCanMap(const uint8_t* pubKey) const {
+    if (!pubKey) return false;
+    const TelemetryData* td = TelemetryCache::instance().get(pubKey);
+    return td && td->hasLocation
+        && TelemetryCache::instance().isFresh(pubKey)
+        && TileLoader::instance().tilesAvailable();
+}
+
+void UIManager::buildTelemetryMsgbox(bool canMap) {
+    // Tear down any existing msgbox widget (but keep _telemText/_telemContactId).
+    if (_telemMsgbox) {
+        restoreFromModalGroup();
+        lv_msgbox_close(_telemMsgbox);
+        _telemMsgbox = nullptr;
+    }
+
+    _telemBtns[0] = t("btn_close");
+    _telemBtns[1] = t("btn_refresh");
+    if (canMap) { _telemBtns[2] = t("btn_map"); _telemBtns[3] = ""; }
+    else        { _telemBtns[2] = "";           _telemBtns[3] = nullptr; }
+
+    String title = String(LV_SYMBOL_EYE_OPEN " ") + t("telem_title");
+    _telemMsgbox = lv_msgbox_create(NULL, title.c_str(), _telemText.c_str(), _telemBtns, false);
+    lv_obj_center(_telemMsgbox);
+    lv_obj_set_width(_telemMsgbox, 280);
+    lv_obj_set_height(_telemMsgbox, LV_SIZE_CONTENT);
+    lv_obj_set_style_max_height(_telemMsgbox, 200, 0);
+    lv_obj_set_style_bg_color(_telemMsgbox, theme::BG_SECONDARY, 0);
+    lv_obj_set_style_text_color(_telemMsgbox, theme::TEXT_PRIMARY, 0);
+    lv_obj_set_style_text_font(_telemMsgbox, FONT_NORMAL, 0);
+
+    lv_obj_t* content = lv_msgbox_get_text(_telemMsgbox);
+    if (content) {
+        lv_obj_t* contentParent = lv_obj_get_parent(content);
+        lv_obj_set_style_max_height(contentParent, 140, 0);
+        lv_obj_add_flag(contentParent, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_scroll_dir(contentParent, LV_DIR_VER);
+        lv_obj_set_scrollbar_mode(contentParent, LV_SCROLLBAR_MODE_AUTO);
+    }
+
+    lv_obj_t* btnm = lv_msgbox_get_btns(_telemMsgbox);
+    if (btnm) switchToModalGroup(btnm);
+
+    lv_obj_add_event_cb(_telemMsgbox, telemBtnCb, LV_EVENT_VALUE_CHANGED, this);
 }
 
 void UIManager::updateTelemetryModal(const uint8_t* pubKey) {
     if (!_telemMsgbox || !pubKey) return;
 
-    // Verify this response matches the open modal's contact
     auto& contacts = ContactStore::instance();
     for (size_t i = 0; i < contacts.count(); i++) {
         const Contact* c = contacts.findByIndex(i);
@@ -1228,8 +1273,17 @@ void UIManager::updateTelemetryModal(const uint8_t* pubKey) {
 
             const TelemetryData* td = TelemetryCache::instance().get(pubKey);
             _telemText = buildTelemText(c, td);
-            lv_label_set_text(lv_msgbox_get_text(_telemMsgbox), _telemText.c_str());
             _telemPending = false;
+
+            const bool canMap = evalCanMap(pubKey);
+            const bool hadMap = (_telemBtns[2] && _telemBtns[2][0] != '\0');
+            if (canMap != hadMap) {
+                // Button set changed — recreate the msgbox so layout is correct.
+                buildTelemetryMsgbox(canMap);
+            } else {
+                // Text-only update.
+                lv_label_set_text(lv_msgbox_get_text(_telemMsgbox), _telemText.c_str());
+            }
             break;
         }
     }

@@ -88,6 +88,7 @@
     "telem_stale": "(donnees peut-etre obsoletes)",
     "btn_refresh": "Actualiser",
     "btn_close": "Fermer",
+    "btn_map": "Carte",
 
     "canned_1": "OK",
     "canned_2": "Bien recu",

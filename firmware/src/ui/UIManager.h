@@ -5,6 +5,7 @@
 #include "ConvoListScreen.h"
 #include "ChatScreen.h"
 #include "AdminScreen.h"
+#include "MapScreen.h"
 #include "../storage/MessageStore.h"
 
 namespace mclite {
@@ -72,11 +73,15 @@ public:
     void showTelemetryModal(const ConvoId& id);
     void updateTelemetryModal(const uint8_t* pubKey);
 
+    // Map screen (opened from telemetry modal)
+    void showMapScreen(double lat, double lon, const String& contactName);
+
     // Modal input group helpers (used by ChatScreen GPS modal too)
     void switchToModalGroup(lv_obj_t* modalWidget);
     void restoreFromModalGroup();
 
     Screen currentScreen() const { return _currentScreen; }
+    lv_group_t* inputGroup() const { return _inputGroup; }
 
     static UIManager& instance();
 
@@ -147,14 +152,24 @@ private:
     lv_group_t* _modalGroup = nullptr;
 
     // Telemetry modal state
-    lv_obj_t* _telemMsgbox = nullptr;
-    String    _telemText;
-    String    _telemContactId;
-    uint32_t  _telemTimeout = 0;
-    bool      _telemPending = false;
+    lv_obj_t*   _telemMsgbox = nullptr;
+    String      _telemText;
+    String      _telemContactId;
+    uint32_t    _telemTimeout = 0;
+    bool        _telemPending = false;
+    const char* _telemBtns[4] = {nullptr, nullptr, nullptr, nullptr};
 
     void dismissTelemetryModal();
+    bool evalCanMap(const uint8_t* pubKey) const;
+    void buildTelemetryMsgbox(bool canMap);  // (re)creates the msgbox widget
     static void telemBtnCb(lv_event_t* e);
+
+    // Map screen state
+    MapScreen _mapScreen;
+    double    _pendingMapLat = 0.0;
+    double    _pendingMapLon = 0.0;
+    String    _pendingMapName;
+    static void openMapAsync(void* user);
 };
 
 }  // namespace mclite

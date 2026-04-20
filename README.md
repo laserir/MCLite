@@ -188,6 +188,20 @@ You don't need to write this by hand -- use the Config Tool. This example shows 
 
 </details>
 
+### Map tiles (optional)
+
+If you want a visual map view when tapping a contact's name in chat (Telemetry → **Map**), copy slippy map tiles to `/tiles/` on the SD card root:
+
+```
+/tiles/<zoom>/<x>/<y>.png    (256×256 PNG, Web Mercator / EPSG:3857)
+```
+
+This is the same layout used by MeshCore's official T-Deck firmware, so any existing tile pack works unchanged. Zoom levels are auto-detected from the folder names present.
+
+**Getting tiles**: [map-tiles-downloader](https://github.com/tekk/map-tiles-downloader) is a simple browser-based tool that produces exactly this layout -- pick a bounding box, zoom range, tile source, and export.
+
+**Attribution**: include the source map's licence text when sharing the SD card. For OpenStreetMap tiles: "© OpenStreetMap contributors".
+
 ## Hints
 
 **Shortcuts**
