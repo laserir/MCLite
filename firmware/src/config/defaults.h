@@ -2,7 +2,7 @@
 
 // MCLite default configuration values
 
-#define MCLITE_VERSION "0.1.3"
+#define MCLITE_VERSION "0.1.4"
 
 namespace mclite {
 namespace defaults {
