@@ -370,6 +370,10 @@ void UIManager::showSOSAlert(const ConvoId& id, const Message& msg) {
     // Button callback
     lv_obj_add_event_cb(_sosMsgbox, sosButtonCb, LV_EVENT_VALUE_CHANGED, this);
 
+    // Disengage key lock so user can respond without unlocking first.
+    // PIN lock (_isLocked) stays engaged — don't bypass security.
+    if (_keyLocked) disengageKeyLock();
+
     // Start SOS sound
     const auto& cfg = ConfigManager::instance().config();
     Speaker::instance().startSOS(cfg.sosRepeat);
@@ -706,6 +710,9 @@ void UIManager::sendSOSToAll() {
         sosText += " @ " + gps.formatLocationWithStatus();
     }
 
+    Serial.printf("[SOS] Begin burst: %u contacts, %u channels\n",
+                  (unsigned)contacts.count(), (unsigned)ChannelStore::instance().count());
+
     // Send to every contact
     uint32_t sent = 0;
     for (size_t i = 0; i < contacts.count(); i++) {
@@ -713,6 +720,9 @@ void UIManager::sendSOSToAll() {
         if (!c || !c->sendSos) continue;
 
         uint32_t packetId = mesh.sendMessage(i, sosText);
+        Serial.printf("[SOS] DM %s: packetId=%u %s\n",
+                      c->name.c_str(), packetId,
+                      packetId ? "queued" : "FAILED (pool?)");
 
         // Add to local message store
         ConvoId id{ConvoId::DM, c->shortId()};
@@ -729,6 +739,12 @@ void UIManager::sendSOSToAll() {
         MessageStore::instance().addMessage(id, displayName, false, msg);
 
         if (packetId) sent++;
+
+        // Yield to dispatcher between sends so it can drain one packet
+        // before we enqueue the next. Prevents tight-burst pool pressure
+        // and lets CAD settle.
+        MeshManager::instance().update();
+        delay(50);
     }
 
     // Also send to all channels
@@ -737,6 +753,9 @@ void UIManager::sendSOSToAll() {
         const auto& allCh = channels.all();
         if (!allCh[i].sendSos) continue;
         uint32_t packetId = mesh.sendGroupMessage(allCh[i].index, sosText);
+        Serial.printf("[SOS] CH %s: packetId=%u %s\n",
+                      allCh[i].name.c_str(), packetId,
+                      packetId ? "queued" : "FAILED (pool?)");
 
         ConvoId id{ConvoId::CHANNEL, allCh[i].name};
         Message msg;
@@ -752,6 +771,9 @@ void UIManager::sendSOSToAll() {
         MessageStore::instance().addMessage(id, displayName, false, msg);
 
         if (packetId) sent++;
+
+        MeshManager::instance().update();
+        delay(50);
     }
 
     // Show confirmation toast via a brief modal
