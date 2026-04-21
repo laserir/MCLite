@@ -127,6 +127,10 @@ bool MCLiteMesh::begin(const char* deviceName) {
     if (!_globalScope.isNull()) {
         Serial.printf("[MCLiteMesh] Global scope: %s\n", cfg.radio.scope.c_str());
     }
+    _pathHashSize = cfg.radio.pathHashMode + 1;
+    if (_pathHashSize > 1) {
+        Serial.printf("[MCLiteMesh] Path hash size: %u bytes/hop\n", _pathHashSize);
+    }
 
     // 5. Start the mesh
     Mesh::begin();
@@ -181,12 +185,12 @@ bool MCLiteMesh::advertise(const char* name) {
 
 void MCLiteMesh::sendWithScope(const TransportKey& scope, mesh::Packet* pkt, uint32_t delay_millis) {
     if (scope.isNull()) {
-        sendFlood(pkt, delay_millis);
+        sendFlood(pkt, delay_millis, _pathHashSize);
     } else {
         uint16_t codes[2];
         codes[0] = scope.calcTransportCode(pkt);
         codes[1] = 0;
-        sendFlood(pkt, codes, delay_millis);
+        sendFlood(pkt, codes, delay_millis, _pathHashSize);
     }
 }
 

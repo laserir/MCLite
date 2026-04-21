@@ -609,6 +609,15 @@ h1 {
              pattern="\*|#[a-z0-9\-]+" title="Enter * for no filtering, or #name for a region (e.g. #europe)">
       <div class="hint">Transport code region for repeater filtering. <code>*</code> = no filtering, <code>#name</code> = hashtag region.</div>
     </div>
+    <div class="field">
+      <label>Path Hash Mode</label>
+      <select id="radioPathHashMode">
+        <option value="0" selected>0 — 1 byte/hop (default, legacy)</option>
+        <option value="1">1 — 2 bytes/hop</option>
+        <option value="2">2 — 3 bytes/hop</option>
+      </select>
+      <div class="hint">Bytes per repeater fingerprint in packet path. Larger = fewer collisions in dense meshes, but more airtime per hop. Keep at 0 for compatibility with v1.10 and earlier peers.</div>
+    </div>
   </div>
 
   <!-- Contacts -->
@@ -1626,7 +1635,8 @@ function buildConfig() {
       bandwidth: parseFloat(document.getElementById('radioBW').value),
       tx_power: parseInt(document.getElementById('radioTX').value),
       coding_rate: parseInt(document.getElementById('radioCR').value),
-      ...(document.getElementById('radioScope').value !== '*' ? { scope: document.getElementById('radioScope').value } : {})
+      ...(document.getElementById('radioScope').value !== '*' ? { scope: document.getElementById('radioScope').value } : {}),
+      ...(parseInt(document.getElementById('radioPathHashMode').value) !== 0 ? { path_hash_mode: parseInt(document.getElementById('radioPathHashMode').value) } : {})
     },
     identity: {
       private_key: identity.privateKey,
@@ -1752,6 +1762,7 @@ function loadConfig(cfg) {
     document.getElementById('radioTX').value   = cfg.radio.tx_power ?? 22;
     document.getElementById('radioCR').value   = cfg.radio.coding_rate ?? 8;
     document.getElementById('radioScope').value = cfg.radio.scope ?? '*';
+    document.getElementById('radioPathHashMode').value = cfg.radio.path_hash_mode ?? 0;
     detectPreset();
   }
 
@@ -1868,6 +1879,7 @@ function resetAll() {
   document.getElementById('radioPreset').value = 'eu_narrow';
   applyPreset();
   document.getElementById('radioScope').value = '*';
+  document.getElementById('radioPathHashMode').value = '0';
   document.getElementById('pubKeyDisplay').textContent = 'Not yet generated';
   document.getElementById('privKeyDisplay').textContent = 'Not yet generated';
   document.getElementById('dispBrightness').value = 180;
@@ -2337,6 +2349,7 @@ function wizStartFromScratch() {
   document.getElementById('radioPreset').value = 'eu_narrow';
   applyPreset();
   document.getElementById('radioScope').value = '*';
+  document.getElementById('radioPathHashMode').value = '0';
   document.getElementById('pubKeyDisplay').textContent = 'Not yet generated';
   document.getElementById('privKeyDisplay').textContent = 'Not yet generated';
   document.getElementById('dispBrightness').value = 180;

@@ -121,6 +121,11 @@ void AdminScreen::show() {
     addRow("Coding Rate", String(cfg.radio.codingRate));
     addRow("TX Power", String(cfg.radio.txPower) + " dBm");
     addRow("Scope", cfg.radio.scope);
+    {
+        char phBuf[16];
+        snprintf(phBuf, sizeof(phBuf), "%u B/hop", (unsigned)(cfg.radio.pathHashMode + 1));
+        addRow("Path Hash", phBuf);
+    }
     addRow("Status", MeshManager::instance().isRadioReady() ? t("ready") : t("error"));
 
     // Channel utilization (TX duty cycle over last hour)
@@ -159,6 +164,7 @@ void AdminScreen::show() {
         String info = ch.name;
         if (ch.readOnly) info += " [read-only]";
         if (ch.sendSos) info += " [SOS]";
+        if (ch.scope.length() > 0) info += " [scope:" + ch.scope + "]";
         addRow(prefix, info);
     }
 

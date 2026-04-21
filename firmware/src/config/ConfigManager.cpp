@@ -19,6 +19,7 @@ void ConfigManager::applyDefaults() {
     _config.radio.txPower         = defaults::RADIO_TX_POWER;
     _config.radio.codingRate      = defaults::RADIO_CODING_RATE;
     _config.radio.scope           = defaults::RADIO_SCOPE;
+    _config.radio.pathHashMode    = defaults::RADIO_PATH_HASH_MODE;
     _config.display.brightness    = defaults::DISPLAY_BRIGHTNESS;
     _config.display.autoDimSeconds = defaults::AUTO_DIM_SECONDS;
     _config.display.theme         = "dark";
@@ -85,6 +86,9 @@ bool ConfigManager::parseJson(const String& json) {
         if (_config.radio.codingRate < 5 || _config.radio.codingRate > 8)
             _config.radio.codingRate = defaults::RADIO_CODING_RATE;
         _config.radio.scope           = radio["scope"] | defaults::RADIO_SCOPE;
+        _config.radio.pathHashMode    = radio["path_hash_mode"] | defaults::RADIO_PATH_HASH_MODE;
+        if (_config.radio.pathHashMode > 2)
+            _config.radio.pathHashMode = defaults::RADIO_PATH_HASH_MODE;
     }
 
     // Identity
@@ -264,6 +268,9 @@ String ConfigManager::toJson() const {
     radio["coding_rate"]      = _config.radio.codingRate;
     if (_config.radio.scope != "*") {
         radio["scope"]        = _config.radio.scope;
+    }
+    if (_config.radio.pathHashMode != defaults::RADIO_PATH_HASH_MODE) {
+        radio["path_hash_mode"] = _config.radio.pathHashMode;
     }
 
     doc["identity"]["private_key"] = _config.privateKey;

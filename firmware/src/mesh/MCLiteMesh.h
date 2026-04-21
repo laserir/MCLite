@@ -143,6 +143,7 @@ private:
     bool _ready = false;
     float _frequency = 0.0f;  // Configured radio frequency (MHz)
     TransportKey _globalScope;  // Derived from RadioConfig::scope at begin()
+    uint8_t _pathHashSize = 1;  // 1/2/3 bytes per hop — wire value passed to sendFlood()
     void sendWithScope(const TransportKey& scope, mesh::Packet* pkt, uint32_t delay_millis);
 
     // Callbacks

@@ -20,6 +20,7 @@ constexpr float    RADIO_BANDWIDTH       = 62.5f;
 constexpr int8_t   RADIO_TX_POWER        = 22;
 constexpr uint8_t  RADIO_CODING_RATE     = 8;
 constexpr const char* RADIO_SCOPE        = "*";  // No transport codes (wildcard)
+constexpr uint8_t  RADIO_PATH_HASH_MODE  = 0;    // 0=1B/hop (legacy), 1=2B/hop, 2=3B/hop
 
 // Display
 constexpr uint8_t  DISPLAY_BRIGHTNESS    = 180;

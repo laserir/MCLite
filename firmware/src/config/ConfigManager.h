@@ -35,6 +35,7 @@ struct RadioConfig {
     int8_t  txPower         = 22;
     uint8_t codingRate      = 8;
     String  scope           = "*";  // Region scope ("*" = no transport codes, "#name" = region)
+    uint8_t pathHashMode    = 0;    // 0/1/2 → 1/2/3 bytes per repeater hash in path
 };
 
 struct DisplayConfig {
