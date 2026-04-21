@@ -97,5 +97,13 @@
     "canned_5": "En route",
     "canned_6": "Attends",
     "canned_7": "Besoin d'aide",
-    "canned_8": "Tout est bon"
+    "canned_8": "Tout est bon",
+
+    "offgrid_off": "INACTIF",
+    "offgrid_on": "ACTIF",
+    "offgrid_confirm_on_title": "Activer le mode hors-grille?",
+    "offgrid_confirm_on_body": "Basculer sur %d MHz et relayer les paquets des autres noeuds hors-grille. L'appareil va redemarrer.",
+    "offgrid_confirm_off_title": "Desactiver le mode hors-grille?",
+    "offgrid_confirm_off_body": "Retour a la frequence normale (%.3f MHz). L'appareil va redemarrer.",
+    "reboot_now": "Redemarrer maintenant"
 }

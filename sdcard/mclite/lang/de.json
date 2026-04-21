@@ -97,5 +97,13 @@
     "canned_5": "Unterwegs",
     "canned_6": "Warte",
     "canned_7": "Brauche Hilfe",
-    "canned_8": "Alles klar"
+    "canned_8": "Alles klar",
+
+    "offgrid_off": "AUS",
+    "offgrid_on": "AN",
+    "offgrid_confirm_on_title": "Offgrid aktivieren?",
+    "offgrid_confirm_on_body": "Auf %d MHz wechseln und Pakete fuer andere Offgrid-Knoten weiterleiten. Geraet startet neu.",
+    "offgrid_confirm_off_title": "Offgrid deaktivieren?",
+    "offgrid_confirm_off_body": "Zurueck zur normalen Frequenz (%.3f MHz). Geraet startet neu.",
+    "reboot_now": "Jetzt neu starten"
 }

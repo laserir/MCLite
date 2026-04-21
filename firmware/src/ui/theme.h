@@ -31,6 +31,7 @@ constexpr lv_color_t ONLINE_DOT      = LV_COLOR_MAKE(0x00, 0xCC, 0x66);  // Gree
 constexpr lv_color_t BATTERY_LOW     = LV_COLOR_MAKE(0xFF, 0x44, 0x44);  // Red
 constexpr lv_color_t BATTERY_OK      = LV_COLOR_MAKE(0x00, 0xCC, 0x66);  // Green
 constexpr lv_color_t GPS_LAST_KNOWN  = LV_COLOR_MAKE(0xFF, 0xAA, 0x00);  // Amber/yellow
+constexpr lv_color_t OFFGRID_ACCENT  = LV_COLOR_MAKE(0xFF, 0x8C, 0x00);  // Warm orange (offgrid mode indicator)
 
 // Spacing
 constexpr int PAD_SMALL   = 4;

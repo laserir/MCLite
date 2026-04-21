@@ -36,8 +36,13 @@ bool MeshManager::initRadio() {
         return false;
     }
 
-    // Apply user config radio parameters (std_init uses compile-time defaults)
-    radio.setFrequency(cfg.radio.frequency);
+    // Apply user config radio parameters (std_init uses compile-time defaults).
+    // Offgrid mode swaps to the closest community band (433/869/918); other radio
+    // params (SF/BW/CR/TX power) stay as configured so peers still interop with the
+    // user's normal-mesh settings when they share them.
+    float freq = cfg.radio.frequency;
+    if (cfg.offgrid.enabled) freq = MCLiteMesh::offgridFreqFor(cfg.radio.frequency);
+    radio.setFrequency(freq);
     radio.setSpreadingFactor(cfg.radio.spreadingFactor);
     radio.setBandwidth(cfg.radio.bandwidth);
     radio.setCodingRate(cfg.radio.codingRate);
@@ -126,7 +131,10 @@ bool MeshManager::init() {
     wireCallbacks();
 
     const auto& cfg = ConfigManager::instance().config();
-    _mesh->setFrequency(cfg.radio.frequency);
+    float activeFreq = cfg.offgrid.enabled
+        ? MCLiteMesh::offgridFreqFor(cfg.radio.frequency)
+        : cfg.radio.frequency;
+    _mesh->setFrequency(activeFreq);
 
     if (!_mesh->begin(cfg.deviceName.c_str())) {
         Serial.println("[Mesh] Mesh begin failed");

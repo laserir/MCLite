@@ -4,6 +4,7 @@
 #include "../config/ConfigManager.h"
 #include "../hal/Battery.h"
 #include "../hal/GPS.h"
+#include "../util/offgrid.h"
 #include <helpers/ArduinoHelpers.h>
 #include <helpers/ESP32Board.h>
 #include <helpers/radiolib/CustomSX1262Wrapper.h>
@@ -51,8 +52,16 @@ MCLiteMesh::~MCLiteMesh() {
     // Intentionally leak — these objects live for the entire program
 }
 
+float MCLiteMesh::offgridFreqFor(float f) {
+    return mclite::offgridFreqFor(f);
+}
+
 bool MCLiteMesh::begin(const char* deviceName) {
     const auto& cfg = ConfigManager::instance().config();
+    _offgridEnabled = cfg.offgrid.enabled;
+    if (_offgridEnabled) {
+        Serial.printf("[MCLiteMesh] OFFGRID mode active — forwarding packets on %.3f MHz\n", _frequency);
+    }
 
     // 1. Load or generate identity
     if (cfg.privateKey.length() > 0 && cfg.publicKey.length() > 0) {

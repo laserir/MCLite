@@ -71,6 +71,10 @@ struct SecurityConfig {
     bool   adminEnabled = true;
 };
 
+struct OffgridConfig {
+    bool enabled = false;  // When true, forward packets + switch to closest offgrid freq (433/869/918)
+};
+
 struct AppConfig {
     String          deviceName;
     String          language;    // "" = English, "de" = German, etc.
@@ -90,6 +94,7 @@ struct AppConfig {
     uint16_t        gpsLastKnownMaxAge = 1800;  // Seconds before last-known expires
     BatteryConfig   battery;
     SecurityConfig  security;
+    OffgridConfig   offgrid;
 };
 
 class ConfigManager {

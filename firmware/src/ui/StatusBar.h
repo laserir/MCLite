@@ -15,12 +15,13 @@ public:
     lv_obj_t* obj() { return _bar; }
 
 private:
-    lv_obj_t* _bar       = nullptr;
-    lv_obj_t* _lblName   = nullptr;
-    lv_obj_t* _soundIcon = nullptr;
-    lv_obj_t* _lblBatt   = nullptr;
-    lv_obj_t* _lblTime   = nullptr;
-    lv_obj_t* _gpsIcon   = nullptr;
+    lv_obj_t* _bar        = nullptr;
+    lv_obj_t* _lblOffgrid = nullptr;
+    lv_obj_t* _lblName    = nullptr;
+    lv_obj_t* _soundIcon  = nullptr;
+    lv_obj_t* _lblBatt    = nullptr;
+    lv_obj_t* _lblTime    = nullptr;
+    lv_obj_t* _gpsIcon    = nullptr;
 
     static void soundClickCb(lv_event_t* e);
 };

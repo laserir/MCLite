@@ -99,6 +99,15 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"licenses_toggle",     "3rd-party licenses"},
     {"admin_footer",        "Edit config.json on SD card to change settings"},
 
+    // Offgrid mode (tap-to-toggle on admin screen)
+    {"offgrid_off",              "OFF"},
+    {"offgrid_on",               "ON"},
+    {"offgrid_confirm_on_title", "Enable offgrid mode?"},
+    {"offgrid_confirm_on_body",  "Switch to %d MHz and relay packets for other offgrid nodes. Device will reboot."},
+    {"offgrid_confirm_off_title","Disable offgrid mode?"},
+    {"offgrid_confirm_off_body", "Return to normal frequency (%.3f MHz). Device will reboot."},
+    {"reboot_now",               "Reboot now"},
+
     // Telemetry
     {"telem_title",         "Contact Info"},
     {"telem_battery",       "Battery: %.2fV (~%d%%)"},

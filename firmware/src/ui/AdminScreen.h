@@ -18,6 +18,7 @@ private:
     lv_obj_t* _screen = nullptr;
     lv_obj_t* _closeBtn = nullptr;
     static void closeBtnCb(lv_event_t* e);
+    static void offgridToggleCb(lv_event_t* e);
 };
 
 }  // namespace mclite

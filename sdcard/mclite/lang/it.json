@@ -97,5 +97,13 @@
     "canned_5": "In arrivo",
     "canned_6": "Aspetta",
     "canned_7": "Ho bisogno di aiuto",
-    "canned_8": "Tutto bene"
+    "canned_8": "Tutto bene",
+
+    "offgrid_off": "OFF",
+    "offgrid_on": "ON",
+    "offgrid_confirm_on_title": "Attivare modalita offgrid?",
+    "offgrid_confirm_on_body": "Passa a %d MHz e inoltra pacchetti per altri nodi offgrid. Il dispositivo si riavvia.",
+    "offgrid_confirm_off_title": "Disattivare modalita offgrid?",
+    "offgrid_confirm_off_body": "Ritorno alla frequenza normale (%.3f MHz). Il dispositivo si riavvia.",
+    "reboot_now": "Riavvia ora"
 }

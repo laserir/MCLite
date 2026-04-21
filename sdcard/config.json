@@ -71,5 +71,8 @@
     "pin_code": "",
     "auto_lock": "key",
     "admin_enabled": true
+  },
+  "offgrid": {
+    "enabled": false
   }
 }

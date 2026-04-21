@@ -33,6 +33,7 @@ Most features below are optional. The primary goal is to keep things extremely s
 - **Screen lock** -- hold the trackball for 1 second to lock. Key lock (`"lock": "key"`) blocks all input and unlocks with another 1s hold. PIN lock (`"lock": "pin"`) requires a code to unlock. Optional auto-lock on display dim
 - **Region scope** -- tag outgoing packets with MeshCore transport codes so repeaters can filter by region. Set a global scope or override per channel
 - **Path hash mode** -- configurable repeater path fingerprint size (1/2/3 bytes per hop). Larger sizes reduce path collisions in dense meshes at the cost of a few extra bytes per hop. Defaults to 1 byte for compatibility with pre-v1.15 peers
+- **Offgrid mode** -- one-flag toggle that switches to the community offgrid frequency (433/869/918 MHz, auto-picked from your normal frequency) and relays packets for other offgrid nodes. Camping / hiking / SAR scenarios where no repeaters exist. Toggle on-device from the admin screen or via config tool, reboot to apply. While offgrid, only other offgrid peers receive your messages, SOS, and battery alerts.
 - **Zero-config for end users** -- all settings live in one JSON file on the SD card. Set it up once, copy to every device in your group
 
 ## Getting Started

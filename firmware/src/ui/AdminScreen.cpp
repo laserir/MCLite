@@ -1,4 +1,5 @@
 #include "AdminScreen.h"
+#include <Arduino.h>
 #include "UIManager.h"
 #include "theme.h"
 #include "../config/ConfigManager.h"
@@ -11,6 +12,7 @@
 #include "../config/defaults.h"
 #include "../i18n/I18n.h"
 #include "../util/TimeHelper.h"
+#include "../util/offgrid.h"
 
 namespace mclite {
 
@@ -116,7 +118,17 @@ void AdminScreen::show() {
 
     // --- Radio ---
     addSection(t("sec_radio"));
-    addRow("Frequency", String(cfg.radio.frequency, 3) + " MHz");
+    {
+        // Show the active frequency: in offgrid mode this is the derived band,
+        // with "(offgrid)" marker so users see 869.000 (offgrid) vs 869.618 at a glance.
+        float activeFreq = cfg.radio.frequency;
+        String freqSuffix = " MHz";
+        if (cfg.offgrid.enabled) {
+            activeFreq = mclite::offgridFreqFor(cfg.radio.frequency);
+            freqSuffix += " (offgrid)";
+        }
+        addRow("Frequency", String(activeFreq, 3) + freqSuffix);
+    }
     addRow("SF / BW", String(cfg.radio.spreadingFactor) + " / " + String(cfg.radio.bandwidth, 1));
     addRow("Coding Rate", String(cfg.radio.codingRate));
     addRow("TX Power", String(cfg.radio.txPower) + " dBm");
@@ -127,6 +139,43 @@ void AdminScreen::show() {
         addRow("Path Hash", phBuf);
     }
     addRow("Status", MeshManager::instance().isRadioReady() ? t("ready") : t("error"));
+
+    // Offgrid toggle — clickable row with tinted OFFGRID_ACCENT bg.
+    // Tint depth signals state (subtle when OFF, stronger when ON); distinct
+    // from the BG_SECONDARY info rows so the row reads as interactive.
+    {
+        lv_obj_t* row = lv_obj_create(_screen);
+        lv_obj_set_size(row, 300, LV_SIZE_CONTENT);
+        lv_obj_set_style_bg_color(row, theme::OFFGRID_ACCENT, 0);
+        lv_obj_set_style_bg_opa(row, cfg.offgrid.enabled ? LV_OPA_50 : LV_OPA_20, 0);
+        lv_obj_set_style_border_width(row, 0, 0);
+        lv_obj_set_style_radius(row, 4, 0);
+        lv_obj_set_style_pad_all(row, theme::PAD_SMALL, 0);
+        lv_obj_clear_flag(row, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(row, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
+
+        lv_obj_t* lbl = lv_label_create(row);
+        lv_obj_set_style_text_font(lbl, FONT_SMALL, 0);
+        lv_obj_set_style_text_color(lbl, theme::TEXT_PRIMARY, 0);
+        lv_label_set_text(lbl, "Offgrid");
+
+        lv_obj_t* val = lv_label_create(row);
+        lv_obj_set_style_text_font(val, FONT_SMALL, 0);
+        lv_obj_set_style_text_color(val, theme::TEXT_PRIMARY, 0);
+        if (cfg.offgrid.enabled) {
+            char buf[24];
+            snprintf(buf, sizeof(buf), "%s (%d MHz)",
+                     t("offgrid_on"),
+                     (int)mclite::offgridFreqFor(cfg.radio.frequency));
+            lv_label_set_text(val, buf);
+        } else {
+            lv_label_set_text(val, t("offgrid_off"));
+        }
+
+        lv_obj_add_event_cb(row, offgridToggleCb, LV_EVENT_CLICKED, nullptr);
+    }
 
     // Channel utilization (TX duty cycle over last hour)
     if (MeshManager::instance().isRadioReady()) {
@@ -369,6 +418,58 @@ void AdminScreen::show() {
 
 void AdminScreen::closeBtnCb(lv_event_t* e) {
     UIManager::instance().goHome();
+}
+
+void AdminScreen::offgridToggleCb(lv_event_t* e) {
+    // Build the confirm-dialog text with the current derived freq.
+    const auto& cfg = ConfigManager::instance().config();
+    bool enabling = !cfg.offgrid.enabled;
+
+    float og = mclite::offgridFreqFor(cfg.radio.frequency);
+
+    static char bodyBuf[192];
+    if (enabling) {
+        snprintf(bodyBuf, sizeof(bodyBuf), t("offgrid_confirm_on_body"), (int)og);
+    } else {
+        snprintf(bodyBuf, sizeof(bodyBuf), t("offgrid_confirm_off_body"), cfg.radio.frequency);
+    }
+
+    static const char* btns[3];
+    btns[0] = t("btn_cancel");
+    btns[1] = t("reboot_now");
+    btns[2] = "";
+
+    const char* title = enabling ? t("offgrid_confirm_on_title") : t("offgrid_confirm_off_title");
+
+    lv_obj_t* msgbox = lv_msgbox_create(NULL, title, bodyBuf, btns, false);
+    lv_obj_center(msgbox);
+    lv_obj_set_style_bg_color(msgbox, theme::BG_SECONDARY, 0);
+    lv_obj_set_style_text_color(msgbox, theme::TEXT_PRIMARY, 0);
+    lv_obj_set_style_text_font(msgbox, FONT_NORMAL, 0);
+
+    lv_obj_t* btnm = lv_msgbox_get_btns(msgbox);
+    if (btnm) UIManager::instance().switchToModalGroup(btnm);
+
+    lv_obj_add_event_cb(msgbox, [](lv_event_t* ev) {
+        lv_obj_t* mbox = lv_event_get_current_target(ev);
+        uint16_t btnIdx = lv_msgbox_get_active_btn(mbox);
+        if (btnIdx == LV_BTNMATRIX_BTN_NONE) return;
+
+        if (btnIdx == 1) {
+            // "Reboot now" — flip the flag, persist, restart.
+            auto& mgr = ConfigManager::instance();
+            mgr.config().offgrid.enabled = !mgr.config().offgrid.enabled;
+            mgr.save();
+            UIManager::instance().restoreFromModalGroup();
+            lv_msgbox_close(mbox);
+            delay(200);
+            ESP.restart();
+            return;
+        }
+
+        UIManager::instance().restoreFromModalGroup();
+        lv_msgbox_close(mbox);
+    }, LV_EVENT_VALUE_CHANGED, NULL);
 }
 
 void AdminScreen::hide() {

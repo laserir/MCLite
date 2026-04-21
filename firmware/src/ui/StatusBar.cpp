@@ -22,10 +22,20 @@ void StatusBar::create(lv_obj_t* parent) {
     lv_obj_set_flex_align(_bar, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(_bar, theme::PAD_SMALL, 0);
 
-    // Device name (left, takes remaining space)
+    // OFFGRID indicator — created FIRST so flex order places it leftmost.
+    // Hidden by default; update() toggles visibility from cfg.offgrid.enabled.
+    _lblOffgrid = lv_label_create(_bar);
+    lv_label_set_text(_lblOffgrid, "OFFGRID");
+    lv_obj_set_style_text_font(_lblOffgrid, FONT_SMALL, 0);
+    lv_obj_set_style_text_color(_lblOffgrid, theme::OFFGRID_ACCENT, 0);
+    lv_obj_add_flag(_lblOffgrid, LV_OBJ_FLAG_HIDDEN);
+
+    // Device name (left, takes remaining space). LONG_DOT so long names truncate
+    // instead of wrapping when the OFFGRID label shares the left side.
     _lblName = lv_label_create(_bar);
     lv_obj_set_style_text_font(_lblName, FONT_SMALL, 0);
     lv_obj_set_style_text_color(_lblName, theme::TEXT_PRIMARY, 0);
+    lv_label_set_long_mode(_lblName, LV_LABEL_LONG_DOT);
     lv_obj_set_flex_grow(_lblName, 1);
 
     const auto& cfg = ConfigManager::instance().config();
@@ -75,6 +85,12 @@ void StatusBar::updateSoundIcon() {
 
 void StatusBar::update() {
     const auto& cfg = ConfigManager::instance().config();
+
+    // OFFGRID indicator — show whenever offgrid mode is active on this boot
+    if (_lblOffgrid) {
+        if (cfg.offgrid.enabled) lv_obj_clear_flag(_lblOffgrid, LV_OBJ_FLAG_HIDDEN);
+        else                     lv_obj_add_flag(_lblOffgrid, LV_OBJ_FLAG_HIDDEN);
+    }
 
     // Device name (may change after first-boot generation)
     lv_label_set_text(_lblName, cfg.deviceName.c_str());

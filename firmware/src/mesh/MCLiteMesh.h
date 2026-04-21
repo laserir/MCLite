@@ -93,6 +93,10 @@ public:
     // Set configured frequency (must be called before begin())
     void setFrequency(float freq) { _frequency = freq; }
 
+    // Map a normal-mesh frequency to its closest offgrid whitelist band (433/869/918).
+    // Deterministic so the offgrid network is always interoperable.
+    static float offgridFreqFor(float normalFreq);
+
 protected:
     // ---- Required BaseChatMesh overrides ----
 
@@ -135,6 +139,10 @@ protected:
     // ---- Optional overrides ----
     bool shouldAutoAddContactType(uint8_t type) const override { return false; }  // MCLite uses config-defined contacts only
 
+    // Offgrid / client-repeat: forward packets for other nodes when enabled.
+    // Base-class dedup via _tables->hasSeen() prevents loops at every forward site.
+    bool allowPacketForward(const mesh::Packet* packet) override { return _offgridEnabled; }
+
     // Airtime budget: EU 868-870 MHz → 9.0 (10% duty cycle, ETSI G3),
     //                 otherwise       → 2.0 (33% duty cycle, MeshCore default)
     float getAirtimeBudgetFactor() const override;
@@ -142,6 +150,7 @@ protected:
 private:
     bool _ready = false;
     float _frequency = 0.0f;  // Configured radio frequency (MHz)
+    bool _offgridEnabled = false;  // Mirror of config.offgrid.enabled, read at begin()
     TransportKey _globalScope;  // Derived from RadioConfig::scope at begin()
     uint8_t _pathHashSize = 1;  // 1/2/3 bytes per hop — wire value passed to sendFlood()
     void sendWithScope(const TransportKey& scope, mesh::Packet* pkt, uint32_t delay_millis);

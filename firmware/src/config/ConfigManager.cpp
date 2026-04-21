@@ -244,6 +244,9 @@ bool ConfigManager::parseJson(const String& json) {
         // else: field missing, not pin — keep default (AUTO_LOCK = "key")
     }
 
+    // Offgrid — missing block defaults to enabled=false (backwards compat)
+    _config.offgrid.enabled = doc["offgrid"]["enabled"] | false;
+
     Serial.printf("[Config] Loaded: device=%s, contacts=%d, channels=%d\n",
                   _config.deviceName.c_str(),
                   _config.contacts.size(),
@@ -343,6 +346,8 @@ String ConfigManager::toJson() const {
     doc["security"]["pin_code"]      = _config.security.pinCode;
     doc["security"]["auto_lock"]     = _config.security.autoLock;
     doc["security"]["admin_enabled"] = _config.security.adminEnabled;
+
+    doc["offgrid"]["enabled"] = _config.offgrid.enabled;
 
     String output;
     serializeJsonPretty(doc, output);
