@@ -8,7 +8,9 @@
     "spreading_factor": 8,
     "bandwidth": 62.5,
     "tx_power": 22,
-    "coding_rate": 8
+    "coding_rate": 8,
+    "scope": "*",
+    "path_hash_mode": 0
   },
   "identity": {
     "private_key": "",
@@ -29,7 +31,8 @@
       "type": "hashtag",
       "index": 1,
       "allow_sos": true,
-      "send_sos": true
+      "send_sos": true,
+      "scope": ""
     }
   ],
   "display": {
