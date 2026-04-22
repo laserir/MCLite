@@ -618,6 +618,15 @@ h1 {
       </select>
       <div class="hint">Bytes per repeater fingerprint in packet path. Larger = fewer collisions in dense meshes, but more airtime per hop. Keep at 0 for compatibility with v1.10 and earlier peers.</div>
     </div>
+    <div class="field">
+      <label>Offgrid Mode</label>
+      <select id="offgridEnabled">
+        <option value="false" selected>Off</option>
+        <option value="true">On</option>
+      </select>
+      <div class="hint">When on, the device joins the offgrid community frequency (auto-selected from 433 / 869 / 918 MHz based on your normal frequency) and relays packets for other offgrid nodes. Use for camping, SAR, or any situation with no repeater infrastructure. SF / BW / coding rate / TX power stay as configured. Reboot to apply. You can also toggle this on-device from the admin screen.</div>
+      <div class="hint" id="offgridDerivedFreq" style="margin-top:6px; font-weight:500;">Derived offgrid freq: &mdash;</div>
+    </div>
   </div>
 
   <!-- Contacts -->
@@ -913,19 +922,6 @@ h1 {
     </div>
   </div>
 
-  <!-- Offgrid Mode -->
-  <div class="section hidden" data-mode="advanced">
-    <div class="section-title">Offgrid Mode</div>
-    <div class="field">
-      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-        <input type="checkbox" id="offgridEnabled">
-        <span>Enable offgrid mode (forward packets, switch to community frequency)</span>
-      </label>
-      <div class="hint">When enabled, the device joins the offgrid community frequency (auto-selected from 433 / 869 / 918 MHz based on your normal frequency) and relays packets for other offgrid nodes. Use for camping, SAR, or any situation with no repeater infrastructure. SF / BW / coding rate / TX power stay as configured. Reboot to apply. You can also toggle this on-device from the admin screen.</div>
-      <div class="hint" id="offgridDerivedFreq" style="margin-top:6px; font-weight:500;">Derived offgrid freq: &mdash;</div>
-    </div>
-  </div>
-
   <div style="text-align:center; padding:16px 0;">
     <button class="btn btn-green" id="exportBtnBottom" onclick="doExport()" style="font-size:1rem; padding:12px 32px;">
       Export config.json
@@ -1115,6 +1111,7 @@ function applyPreset() {
   document.getElementById('radioCR').value = p.cr;
   document.getElementById('radioTX').value = p.tx;
   label.textContent = p.label;
+  updateOffgridDerivedFreq();
 }
 
 // Detect if current radio values match a preset
@@ -1714,7 +1711,7 @@ function buildConfig() {
       admin_enabled: document.getElementById('adminEnabled').value === 'true'
     },
     offgrid: {
-      enabled: document.getElementById('offgridEnabled').checked
+      enabled: document.getElementById('offgridEnabled').value === 'true'
     }
   };
   return cfg;
@@ -1875,7 +1872,7 @@ function loadConfig(cfg) {
     else document.getElementById('autoLock').value = 'none';
   }
   document.getElementById('adminEnabled').value = String(cfg.security?.admin_enabled ?? true);
-  document.getElementById('offgridEnabled').checked = !!(cfg.offgrid?.enabled);
+  document.getElementById('offgridEnabled').value = cfg.offgrid?.enabled ? 'true' : 'false';
   updateOffgridDerivedFreq();
   toggleLockFields();
 
