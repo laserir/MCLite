@@ -40,7 +40,7 @@
     "time_h": "%dh",
     "time_d": "%dd",
 
-    "admin_title": "Geraeteinfo (nur lesen)",
+    "admin_title": "Geraeteinfo",
     "sec_device": "Geraet",
     "sec_radio": "Funk",
     "sec_contacts": "Kontakte (%d)",

@@ -40,7 +40,7 @@
     "time_h": "%dh",
     "time_d": "%dg",
 
-    "admin_title": "Info dispositivo (sola lettura)",
+    "admin_title": "Info dispositivo",
     "sec_device": "Dispositivo",
     "sec_radio": "Radio",
     "sec_contacts": "Contatti (%d)",

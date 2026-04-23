@@ -107,42 +107,9 @@ void AdminScreen::show() {
         lv_label_set_text(lbl, title);
     };
 
-    // --- Device ---
-    addSection(t("sec_device"));
-    addRow("Firmware", String("MCLite v") + defaults::FIRMWARE_VERSION);
-    addRow("Built", String(__DATE__) + " " + __TIME__);
-    addRow("Device Name", cfg.deviceName);
-    if (cfg.publicKey.length() > 0) {
-        addRow("Public Key", cfg.publicKey.substring(0, 16) + "...");
-    }
-
-    // --- Radio ---
-    addSection(t("sec_radio"));
-    {
-        // Show the active frequency: in offgrid mode this is the derived band,
-        // with "(offgrid)" marker so users see 869.000 (offgrid) vs 869.618 at a glance.
-        float activeFreq = cfg.radio.frequency;
-        String freqSuffix = " MHz";
-        if (cfg.offgrid.enabled) {
-            activeFreq = mclite::offgridFreqFor(cfg.radio.frequency);
-            freqSuffix += " (offgrid)";
-        }
-        addRow("Frequency", String(activeFreq, 3) + freqSuffix);
-    }
-    addRow("SF / BW", String(cfg.radio.spreadingFactor) + " / " + String(cfg.radio.bandwidth, 1));
-    addRow("Coding Rate", String(cfg.radio.codingRate));
-    addRow("TX Power", String(cfg.radio.txPower) + " dBm");
-    addRow("Scope", cfg.radio.scope);
-    {
-        char phBuf[16];
-        snprintf(phBuf, sizeof(phBuf), "%u B/hop", (unsigned)(cfg.radio.pathHashMode + 1));
-        addRow("Path Hash", phBuf);
-    }
-    addRow("Status", MeshManager::instance().isRadioReady() ? t("ready") : t("error"));
-
-    // Offgrid toggle — clickable row with tinted OFFGRID_ACCENT bg.
-    // Tint depth signals state (subtle when OFF, stronger when ON); distinct
-    // from the BG_SECONDARY info rows so the row reads as interactive.
+    // Offgrid toggle — promoted above all sections as the only interactive control.
+    // Clickable row with tinted OFFGRID_ACCENT bg; tint depth signals state
+    // (subtle when OFF, stronger when ON), distinct from BG_SECONDARY info rows.
     {
         lv_obj_t* row = lv_obj_create(_screen);
         lv_obj_set_size(row, 300, LV_SIZE_CONTENT);
@@ -176,6 +143,39 @@ void AdminScreen::show() {
 
         lv_obj_add_event_cb(row, offgridToggleCb, LV_EVENT_CLICKED, nullptr);
     }
+
+    // --- Device ---
+    addSection(t("sec_device"));
+    addRow("Firmware", String("MCLite v") + defaults::FIRMWARE_VERSION);
+    addRow("Built", String(__DATE__) + " " + __TIME__);
+    addRow("Device Name", cfg.deviceName);
+    if (cfg.publicKey.length() > 0) {
+        addRow("Public Key", cfg.publicKey.substring(0, 16) + "...");
+    }
+
+    // --- Radio ---
+    addSection(t("sec_radio"));
+    {
+        // Show the active frequency: in offgrid mode this is the derived band,
+        // with "(offgrid)" marker so users see 869.000 (offgrid) vs 869.618 at a glance.
+        float activeFreq = cfg.radio.frequency;
+        String freqSuffix = " MHz";
+        if (cfg.offgrid.enabled) {
+            activeFreq = mclite::offgridFreqFor(cfg.radio.frequency);
+            freqSuffix += " (offgrid)";
+        }
+        addRow("Frequency", String(activeFreq, 3) + freqSuffix);
+    }
+    addRow("SF / BW", String(cfg.radio.spreadingFactor) + " / " + String(cfg.radio.bandwidth, 1));
+    addRow("Coding Rate", String(cfg.radio.codingRate));
+    addRow("TX Power", String(cfg.radio.txPower) + " dBm");
+    addRow("Scope", cfg.radio.scope);
+    {
+        char phBuf[16];
+        snprintf(phBuf, sizeof(phBuf), "%u B/hop", (unsigned)(cfg.radio.pathHashMode + 1));
+        addRow("Path Hash", phBuf);
+    }
+    addRow("Status", MeshManager::instance().isRadioReady() ? t("ready") : t("error"));
 
     // Channel utilization (TX duty cycle over last hour)
     if (MeshManager::instance().isRadioReady()) {

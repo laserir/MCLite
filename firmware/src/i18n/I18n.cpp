@@ -64,7 +64,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"time_d",              "%dd"},
 
     // Admin screen
-    {"admin_title",         "Device Info (read-only)"},
+    {"admin_title",         "Device Info"},
     {"sec_device",          "Device"},
     {"sec_radio",           "Radio"},
     {"sec_contacts",        "Contacts (%d)"},
