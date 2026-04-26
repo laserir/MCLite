@@ -129,6 +129,49 @@ h1 {
   color: var(--text3);
   margin-top: 2px;
 }
+.field label .info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 6px;
+  border-radius: 50%;
+  border: 1px solid var(--text3);
+  color: var(--text3);
+  background: transparent;
+  font-size: 0.65rem;
+  font-style: italic;
+  font-family: Georgia, serif;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: color 0.15s, border-color 0.15s;
+  padding: 0;
+}
+.field label .info-icon:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.field.hint-revealed label .info-icon,
+body.show-hints .field label .info-icon {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.hint.collapsible { display: none; }
+body.show-hints .hint.collapsible,
+.field.hint-revealed .hint.collapsible { display: block; }
+.hints-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text2);
+  cursor: pointer;
+  user-select: none;
+}
+.hints-toggle input { margin: 0; cursor: pointer; }
 .field .error {
   font-size: 0.72rem;
   color: var(--red);
@@ -504,15 +547,19 @@ h1 {
       <button id="btnBasicMode" class="active" onclick="setAdvancedMode(false)">Basic</button>
       <button id="btnAdvancedMode" onclick="setAdvancedMode(true)">Advanced</button>
     </div>
+    <label class="hints-toggle" title="Show explanatory hints for every field">
+      <input type="checkbox" id="hintsToggle" onchange="setShowHints(this.checked)">
+      Show hints
+    </label>
   </div>
 
   <!-- Device (single mode) -->
   <div class="section" id="singleDeviceSection">
     <div class="section-title">Device</div>
     <div class="field">
-      <label>Device Name</label>
+      <label>Device Name<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
       <input type="text" id="deviceName" value="MCLite" maxlength="20" placeholder="e.g. Alpha, Bravo">
-      <div class="hint">Max 20 characters. Shows in status bar and in channel messages.</div>
+      <div class="hint collapsible">Max 20 characters. Shows in status bar and in channel messages.</div>
     </div>
   </div>
 
@@ -604,27 +651,27 @@ h1 {
       </select>
     </div>
     <div class="field">
-      <label>Region Scope</label>
+      <label>Region Scope<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
       <input type="text" id="radioScope" value="*" maxlength="32"
              pattern="\*|#[a-z0-9\-]+" title="Enter * for no filtering, or #name for a region (e.g. #europe)">
-      <div class="hint">Transport code region for repeater filtering. <code>*</code> = no filtering, <code>#name</code> = hashtag region.</div>
+      <div class="hint collapsible">Transport code region for repeater filtering. <code>*</code> = no filtering, <code>#name</code> = hashtag region.</div>
     </div>
     <div class="field">
-      <label>Path Hash Mode</label>
+      <label>Path Hash Mode<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
       <select id="radioPathHashMode">
         <option value="0" selected>0 — 1 byte/hop (default, legacy)</option>
         <option value="1">1 — 2 bytes/hop</option>
         <option value="2">2 — 3 bytes/hop</option>
       </select>
-      <div class="hint">Bytes per repeater fingerprint in packet path. Larger = fewer collisions in dense meshes, but more airtime per hop. Keep at 0 for compatibility with v1.10 and earlier peers.</div>
+      <div class="hint collapsible">Bytes per repeater fingerprint in packet path. Larger = fewer collisions in dense meshes, but more airtime per hop. Keep at 0 for compatibility with v1.10 and earlier peers.</div>
     </div>
     <div class="field">
-      <label>Offgrid Mode</label>
+      <label>Offgrid Mode<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
       <select id="offgridEnabled">
         <option value="false" selected>Off</option>
         <option value="true">On</option>
       </select>
-      <div class="hint">When on, the device joins the offgrid community frequency (auto-selected from 433 / 869 / 918 MHz based on your normal frequency) and relays packets for other offgrid nodes. Use for camping, SAR, or any situation with no repeater infrastructure. SF / BW / coding rate / TX power stay as configured. Reboot to apply. You can also toggle this on-device from the admin screen.</div>
+      <div class="hint collapsible">When on, the device joins the offgrid community frequency (auto-selected from 433 / 869 / 918 MHz based on your normal frequency) and relays packets for other offgrid nodes. Use for camping, SAR, or any situation with no repeater infrastructure. SF / BW / coding rate / TX power stay as configured. Reboot to apply. You can also toggle this on-device from the admin screen.</div>
       <div class="hint" id="offgridDerivedFreq" style="margin-top:6px; font-weight:500;">Derived offgrid freq: &mdash;</div>
     </div>
   </div>
@@ -666,20 +713,20 @@ h1 {
         <div class="error">0–3600</div>
       </div>
       <div class="field">
-        <label>Dim Brightness (0–255)</label>
+        <label>Dim Brightness (0–255)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <input type="number" id="dispDimBrightness" value="20" min="0" max="255">
         <div class="error">0–255</div>
-        <div class="hint">Set to 0 to turn screen off completely when inactive.</div>
+        <div class="hint collapsible">Set to 0 to turn screen off completely when inactive.</div>
       </div>
     </div>
     <div class="row">
       <div class="field">
-        <label>Keyboard Backlight</label>
+        <label>Keyboard Backlight<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="kbdBacklight">
           <option value="true" selected>On</option>
           <option value="false">Off</option>
         </select>
-        <div class="hint">Turn keyboard backlight on/off with auto-dim.</div>
+        <div class="hint collapsible">Turn keyboard backlight on/off with auto-dim.</div>
       </div>
       <div class="field">
         <label>Kbd Brightness (1–255)</label>
@@ -688,14 +735,14 @@ h1 {
       </div>
     </div>
     <div class="field">
-      <label>Boot Text (optional)</label>
+      <label>Boot Text (optional)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
       <input type="text" id="dispBootText" value="" maxlength="32" placeholder="e.g. Team Alpha">
-      <div class="hint">Shown on boot screen below version number. Max 32 characters.</div>
+      <div class="hint collapsible">Shown on boot screen below version number. Max 32 characters.</div>
     </div>
     <div class="field">
-      <label>Language</label>
+      <label>Language<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
       <input type="text" id="language" value="" maxlength="5" placeholder="e.g. de, fr, es">
-      <div class="hint">Leave empty for English. Translation files (de, fr, it) are included in the export ZIP.</div>
+      <div class="hint collapsible">Leave empty for English. Translation files (de, fr, it) are included in the export ZIP.</div>
     </div>
   </div>
 
@@ -721,34 +768,34 @@ h1 {
         <div class="error">1–5</div>
       </div>
       <div class="field">
-        <label>Quick Replies</label>
+        <label>Quick Replies<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="cannedMessages">
           <option value="false" selected>Off</option>
           <option value="true">On</option>
         </select>
-        <div class="hint">Quick-reply picker in chat (OK, Copy, Need help, etc.).</div>
+        <div class="hint collapsible">Quick-reply picker in chat (OK, Copy, Need help, etc.).</div>
       </div>
     </div>
     <div class="divider"></div>
     <div style="font-size:0.85rem; font-weight:600; margin-bottom:8px;">Telemetry</div>
     <div class="row">
       <div class="field">
-        <label>Request Telemetry</label>
+        <label>Request Telemetry<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="msgTelemetry">
           <option value="true" selected>Yes</option>
           <option value="false">No</option>
         </select>
-        <div class="hint">Tap contact name in chat to see battery/location info.</div>
+        <div class="hint collapsible">Tap contact name in chat to see battery/location info.</div>
       </div>
       <div class="field">
-        <label>Show Telemetry Badges</label>
+        <label>Show Telemetry Badges<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="msgShowTelemetry">
           <option value="both" selected>Both (battery + location)</option>
           <option value="battery">Battery only</option>
           <option value="location">Location only</option>
           <option value="none">None</option>
         </select>
-        <div class="hint">Icons shown next to contacts on the conversation list.</div>
+        <div class="hint collapsible">Icons shown next to contacts on the conversation list.</div>
       </div>
     </div>
   </div>
@@ -765,17 +812,17 @@ h1 {
         </select>
       </div>
       <div class="field">
-        <label style="color:#888">Custom notification sound</label>
-        <div class="hint">Place <code>notification.wav</code> on SD root. Format: 16-bit PCM WAV, mono or stereo, max 3 seconds.</div>
+        <label style="color:#888">Custom notification sound<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+        <div class="hint collapsible">Place <code>notification.wav</code> on SD root. Format: 16-bit PCM WAV, mono or stereo, max 3 seconds.</div>
       </div>
     </div>
     <div class="divider"></div>
     <div style="font-size:0.85rem; font-weight:600; margin-bottom:8px;">SOS Alert</div>
     <div class="row">
       <div class="field">
-        <label>SOS Keyword</label>
+        <label>SOS Keyword<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <input type="text" id="sosKeyword" value="SOS" maxlength="16" placeholder="e.g. SOS, HELP">
-        <div class="hint">Messages starting with this word trigger SOS alert (case-insensitive). Hold trackball 6s to send SOS to all contacts.</div>
+        <div class="hint collapsible">Messages starting with this word trigger SOS alert (case-insensitive). Hold trackball 6s to send SOS to all contacts.</div>
       </div>
       <div class="field">
         <label>SOS Sound Repeats</label>
@@ -784,8 +831,8 @@ h1 {
       </div>
     </div>
     <div class="field">
-      <label style="color:#888">Custom SOS sound</label>
-      <div class="hint">Place <code>sos.wav</code> on SD root. Format: 16-bit PCM WAV, mono or stereo. Falls back to built-in morse pattern.</div>
+      <label style="color:#888">Custom SOS sound<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+      <div class="hint collapsible">Place <code>sos.wav</code> on SD root. Format: 16-bit PCM WAV, mono or stereo. Falls back to built-in morse pattern.</div>
     </div>
   </div>
 
@@ -803,7 +850,7 @@ h1 {
     </div>
     <div class="row">
       <div class="field" style="flex:2">
-        <label>Timezone</label>
+        <label>Timezone<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="gpsTimezone">
           <option value="">Manual offset (no auto-DST)</option>
           <option value="UTC0">UTC</option>
@@ -834,28 +881,28 @@ h1 {
           <option value="NZST-12NZDT,M9.5.0,M4.1.0/3">New Zealand (NZST/NZDT)</option>
           <option value="SAST-2">South Africa (SAST, no DST)</option>
         </select>
-        <div class="hint">Auto-DST: set and forget</div>
+        <div class="hint collapsible">Auto-DST: set and forget</div>
       </div>
       <div class="field">
-        <label>UTC Offset (fallback)</label>
+        <label>UTC Offset (fallback)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <input type="number" id="gpsClockOffset" value="0" min="-12" max="14">
-        <div class="hint">Only used when no timezone selected</div>
+        <div class="hint collapsible">Only used when no timezone selected</div>
       </div>
     </div>
     <div class="row">
       <div class="field">
-        <label>Coordinate Format</label>
+        <label>Coordinate Format<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="gpsCoordFormat">
           <option value="decimal" selected>Decimal (lat, lon)</option>
           <option value="mgrs">MGRS only</option>
           <option value="both">Both (decimal + MGRS)</option>
         </select>
-        <div class="hint">MGRS (Military Grid Reference) is used by SAR and emergency services.</div>
+        <div class="hint collapsible">MGRS (Military Grid Reference) is used by SAR and emergency services.</div>
       </div>
       <div class="field">
-        <label>Last Known Max Age (seconds)</label>
+        <label>Last Known Max Age (seconds)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <input type="number" id="gpsLastKnownMaxAge" value="1800" min="60" max="7200">
-        <div class="hint">How long to keep last GPS fix (60-7200s). After this, position is discarded.</div>
+        <div class="hint collapsible">How long to keep last GPS fix (60-7200s). After this, position is discarded.</div>
         <div class="error">60–7200</div>
       </div>
     </div>
@@ -886,38 +933,38 @@ h1 {
     <div class="section-title">Security</div>
     <div class="row">
       <div class="field">
-        <label>Lock</label>
+        <label>Lock<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="lockMode" onchange="toggleLockFields()">
           <option value="none">None</option>
           <option value="key" selected>Key Lock</option>
           <option value="pin">PIN Lock</option>
         </select>
-        <div class="hint">Key Lock: hold trackball 1s to lock/unlock. PIN Lock: hold 1s to lock, enter PIN to unlock.</div>
+        <div class="hint collapsible">Key Lock: hold trackball 1s to lock/unlock. PIN Lock: hold 1s to lock, enter PIN to unlock.</div>
       </div>
       <div class="field" id="pinCodeField" style="display:none">
-        <label>PIN Code</label>
+        <label>PIN Code<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <input type="password" id="pinCode" value="" maxlength="8" placeholder="4-8 characters" pattern="[a-zA-Z0-9]*">
         <div class="error" id="pinError">PIN must be 4-8 alphanumeric characters</div>
-        <div class="hint">Letters and numbers, case-insensitive. Required on boot and after idle timeout.</div>
+        <div class="hint collapsible">Letters and numbers, case-insensitive. Required on boot and after idle timeout.</div>
       </div>
     </div>
     <div class="row" style="margin-top:8px">
       <div class="field">
-        <label>Auto Lock</label>
+        <label>Auto Lock<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="autoLock">
           <option value="none">None</option>
           <option value="key" selected>Key Lock</option>
           <option value="pin">PIN Lock</option>
         </select>
-        <div class="hint">Automatically lock when display dims. Falls back if selected lock type isn't available.</div>
+        <div class="hint collapsible">Automatically lock when display dims. Falls back if selected lock type isn't available.</div>
       </div>
       <div class="field">
-        <label>Admin Screen</label>
+        <label>Admin Screen<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="adminEnabled">
           <option value="true" selected>Enabled</option>
           <option value="false">Disabled</option>
         </select>
-        <div class="hint">Press 0 on home screen to view device info. Disable to hide admin access.</div>
+        <div class="hint collapsible">Press 0 on home screen to view device info. Disable to hide admin access.</div>
       </div>
     </div>
   </div>
@@ -1167,54 +1214,54 @@ function renderContacts() {
       </div>
       <div class="row" style="margin-top:8px">
         <div class="field">
-          <label>Allow Telemetry</label>
+          <label>Allow Telemetry<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
           <select onchange="contacts[${i}].allow_telemetry=(this.value==='true')">
             <option value="true" ${c.allow_telemetry !== false ? 'selected' : ''}>Yes</option>
             <option value="false" ${c.allow_telemetry === false ? 'selected' : ''}>No</option>
           </select>
-          <div class="hint">Base telemetry (required for location/environment)</div>
+          <div class="hint collapsible">Base telemetry (required for location/environment)</div>
         </div>
         <div class="field">
-          <label>Allow Location</label>
+          <label>Allow Location<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
           <select onchange="contacts[${i}].allow_location=(this.value==='true')">
             <option value="false" ${c.allow_location !== true ? 'selected' : ''}>No</option>
             <option value="true" ${c.allow_location === true ? 'selected' : ''}>Yes</option>
           </select>
-          <div class="hint">GPS position (requires telemetry)</div>
+          <div class="hint collapsible">GPS position (requires telemetry)</div>
         </div>
         <div class="field">
-          <label>Allow Environment</label>
+          <label>Allow Environment<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
           <select onchange="contacts[${i}].allow_environment=(this.value==='true')">
             <option value="false" ${c.allow_environment !== true ? 'selected' : ''}>No</option>
             <option value="true" ${c.allow_environment === true ? 'selected' : ''}>Yes</option>
           </select>
-          <div class="hint">Temp, humidity (requires telemetry)</div>
+          <div class="hint collapsible">Temp, humidity (requires telemetry)</div>
         </div>
       </div>
       <div class="row" style="margin-top:8px">
         <div class="field">
-          <label>Always Sound</label>
+          <label>Always Sound<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
           <select onchange="contacts[${i}].always_sound=(this.value==='true')">
             <option value="false" ${c.always_sound !== true ? 'selected' : ''}>No</option>
             <option value="true" ${c.always_sound === true ? 'selected' : ''}>Yes</option>
           </select>
-          <div class="hint">Play sound even when muted</div>
+          <div class="hint collapsible">Play sound even when muted</div>
         </div>
         <div class="field">
-          <label>Allow SOS</label>
+          <label>Allow SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
           <select onchange="contacts[${i}].allow_sos=(this.value==='true')">
             <option value="true" ${c.allow_sos !== false ? 'selected' : ''}>Yes</option>
             <option value="false" ${c.allow_sos === false ? 'selected' : ''}>No</option>
           </select>
-          <div class="hint">Trigger SOS alert from this contact</div>
+          <div class="hint collapsible">Trigger SOS alert from this contact</div>
         </div>
         <div class="field">
-          <label>Send SOS</label>
+          <label>Send SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
           <select onchange="contacts[${i}].send_sos=(this.value==='true')">
             <option value="true" ${c.send_sos !== false ? 'selected' : ''}>Yes</option>
             <option value="false" ${c.send_sos === false ? 'selected' : ''}>No</option>
           </select>
-          <div class="hint">Include in outgoing SOS broadcast</div>
+          <div class="hint collapsible">Include in outgoing SOS broadcast</div>
         </div>
       </div>
     </div>
@@ -1272,18 +1319,18 @@ function renderChannels() {
     if (isPublic) {
       pskSection = `
       <div class="field" style="margin-top:8px">
-        <label>Pre-Shared Key (hardcoded)</label>
+        <label>Pre-Shared Key (hardcoded)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <input type="text" value="${esc(ch.psk)}" readonly
                style="font-family:monospace; font-size:0.8rem; color:var(--text3);">
-        <div class="hint">Well-known MeshCore Public channel key. All devices use this same key.</div>
+        <div class="hint collapsible">Well-known MeshCore Public channel key. All devices use this same key.</div>
       </div>`;
     } else if (isHashtag) {
       pskSection = `
       <div class="field" style="margin-top:8px">
-        <label>Pre-Shared Key (derived from name)</label>
+        <label>Pre-Shared Key (derived from name)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <input type="text" value="${esc(ch.psk)}" readonly
                style="font-family:monospace; font-size:0.8rem; color:var(--text3);">
-        <div class="hint">Auto-derived via SHA256("${esc(ch.name)}"). Any MeshCore device with this channel name will compute the same key.</div>
+        <div class="hint collapsible">Auto-derived via SHA256("${esc(ch.name)}"). Any MeshCore device with this channel name will compute the same key.</div>
       </div>`;
     } else {
       pskSection = `
@@ -1316,37 +1363,37 @@ function renderChannels() {
       ${pskSection}
       <div class="row" style="margin-top:8px; gap:16px;">
         <div class="field">
-          <label>Allow SOS</label>
+          <label>Allow SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
           <select onchange="channels[${i}].allow_sos=(this.value==='true')">
             <option value="true" ${ch.allow_sos !== false ? 'selected' : ''}>Yes</option>
             <option value="false" ${ch.allow_sos === false ? 'selected' : ''}>No</option>
           </select>
-          <div class="hint">Trigger SOS alert from this channel</div>
+          <div class="hint collapsible">Trigger SOS alert from this channel</div>
         </div>
         <div class="field">
-          <label>Send SOS</label>
+          <label>Send SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
           <select onchange="channels[${i}].send_sos=(this.value==='true')">
             <option value="true" ${ch.send_sos !== false ? 'selected' : ''}>Yes</option>
             <option value="false" ${ch.send_sos === false ? 'selected' : ''}>No</option>
           </select>
-          <div class="hint">Include in outgoing SOS broadcast</div>
+          <div class="hint collapsible">Include in outgoing SOS broadcast</div>
         </div>
         <div class="field">
-          <label>Read Only</label>
+          <label>Read Only<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
           <select onchange="channels[${i}].read_only=(this.value==='true')">
             <option value="false" ${ch.read_only ? '' : 'selected'}>No</option>
             <option value="true" ${ch.read_only ? 'selected' : ''}>Yes</option>
           </select>
-          <div class="hint">Listen-only mode (hides input bar)</div>
+          <div class="hint collapsible">Listen-only mode (hides input bar)</div>
         </div>
         <div class="field">
-          <label>Scope Override</label>
+          <label>Scope Override<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
           <input type="text" value="${esc(ch.scope || '')}" maxlength="32"
                  pattern="|\*|#[a-z0-9\-]+"
                  onchange="channels[${i}].scope=this.value"
                  placeholder="(inherit global)"
                  title="Leave empty to use global scope, * for wildcard, or #name for a region">
-          <div class="hint">Override global radio scope for this channel</div>
+          <div class="hint collapsible">Override global radio scope for this channel</div>
         </div>
       </div>
     </div>`;
@@ -2760,7 +2807,25 @@ function maybeShowWizard() {
   }
 }
 
+// ===== Hint visibility =====
+function setShowHints(on) {
+  document.body.classList.toggle('show-hints', on);
+  document.getElementById('hintsToggle').checked = on;
+  try { localStorage.setItem('mclite_show_hints', on ? '1' : '0'); } catch (_) {}
+}
+function toggleHint(btn) {
+  const field = btn.closest('.field');
+  if (field) field.classList.toggle('hint-revealed');
+}
+function initHintToggle() {
+  // Default: hints OFF; user opts in via the checkbox.
+  let show;
+  try { show = localStorage.getItem('mclite_show_hints'); } catch (_) {}
+  setShowHints(show === '1');
+}
+
 // Init
+initHintToggle();
 renderContacts();
 renderChannels();
 maybeShowWizard();
