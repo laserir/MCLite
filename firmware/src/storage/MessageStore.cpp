@@ -15,6 +15,7 @@ MessageStore& MessageStore::instance() {
 String MessageStore::historyPath(const ConvoId& id) const {
     String path = defaults::HISTORY_DIR;
     path += "/";
+    if (id.type == ConvoId::ROOM) path += "room_";
     path += id.id;
     path += ".json";
     return path;
@@ -30,11 +31,11 @@ Conversation& MessageStore::getOrCreate(const ConvoId& id, const String& display
     c.displayName = displayName;
     c.isPrivate = isPrivate;
     c.readOnly = readOnly;
-    // MAX_CONVERSATIONS == MAX_CONTACTS + MAX_GROUP_CHANNELS, so this cap
-    // can only be reached if those build flags are increased without updating
-    // MAX_CONVERSATIONS. Guard kept as defensive fallback — returns last
-    // conversation which would corrupt it; acceptable since this path is
-    // unreachable under current config limits.
+    // MAX_CONVERSATIONS == MAX_CONTACTS(40) + MAX_GROUP_CHANNELS(16); 40 covers
+    // up to 32 chat contacts + 8 rooms. Cap can only be reached if those build
+    // flags are increased without updating MAX_CONVERSATIONS. Guard kept as
+    // defensive fallback — returns last conversation which would corrupt it;
+    // acceptable since this path is unreachable under current config limits.
     if (_convos.size() >= MAX_CONVERSATIONS) {
         Serial.println("[MessageStore] ERROR: max conversations reached, reusing last");
         return _convos.back();
@@ -71,6 +72,7 @@ void MessageStore::loadHistory(const ConvoId& id) {
         convo->lastActivity = saved;
         // Track highest loaded value so new messages always sort above
         if (saved > _activityCounter) _activityCounter = saved;
+        convo->syncSince = doc["syncSince"] | (uint32_t)0;
         arr = doc["messages"].as<JsonArray>();
     } else {
         arr = doc.as<JsonArray>();
@@ -106,6 +108,9 @@ void MessageStore::saveHistory(const ConvoId& id) {
 
     JsonDocument doc;
     doc["lastActivity"] = convo->lastActivity;
+    if (convo->syncSince != 0) {
+        doc["syncSince"] = convo->syncSince;
+    }
     JsonArray arr = doc["messages"].to<JsonArray>();
 
     for (const auto& msg : convo->messages) {
@@ -189,6 +194,14 @@ std::vector<Conversation*> MessageStore::getConversationsSorted() {
 void MessageStore::markRead(const ConvoId& id) {
     Conversation* c = getConversation(id);
     if (c) c->hasUnread = false;
+}
+
+void MessageStore::updateRoomSyncSince(const ConvoId& id, uint32_t timestamp) {
+    Conversation* c = getConversation(id);
+    if (!c) return;
+    if (timestamp <= c->syncSince) return;  // never go backwards
+    c->syncSince = timestamp;
+    saveHistory(id);
 }
 
 void MessageStore::pruneIfNeeded(Conversation& convo) {

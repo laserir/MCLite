@@ -22,6 +22,15 @@ using OnAckCallback      = std::function<void(uint32_t packetId)>;
 using OnFailCallback     = std::function<void(uint32_t packetId)>;
 using OnAdvertCallback     = std::function<void(const uint8_t* senderKey)>;
 using OnTelemetryCallback  = std::function<void(const uint8_t* pubKey, const TelemetryData& data)>;
+using OnRoomMessageCallback = std::function<void(size_t roomIdx,
+                                                  const String& roomName,
+                                                  const uint8_t* senderPrefix /* 4 B */,
+                                                  const String& text,
+                                                  uint32_t timestamp)>;
+using OnRoomLoginCallback   = std::function<void(size_t roomIdx,
+                                                  const String& roomName,
+                                                  uint8_t status,
+                                                  uint8_t permissions)>;
 
 class MeshManager {
 public:
@@ -41,6 +50,17 @@ public:
     void onFail(OnFailCallback cb)            { _onFail = cb; }
     void onAdvert(OnAdvertCallback cb)        { _onAdvert = cb; }
     void onTelemetry(OnTelemetryCallback cb)  { _onTelemetry = cb; }
+    void onRoomMessage(OnRoomMessageCallback cb) { _onRoomMsg = cb; }
+    void onRoomLogin(OnRoomLoginCallback cb)     { _onRoomLogin = cb; }
+
+    // Login to a configured room server (by config index 0..7). Returns true on
+    // a successful send; the actual login outcome arrives asynchronously via
+    // onRoomLogin. Idempotent server-side (refreshes the session).
+    bool loginRoom(size_t roomIdx, uint32_t& estTimeout);
+
+    // Send a post to a room (by config index). Returns internal packetId, 0 on
+    // failure. ACK arrives via the existing onAck/onFail callbacks.
+    uint32_t sendRoomPost(size_t roomIdx, const String& text);
 
     // Request telemetry from a contact — returns true on success
     bool requestTelemetry(size_t contactIndex, uint32_t& estTimeout);
@@ -72,6 +92,8 @@ private:
     OnFailCallback     _onFail;
     OnAdvertCallback    _onAdvert;
     OnTelemetryCallback _onTelemetry;
+    OnRoomMessageCallback _onRoomMsg;
+    OnRoomLoginCallback   _onRoomLogin;
 
     // Advertisement
     uint32_t _advertIntervalMs = 540000;  // Default: every 9 minutes (under 10-min "recently seen" threshold)

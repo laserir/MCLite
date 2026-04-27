@@ -41,6 +41,18 @@ public:
     // Retry a failed DM
     void handleRetry(const ConvoId& id, const String& text, uint32_t oldPacketId);
 
+    // Room callbacks (wired from main.cpp setupMeshCallbacks)
+    void onRoomMessageReceived(size_t roomIdx, const String& roomName,
+                                const uint8_t* senderPrefix /* 4 B */,
+                                const String& text, uint32_t timestamp);
+    void onRoomLoginResponse(size_t roomIdx, const String& roomName,
+                              uint8_t status, uint8_t permissions);
+
+    // Read-only accessors for AdminScreen Rooms section
+    bool isRoomLoggedIn(size_t roomIdx) const {
+        return roomIdx < MAX_ROOMS && _roomLoggedIn[roomIdx];
+    }
+
     // Show persistent setup/error screen (blocks all interaction until reboot)
     enum SetupReason { NO_SD, NO_CONFIG, CONFIG_ERROR };
     void showSetupScreen(SetupReason reason);
@@ -170,6 +182,18 @@ private:
     double    _pendingMapLon = 0.0;
     String    _pendingMapName;
     static void openMapAsync(void* user);
+
+    // ─── Room state (decisions #14, #15 from room-server-plan.md) ───
+    static constexpr size_t MAX_ROOMS = 8;
+    bool          _roomLoggedIn[MAX_ROOMS]       = {};   // RESP_SERVER_LOGIN_OK observed this session
+    uint8_t       _loginAttempt[MAX_ROOMS]       = {};   // exponential-backoff counter for boot login retry
+    unsigned long _nextLoginAttemptMs[MAX_ROOMS] = {};   // when next boot retry is allowed
+    unsigned long _lastLoginMs[MAX_ROOMS]        = {};   // last loginRoom() fire (any path)
+    unsigned long _lastRoomMsgMs[MAX_ROOMS]      = {};   // last received signed-room msg per room
+
+    void roomLoginTick();              // backoff retry on not-logged-in rooms (boot path)
+    void roomChatOpenRelogin(size_t roomIdx);   // decision #14: re-login on ROOM ChatScreen open
+    void roomSilenceTick(size_t roomIdx);       // decision #15: silence-triggered re-login while ROOM chat foreground
 };
 
 }  // namespace mclite

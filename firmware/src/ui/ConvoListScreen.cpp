@@ -150,7 +150,10 @@ void ConvoListScreen::addConvoRow(Conversation* convo) {
     // Type icon
     lv_obj_t* icon = lv_label_create(topLine);
     lv_obj_set_style_text_font(icon, FONT_NORMAL, 0);
-    if (convo->convoId.type == ConvoId::DM) {
+    if (convo->convoId.type == ConvoId::ROOM) {
+        lv_label_set_text(icon, ICON_ROOM);
+        lv_obj_set_style_text_color(icon, theme::ROOM_ACCENT, 0);
+    } else if (convo->convoId.type == ConvoId::DM) {
         lv_label_set_text(icon, ICON_DM);
         lv_obj_set_style_text_color(icon, theme::ACCENT, 0);
     } else if (convo->isPrivate) {
@@ -241,9 +244,10 @@ void ConvoListScreen::addConvoRow(Conversation* convo) {
         }
     }
 
-    // Timestamp — show for channels (DMs already have last-seen above)
+    // Timestamp — show for channels and rooms (DMs already have last-seen above)
     const Message* lastMsg = convo->lastMessage();
-    if (convo->convoId.type == ConvoId::CHANNEL && lastMsg &&
+    if ((convo->convoId.type == ConvoId::CHANNEL ||
+         convo->convoId.type == ConvoId::ROOM) && lastMsg &&
         lastMsg->timestamp > 1700000000 && GPS::instance().isTimeSynced()) {
         // Use last message's Unix epoch timestamp for relative time display
         uint32_t now = GPS::instance().currentTimestamp();

@@ -1,11 +1,13 @@
 #include "AdminScreen.h"
 #include <Arduino.h>
+#include <time.h>
 #include "UIManager.h"
 #include "theme.h"
 #include "../config/ConfigManager.h"
 #include "../mesh/ContactStore.h"
 #include "../mesh/ChannelStore.h"
 #include "../mesh/MeshManager.h"
+#include "../storage/MessageStore.h"
 #include "../hal/Battery.h"
 #include "../hal/GPS.h"
 #include "../hal/Speaker.h"
@@ -215,6 +217,37 @@ void AdminScreen::show() {
         if (ch.sendSos) info += " [SOS]";
         if (ch.scope.length() > 0) info += " [scope:" + ch.scope + "]";
         addRow(prefix, info);
+    }
+
+    // --- Rooms (read-only — config tool manages add/remove) ---
+    {
+        const auto& rooms = ConfigManager::instance().config().roomServers;
+        char secRoomsBuf[32];
+        snprintf(secRoomsBuf, sizeof(secRoomsBuf), t("sec_rooms"), (int)rooms.size());
+        addSection(secRoomsBuf);
+        auto& store = MessageStore::instance();
+        for (size_t i = 0; i < rooms.size(); i++) {
+            String info = rooms[i].name;
+            info += UIManager::instance().isRoomLoggedIn(i) ? " [online]" : " [offline]";
+            // Last sync timestamp (Unix seconds) from the room's history
+            if (rooms[i].publicKey.length() == 64) {
+                String shortId = rooms[i].publicKey.substring(0, 16);
+                ConvoId rid { ConvoId::ROOM, shortId };
+                if (Conversation* convo = store.getConversation(rid)) {
+                    if (convo->syncSince > 0) {
+                        char ts[24];
+                        time_t t = (time_t)convo->syncSince;
+                        struct tm* tm_info = gmtime(&t);
+                        if (tm_info) {
+                            strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M", tm_info);
+                            info += " ";
+                            info += ts;
+                        }
+                    }
+                }
+            }
+            addRow("  R", info);
+        }
     }
 
     // --- Display ---

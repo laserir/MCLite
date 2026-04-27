@@ -69,6 +69,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"sec_radio",           "Radio"},
     {"sec_contacts",        "Contacts (%d)"},
     {"sec_channels",        "Channels (%d)"},
+    {"sec_rooms",           "Rooms (%d)"},
     {"sec_display",         "Display"},
     {"sec_messaging",       "Messaging"},
     {"sec_gps",             "GPS"},

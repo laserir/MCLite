@@ -19,6 +19,7 @@ Most features below are optional. The primary goal is to keep things extremely s
 
 - **Direct messages** -- private encrypted conversations between contacts
 - **Channels** -- group communication via shared or public channels, with optional read-only (listen-only) mode
+- **Room servers** -- join community message boards run by MeshCore room servers (up to 8). Posts arrive on the conversation list with an `R` icon, ordered alongside DMs and channels by last activity. Auto-login on boot with retry; re-login on chat-open and after 10 minutes of silence to recover from brief radio dropouts. Configured via `room_servers` in `config.json` (name, server public key, optional password)
 - **SOS alerts** -- long-press the trackball (hold 6 seconds) to broadcast an emergency alert
 - **Battery alerts** -- automatic low-battery warnings sent to your contacts
 - **GPS location sharing** -- manually send your position in lat/lon or UTMREF/MGRS (military grid) format, used by search and rescue worldwide. Last-known position support when GPS signal is temporarily lost
@@ -46,7 +47,7 @@ Visit the [MCLite Web Flasher](https://laserir.github.io/MCLite/tools/web-flashe
 
 **Option 2: Manual**
 
-Download the latest `mclite-v*.bin` from the [Releases](../../releases) page and flash with esptool: `esptool.py write_flash 0x0 mclite-v0.1.5.bin`
+Download the latest `mclite-v*.bin` from the [Releases](../../releases) page and flash with esptool: `esptool.py write_flash 0x0 mclite-v0.1.7.bin`
 
 ### Set up your config
 

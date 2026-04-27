@@ -114,6 +114,64 @@ void MeshManager::wireCallbacks() {
         ContactStore::instance().updateLastSeen(contact.id.pub_key);
         if (_onAdvert) _onAdvert(contact.id.pub_key);
     });
+
+    // Helper: map a ROOM contact's pubkey back to its config index (0..7).
+    // Returns -1 if not found (shouldn't happen for registered rooms).
+    auto findRoomIdx = [](const ContactInfo& contact) -> int {
+        const auto& rooms = ConfigManager::instance().config().roomServers;
+        for (size_t i = 0; i < rooms.size(); i++) {
+            // rooms[i].publicKey is 64-hex; compare against contact.id.pub_key bytes.
+            if (rooms[i].publicKey.length() != 64) continue;
+            bool match = true;
+            for (int b = 0; b < PUB_KEY_SIZE; b++) {
+                char byteStr[3] = { rooms[i].publicKey[b*2], rooms[i].publicKey[b*2+1], 0 };
+                uint8_t want = (uint8_t)strtoul(byteStr, nullptr, 16);
+                if (contact.id.pub_key[b] != want) { match = false; break; }
+            }
+            if (match) return (int)i;
+        }
+        return -1;
+    };
+
+    // Incoming room post (signed message from a server we're logged in to)
+    _mesh->onRoomMsg([this, findRoomIdx](const ContactInfo& contact,
+                                          const uint8_t* sender_prefix,
+                                          uint32_t timestamp, const char* text) {
+        if (!_onRoomMsg) return;
+        int roomIdx = findRoomIdx(contact);
+        if (roomIdx < 0) return;
+        _onRoomMsg((size_t)roomIdx, String(contact.name), sender_prefix,
+                   String(text), timestamp);
+    });
+
+    // Room login response (from sendLogin handshake)
+    _mesh->onRoomLogin([this, findRoomIdx](const ContactInfo& contact,
+                                            uint8_t status, uint8_t permissions) {
+        if (!_onRoomLogin) return;
+        int roomIdx = findRoomIdx(contact);
+        if (roomIdx < 0) return;
+        _onRoomLogin((size_t)roomIdx, String(contact.name), status, permissions);
+    });
+}
+
+bool MeshManager::loginRoom(size_t roomIdx, uint32_t& estTimeout) {
+    if (!_mesh) return false;
+    const auto& cfg = ConfigManager::instance().config();
+    if (roomIdx >= cfg.roomServers.size()) return false;
+    int result = _mesh->loginRoom(roomIdx, cfg.roomServers[roomIdx].password.c_str(),
+                                   estTimeout);
+    return result != MSG_SEND_FAILED;
+}
+
+uint32_t MeshManager::sendRoomPost(size_t roomIdx, const String& text) {
+    if (!_mesh || !_radioReady) return 0;
+    const auto& cfg = ConfigManager::instance().config();
+    // Same timestamp policy as sendMessage/sendGroupMessage: GPS epoch when
+    // synced, else millis()/1000 as a unique-per-message fallback.
+    uint32_t timestamp = GPS::instance().isTimeSynced()
+        ? GPS::instance().currentTimestamp() : (millis() / 1000);
+    return _mesh->sendRoomPost(roomIdx, text.c_str(), timestamp,
+                                cfg.messaging.maxRetries);
 }
 
 bool MeshManager::init() {

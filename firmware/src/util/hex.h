@@ -13,4 +13,13 @@ inline bool isHexString(const String& s) {
     return s.length() > 0;
 }
 
+// Render the first 8 bytes of a public key as a 16-char lowercase hex string.
+// Matches Contact::computeShortId — used for ConvoId{ROOM, shortId} and DM ids.
+inline String pubKeyToShortId(const uint8_t* key) {
+    char hex[17];
+    for (int i = 0; i < 8; i++) sprintf(hex + i * 2, "%02x", key[i]);
+    hex[16] = '\0';
+    return String(hex);
+}
+
 }  // namespace mclite

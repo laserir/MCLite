@@ -239,6 +239,18 @@ static void setupMeshCallbacks() {
         ContactStore::instance().updateLastSeen(pubKey);
         UIManager::instance().updateTelemetryModal(pubKey);
     });
+
+    mesh.onRoomMessage([](size_t roomIdx, const String& roomName,
+                           const uint8_t* senderPrefix,
+                           const String& text, uint32_t timestamp) {
+        UIManager::instance().onRoomMessageReceived(roomIdx, roomName,
+                                                     senderPrefix, text, timestamp);
+    });
+
+    mesh.onRoomLogin([](size_t roomIdx, const String& roomName,
+                         uint8_t status, uint8_t permissions) {
+        UIManager::instance().onRoomLoginResponse(roomIdx, roomName, status, permissions);
+    });
 }
 
 static void handleKeyShortcuts() {

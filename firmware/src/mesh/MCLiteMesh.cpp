@@ -4,6 +4,8 @@
 #include "../config/ConfigManager.h"
 #include "../hal/Battery.h"
 #include "../hal/GPS.h"
+#include "../storage/MessageStore.h"
+#include "../util/hex.h"
 #include "../util/offgrid.h"
 #include <helpers/ArduinoHelpers.h>
 #include <helpers/ESP32Board.h>
@@ -106,9 +108,16 @@ bool MCLiteMesh::begin(const char* deviceName) {
         Serial.println("[MCLiteMesh] New identity generated");
     }
 
-    // 2. Register contacts from ContactStore
+    // 2. Register contacts from ContactStore (cap at 32 chat contacts; rooms get
+    // the remaining 8 slots in the shared MeshCore contacts[MAX_CONTACTS] array.)
     auto& contacts = ContactStore::instance();
-    for (size_t i = 0; i < contacts.count(); i++) {
+    constexpr size_t CHAT_CAP = 32;
+    if (contacts.count() > CHAT_CAP) {
+        Serial.printf("[MCLiteMesh] WARN: ignoring %u contact(s) beyond 32-cap\n",
+                      (unsigned)(contacts.count() - CHAT_CAP));
+    }
+    size_t chatToRegister = contacts.count() < CHAT_CAP ? contacts.count() : CHAT_CAP;
+    for (size_t i = 0; i < chatToRegister; i++) {
         const Contact* c = contacts.findByIndex(i);
         if (!c) continue;
 
@@ -122,7 +131,73 @@ bool MCLiteMesh::begin(const char* deviceName) {
 
         addContact(ci);
     }
-    Serial.printf("[MCLiteMesh] Registered %d contacts\n", getNumContacts());
+    Serial.printf("[MCLiteMesh] Registered %d chat contact(s)\n", getNumContacts());
+
+    // 2b. Register room servers (up to 8). Pubkey decoded from 64-hex; sync_since
+    // seeded from the per-room history file so server-side push only replays new
+    // posts. Cached BaseChatMesh contact-index in _roomContactIdx[] for O(1)
+    // lookup in loginRoom() / sendRoomPost().
+    constexpr size_t ROOM_CAP = MAX_ROOMS_RUNTIME;  // 8
+    size_t roomCount = cfg.roomServers.size();
+    if (roomCount > ROOM_CAP) {
+        Serial.printf("[MCLiteMesh] WARN: ignoring %u room(s) beyond 8-cap\n",
+                      (unsigned)(roomCount - ROOM_CAP));
+        roomCount = ROOM_CAP;
+    }
+    int registeredRooms = 0;
+    for (size_t i = 0; i < roomCount; i++) {
+        const auto& rs = cfg.roomServers[i];
+
+        // Decode 64-hex pubkey into 32 raw bytes
+        if (rs.publicKey.length() != 64 || !isHexString(rs.publicKey)) {
+            Serial.printf("[MCLiteMesh] Skipping room '%s': invalid pubkey\n",
+                          rs.name.c_str());
+            continue;
+        }
+        uint8_t pub[PUB_KEY_SIZE];
+        for (int b = 0; b < PUB_KEY_SIZE; b++) {
+            char byteStr[3] = { rs.publicKey[b*2], rs.publicKey[b*2+1], 0 };
+            pub[b] = (uint8_t)strtoul(byteStr, nullptr, 16);
+        }
+
+        // Compute 8-byte shortId hex (16 chars) for the per-room history file
+        char shortId[17];
+        for (int s = 0; s < 8; s++) sprintf(shortId + s*2, "%02x", pub[s]);
+        shortId[16] = '\0';
+
+        // Seed sync_since from MessageStore (loads /mclite/history/room_<id>.json)
+        ConvoId rid { ConvoId::ROOM, String(shortId) };
+        auto& store = MessageStore::instance();
+        store.ensureConversation(rid, rs.name, /*isPrivate=*/false);
+        store.loadHistory(rid);
+        uint32_t syncSince = 0;
+        if (Conversation* convo = store.getConversation(rid)) {
+            syncSince = convo->syncSince;
+        }
+
+        ContactInfo ci;
+        memset(&ci, 0, sizeof(ci));
+        memcpy(ci.id.pub_key, pub, PUB_KEY_SIZE);
+        strncpy(ci.name, rs.name.c_str(), sizeof(ci.name) - 1);
+        ci.type = ADV_TYPE_ROOM;
+        ci.out_path_len = OUT_PATH_UNKNOWN;
+        ci.shared_secret_valid = false;
+        ci.sync_since = syncSince;
+
+        if (!addContact(ci)) {
+            Serial.printf("[MCLiteMesh] Failed to register room '%s' (contacts full)\n",
+                          rs.name.c_str());
+            continue;
+        }
+        // Cache the index that addContact just used (it's the latest slot)
+        _roomContactIdx[i] = (int8_t)(getNumContacts() - 1);
+        registeredRooms++;
+        Serial.printf("[MCLiteMesh] Registered room '%s' (idx=%d, sync_since=%u)\n",
+                      rs.name.c_str(), (int)_roomContactIdx[i], (unsigned)syncSince);
+    }
+    if (registeredRooms > 0) {
+        Serial.printf("[MCLiteMesh] Registered %d room(s)\n", registeredRooms);
+    }
 
     // 3. Register channels from ChannelStore
     auto& channels = ChannelStore::instance();
@@ -256,6 +331,72 @@ uint32_t MCLiteMesh::sendDM(size_t contactIdx, const char* text, uint32_t timest
         entry->attempt     = 1;
         entry->maxAttempts = maxRetries;
         entry->contactIdx  = contactIdx;
+        entry->timestamp   = timestamp;
+        strncpy(entry->text, text, sizeof(entry->text) - 1);
+        entry->text[sizeof(entry->text) - 1] = '\0';
+        entry->active      = true;
+    }
+
+    return packetId;
+}
+
+int MCLiteMesh::loginRoom(size_t roomIdx, const char* password, uint32_t& estTimeout) {
+    if (!_ready) return MSG_SEND_FAILED;
+    if (roomIdx >= MAX_ROOMS_RUNTIME || _roomContactIdx[roomIdx] < 0) {
+        Serial.printf("[MCLiteMesh] loginRoom: invalid room idx %u\n", (unsigned)roomIdx);
+        return MSG_SEND_FAILED;
+    }
+    ContactInfo* ci = getContactByIdx(_roomContactIdx[roomIdx]);
+    if (!ci) {
+        Serial.println("[MCLiteMesh] loginRoom: contact lookup failed");
+        return MSG_SEND_FAILED;
+    }
+    int result = sendLogin(*ci, password, estTimeout);
+    Serial.printf("[MCLiteMesh] Login to room '%s': result=%d, est_timeout=%ums\n",
+                  ci->name, result, (unsigned)estTimeout);
+    return result;
+}
+
+uint32_t MCLiteMesh::sendRoomPost(size_t roomIdx, const char* text, uint32_t timestamp,
+                                   uint8_t maxRetries) {
+    if (!_ready) return 0;
+    if (roomIdx >= MAX_ROOMS_RUNTIME || _roomContactIdx[roomIdx] < 0) {
+        Serial.printf("[MCLiteMesh] sendRoomPost: invalid room idx %u\n", (unsigned)roomIdx);
+        return 0;
+    }
+    int globalIdx = _roomContactIdx[roomIdx];
+    ContactInfo* ci = getContactByIdx(globalIdx);
+    if (!ci) {
+        Serial.println("[MCLiteMesh] sendRoomPost: contact lookup failed");
+        return 0;
+    }
+
+    uint32_t packetId = allocPacketId();
+    uint32_t expectedAck = 0;
+    uint32_t estTimeout = 0;
+
+    int result = sendMessage(*ci, timestamp, 1, text, expectedAck, estTimeout);
+
+    if (result == MSG_SEND_FAILED) {
+        Serial.printf("[MCLiteMesh] Room post failed to '%s'\n", ci->name);
+        return 0;
+    }
+
+    Serial.printf("[MCLiteMesh] Room post sent to '%s' (packetId=%u, %s, timeout=%ums)\n",
+                  ci->name, packetId,
+                  result == MSG_SEND_SENT_DIRECT ? "direct" : "flood",
+                  estTimeout);
+
+    // Track ACK using same pipeline as sendDM. contactIdx stores the BaseChatMesh
+    // global contact index for retry (not the per-room idx).
+    AckEntry* entry = findFreeAck();
+    if (entry) {
+        entry->expectedAck = expectedAck;
+        entry->packetId    = packetId;
+        entry->timeoutMs   = millis() + estTimeout;
+        entry->attempt     = 1;
+        entry->maxAttempts = maxRetries;
+        entry->contactIdx  = (size_t)globalIdx;
         entry->timestamp   = timestamp;
         strncpy(entry->text, text, sizeof(entry->text) - 1);
         entry->text[sizeof(entry->text) - 1] = '\0';
@@ -414,8 +555,17 @@ void MCLiteMesh::onCommandDataRecv(const ContactInfo& contact, mesh::Packet* pkt
 void MCLiteMesh::onSignedMessageRecv(const ContactInfo& contact, mesh::Packet* pkt,
                                       uint32_t sender_timestamp,
                                       const uint8_t* sender_prefix, const char* text) {
-    // Signed messages (room server) — treat as regular messages for display
-    Serial.printf("[MCLiteMesh] Signed msg from %s: %s\n", contact.name, text);
+    // Room post: dispatch with sender_prefix (4 bytes) so UIManager can resolve
+    // the sender's alias against ContactStore. BaseChatMesh has already advanced
+    // contact.sync_since by the time we get here (BaseChatMesh.cpp:242-243).
+    if (contact.type == ADV_TYPE_ROOM) {
+        Serial.printf("[MCLiteMesh] Room msg from '%s': %s\n", contact.name, text);
+        if (_onRoomMsg) _onRoomMsg(contact, sender_prefix, sender_timestamp, text);
+        return;
+    }
+    // Signed DM fallback (no current MCLite path produces these, but BaseChatMesh
+    // requires the override)
+    Serial.printf("[MCLiteMesh] Signed DM from %s: %s\n", contact.name, text);
     if (_onMessage) _onMessage(contact, sender_timestamp, text);
 }
 
@@ -580,6 +730,35 @@ static int lppTypeSize(uint8_t type) {
 void MCLiteMesh::onContactResponse(const ContactInfo& contact,
                                     const uint8_t* data, uint8_t len) {
     Serial.printf("[MCLiteMesh] Response from %s (%d bytes)\n", contact.name, len);
+
+    // NOTE: room-server login response includes data[5] = legacy keep_alive_secs/16,
+    // currently always 0 in simple_room_server. The canonical companion_radio client
+    // gates BaseChatMesh::startConnection() on data[5] > 0; we follow suit and never
+    // call it. If a server ever advertises data[5] != 0, startConnection(contact,
+    // data[5] * 16) must be called on login OK and checkConnections() ticked from
+    // MCLiteMesh::loop(). References:
+    //   simple_room_server/MyMesh.cpp:368   (server writes 0)
+    //   companion_radio/MyMesh.cpp:674-676  (gates startConnection on >0)
+    if (contact.type == ADV_TYPE_ROOM && len > 5 && data[5] != 0) {
+        Serial.printf("[MCLiteMesh] WARN: room '%s' advertised keep_alive_secs=%u — "
+                      "server has re-enabled keep-alive; consider startConnection().\n",
+                      contact.name, (unsigned)data[5] * 16);
+    }
+
+    // Room login response (13 bytes per simple_room_server/MyMesh.cpp:364-373):
+    //   [0..3] reflected timestamp/tag    [4]   status (RESP_SERVER_LOGIN_OK=0)
+    //   [5]    legacy keep_alive (see above)    [6]   legacy permissions
+    //   [7]    v7 ACL permissions               [8..11] random uniqueness
+    //   [12]   firmware version level
+    // Dispatch BEFORE the telemetry-tag checks: rooms never send telemetry, and
+    // a login response has no _pendingTelemTag, which would silently drop it.
+    if (contact.type == ADV_TYPE_ROOM) {
+        if (len < 7) return;  // need at least status + legacy perms
+        uint8_t status      = data[4];
+        uint8_t permissions = data[6];
+        if (_onRoomLogin) _onRoomLogin(contact, status, permissions);
+        return;
+    }
 
     // Need at least 4 bytes (reflected timestamp) + some payload
     if (len <= 4) return;

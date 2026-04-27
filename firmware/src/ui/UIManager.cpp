@@ -16,7 +16,9 @@
 #include "../storage/TelemetryCache.h"
 #include "../storage/TileLoader.h"
 #include "../util/distance.h"
+#include "../util/hex.h"
 #include "../util/mgrs.h"
+#include <helpers/BaseChatMesh.h>  // RESP_SERVER_LOGIN_OK
 
 namespace mclite {
 
@@ -138,6 +140,24 @@ void UIManager::update() {
         _lastConvoRefresh = now;
     }
 
+    // Room login tick (boot path with backoff). No-op for already-logged-in rooms.
+    roomLoginTick();
+
+    // Decision #15 — if user is sitting on a ROOM chat, fire a silence-triggered
+    // re-login at most every 10 min when no signed-room message has arrived.
+    if (_currentScreen == Screen::CHAT && _chatScreen.currentConvo() &&
+        _chatScreen.currentConvo()->type == ConvoId::ROOM) {
+        const auto& rooms = ConfigManager::instance().config().roomServers;
+        const String& shortId = _chatScreen.currentConvo()->id;
+        for (size_t i = 0; i < rooms.size() && i < MAX_ROOMS; i++) {
+            if (rooms[i].publicKey.length() == 64 &&
+                rooms[i].publicKey.substring(0, 16) == shortId) {
+                roomSilenceTick(i);
+                break;
+            }
+        }
+    }
+
     // History is saved automatically on each message send/receive in MessageStore::addMessage()
 }
 
@@ -222,6 +242,19 @@ void UIManager::showScreen(Screen screen) {
 void UIManager::openChat(const ConvoId& id) {
     showScreen(Screen::CHAT);  // Hide other screens first
     _chatScreen.open(id);      // open() calls show() internally
+
+    // Decision #14 — re-login on ROOM ChatScreen open. Wakes any server-side
+    // 3-strike push-freeze caused by brief radio dropouts (~36 s tripwire).
+    if (id.type == ConvoId::ROOM) {
+        const auto& rooms = ConfigManager::instance().config().roomServers;
+        for (size_t i = 0; i < rooms.size() && i < MAX_ROOMS; i++) {
+            if (rooms[i].publicKey.length() == 64 &&
+                rooms[i].publicKey.substring(0, 16) == id.id) {
+                roomChatOpenRelogin(i);
+                break;
+            }
+        }
+    }
 }
 
 void UIManager::goHome() {
@@ -311,6 +344,20 @@ bool UIManager::checkSOS(const ConvoId& id, const Message& msg) {
         Channel* ch = ChannelStore::instance().findByName(id.id);
         if (ch && !ch->allowSos) return false;
         // Also check sender contact allowSos
+        Contact* c = ContactStore::instance().findByName(msg.senderName);
+        if (c && !c->allowSos) return false;
+    } else if (id.type == ConvoId::ROOM) {
+        // Check room-level allowSos (matches the channel pattern)
+        const auto& rooms = ConfigManager::instance().config().roomServers;
+        for (const auto& r : rooms) {
+            if (r.publicKey.length() == 64 && r.publicKey.substring(0, 16) == id.id) {
+                if (!r.allowSos) return false;
+                break;
+            }
+        }
+        // Also honor per-contact allowSos when the sender resolved to a known
+        // alias (msg.senderName came from ContactStore lookup in onRoomMessageReceived;
+        // unknown senders show as 8-hex and won't match by name).
         Contact* c = ContactStore::instance().findByName(msg.senderName);
         if (c && !c->allowSos) return false;
     }
@@ -403,8 +450,11 @@ void UIManager::sosButtonCb(lv_event_t* e) {
 void UIManager::dismissSOSAlert(bool sendReply) {
     Speaker::instance().stopSOS();
 
-    // Send "SOS acknowledged" reply to the conversation it came from
-    if (sendReply) {
+    // Send "SOS acknowledged" reply to the conversation it came from. Rooms
+    // are excluded: we'd have to broadcast to the whole room (no addressable
+    // sender from a 4-byte prefix), and per decision #11 we don't push to rooms.
+    // For ROOM SOS, "SOS seen" just stops the sound + closes the modal.
+    if (sendReply && _sosConvoId.type != ConvoId::ROOM) {
         const String replyText = "Acknowledged SOS";  // Always English — must NOT start with SOS keyword to avoid retriggering alert
         Message reply;
         reply.fromSelf  = true;
@@ -467,7 +517,8 @@ void UIManager::onMessageFailed(uint32_t packetId) {
 
 void UIManager::handleSend(const ConvoId& id, const String& text) {
     uint32_t packetId = 0;
-    bool isDM = (id.type == ConvoId::DM);
+    bool isDM   = (id.type == ConvoId::DM);
+    bool isRoom = (id.type == ConvoId::ROOM);
 
     if (isDM) {
         // Find contact index
@@ -476,6 +527,17 @@ void UIManager::handleSend(const ConvoId& id, const String& text) {
             const auto* c = contacts.findByIndex(i);
             if (c && c->shortId() == id.id) {
                 packetId = MeshManager::instance().sendMessage(i, text);
+                break;
+            }
+        }
+    } else if (isRoom) {
+        // Find room config index whose pubkey shortId matches id.id
+        const auto& rooms = ConfigManager::instance().config().roomServers;
+        for (size_t i = 0; i < rooms.size() && i < MAX_ROOMS; i++) {
+            if (rooms[i].publicKey.length() != 64) continue;
+            // Compare first 8 bytes (16 hex chars) to room shortId
+            if (rooms[i].publicKey.substring(0, 16) == id.id) {
+                packetId = MeshManager::instance().sendRoomPost(i, text);
                 break;
             }
         }
@@ -488,12 +550,12 @@ void UIManager::handleSend(const ConvoId& id, const String& text) {
     }
 
     // Determine initial status:
-    // DMs: SENDING (waiting for ACK, retry logic handles transition to DELIVERED or FAILED)
-    // Groups: SENT immediately (fire-and-forget, no ACK possible)
+    // DMs and rooms: SENDING (waiting for ACK; retry pipeline handles DELIVERED/FAILED)
+    // Channels: SENT immediately (fire-and-forget, no ACK possible)
     MessageStatus initialStatus;
     if (packetId == 0) {
         initialStatus = MessageStatus::FAILED;
-    } else if (isDM) {
+    } else if (isDM || isRoom) {
         initialStatus = MessageStatus::SENDING;
     } else {
         initialStatus = MessageStatus::SENT;
@@ -519,8 +581,137 @@ void UIManager::handleSend(const ConvoId& id, const String& text) {
     _lastActivity = millis();
 }
 
+// ─── Room callbacks (wired from main.cpp setupMeshCallbacks) ───
+
+void UIManager::onRoomMessageReceived(size_t roomIdx, const String& roomName,
+                                       const uint8_t* senderPrefix /* 4 B */,
+                                       const String& text, uint32_t timestamp) {
+    if (roomIdx >= MAX_ROOMS) return;
+    _lastRoomMsgMs[roomIdx] = millis();
+
+    // Resolve sender alias: scan ContactStore for any contact whose pubkey first
+    // 4 bytes match. Hit → use the alias. Miss → 8-hex-char prefix.
+    String sender;
+    auto& contacts = ContactStore::instance();
+    for (size_t i = 0; i < contacts.count(); i++) {
+        const Contact* c = contacts.findByIndex(i);
+        if (c && memcmp(c->publicKey, senderPrefix, 4) == 0) {
+            sender = c->name;
+            break;
+        }
+    }
+    if (sender.isEmpty()) {
+        char hex[9];
+        for (int i = 0; i < 4; i++) sprintf(hex + i*2, "%02x", senderPrefix[i]);
+        hex[8] = '\0';
+        sender = String(hex);
+    }
+
+    // Find the room contact's pubkey from config to compute the room shortId
+    const auto& rooms = ConfigManager::instance().config().roomServers;
+    if (roomIdx >= rooms.size()) return;
+    if (rooms[roomIdx].publicKey.length() != 64) return;
+
+    // shortId = first 16 hex chars of the room's pubkey (matches pubKeyToShortId)
+    String shortId = rooms[roomIdx].publicKey.substring(0, 16);
+    ConvoId id { ConvoId::ROOM, shortId };
+
+    Message msg;
+    msg.fromSelf  = false;
+    msg.text      = text;
+    msg.timestamp = timestamp;
+    msg.senderName = sender;
+    msg.status    = MessageStatus::DELIVERED;
+
+    onIncomingMessage(id, msg);
+
+    // Persist sync_since so next boot only replays newer posts. BaseChatMesh has
+    // already advanced contact.sync_since by the time we got here; this commits
+    // it to /mclite/history/room_<shortId>.json.
+    MessageStore::instance().updateRoomSyncSince(id, timestamp);
+}
+
+void UIManager::onRoomLoginResponse(size_t roomIdx, const String& roomName,
+                                     uint8_t status, uint8_t permissions) {
+    if (roomIdx >= MAX_ROOMS) return;
+    bool ok = (status == RESP_SERVER_LOGIN_OK);
+    _roomLoggedIn[roomIdx] = ok;
+    if (ok) {
+        _loginAttempt[roomIdx] = 0;
+        Serial.printf("[UI] Room '%s' logged in (perms=%u)\n",
+                      roomName.c_str(), (unsigned)permissions);
+    } else {
+        Serial.printf("[UI] Room '%s' login failed (status=%u)\n",
+                      roomName.c_str(), (unsigned)status);
+    }
+}
+
+// Boot login + backoff retry for not-logged-in rooms. Tick from update() at the
+// existing STATUS_UPDATE_MS cadence (1 s) — cheap; only fires when due.
+void UIManager::roomLoginTick() {
+    if (!MeshManager::instance().isRadioReady()) return;
+
+    const auto& rooms = ConfigManager::instance().config().roomServers;
+    unsigned long now = millis();
+    size_t roomCount = rooms.size() < MAX_ROOMS ? rooms.size() : MAX_ROOMS;
+
+    for (size_t i = 0; i < roomCount; i++) {
+        if (_roomLoggedIn[i]) continue;
+        if (now < _nextLoginAttemptMs[i] && _lastLoginMs[i] != 0) continue;
+
+        uint32_t estTimeout = 0;
+        if (MeshManager::instance().loginRoom(i, estTimeout)) {
+            _lastLoginMs[i] = now;
+            // Backoff: 1 → 2 → 4 → cap 30 min. Reset to 0 happens in onRoomLoginResponse.
+            uint32_t delaySec = 60u << (_loginAttempt[i] < 5 ? _loginAttempt[i] : 5);
+            if (delaySec > 1800) delaySec = 1800;
+            _nextLoginAttemptMs[i] = now + (unsigned long)delaySec * 1000;
+            if (_loginAttempt[i] < 255) _loginAttempt[i]++;
+            Serial.printf("[UI] Room '%s' login attempt %u; next in %us\n",
+                          rooms[i].name.c_str(), (unsigned)_loginAttempt[i],
+                          (unsigned)delaySec);
+        }
+    }
+}
+
+// Decision #14: rate-limited re-login on ROOM ChatScreen open. Suppress if a
+// login fired within the last 30 s to avoid thrashing on rapid back-and-forth.
+void UIManager::roomChatOpenRelogin(size_t roomIdx) {
+    if (roomIdx >= MAX_ROOMS) return;
+    if (!MeshManager::instance().isRadioReady()) return;
+    unsigned long now = millis();
+    if (_lastLoginMs[roomIdx] != 0 && now - _lastLoginMs[roomIdx] < 30000) return;
+
+    uint32_t estTimeout = 0;
+    if (MeshManager::instance().loginRoom(roomIdx, estTimeout)) {
+        _lastLoginMs[roomIdx] = now;
+        Serial.printf("[UI] Room idx=%u: chat-open re-login\n", (unsigned)roomIdx);
+    }
+}
+
+// Decision #15: silence-triggered re-login while a ROOM ChatScreen is foreground.
+// Active rooms reset _lastRoomMsgMs on every receipt so this never fires for
+// them. Quiet rooms with passive readers re-login at most once per 10 min.
+void UIManager::roomSilenceTick(size_t roomIdx) {
+    if (roomIdx >= MAX_ROOMS) return;
+    if (!MeshManager::instance().isRadioReady()) return;
+    unsigned long now = millis();
+    constexpr unsigned long SILENCE_THRESHOLD_MS = 10UL * 60UL * 1000UL;  // 10 min
+
+    if (_lastRoomMsgMs[roomIdx] != 0 && now - _lastRoomMsgMs[roomIdx] < SILENCE_THRESHOLD_MS) return;
+    if (_lastLoginMs[roomIdx]   != 0 && now - _lastLoginMs[roomIdx]   < SILENCE_THRESHOLD_MS) return;
+
+    uint32_t estTimeout = 0;
+    if (MeshManager::instance().loginRoom(roomIdx, estTimeout)) {
+        _lastLoginMs[roomIdx] = now;
+        Serial.printf("[UI] Room idx=%u: silence-triggered re-login\n", (unsigned)roomIdx);
+    }
+}
+
 void UIManager::handleRetry(const ConvoId& id, const String& text, uint32_t oldPacketId) {
-    if (id.type != ConvoId::DM) return;
+    // Channels are fire-and-forget (status SENT immediately; never reaches FAILED),
+    // so the retry button only ever fires for DM or ROOM bubbles.
+    if (id.type != ConvoId::DM && id.type != ConvoId::ROOM) return;
 
     // Verify message is still FAILED before sending (guards against double-tap)
     auto* convo = MessageStore::instance().getConversation(id);
@@ -535,14 +726,25 @@ void UIManager::handleRetry(const ConvoId& id, const String& text, uint32_t oldP
     }
     if (!target) return;
 
-    // Re-send via MeshManager
+    // Re-send via MeshManager — match the original send path by convo type
     uint32_t newPacketId = 0;
-    auto& contacts = ContactStore::instance();
-    for (size_t i = 0; i < contacts.count(); i++) {
-        const auto* c = contacts.findByIndex(i);
-        if (c && c->shortId() == id.id) {
-            newPacketId = MeshManager::instance().sendMessage(i, text);
-            break;
+    if (id.type == ConvoId::DM) {
+        auto& contacts = ContactStore::instance();
+        for (size_t i = 0; i < contacts.count(); i++) {
+            const auto* c = contacts.findByIndex(i);
+            if (c && c->shortId() == id.id) {
+                newPacketId = MeshManager::instance().sendMessage(i, text);
+                break;
+            }
+        }
+    } else {  // ROOM
+        const auto& cfgRooms = ConfigManager::instance().config().roomServers;
+        for (size_t i = 0; i < cfgRooms.size() && i < MAX_ROOMS; i++) {
+            if (cfgRooms[i].publicKey.length() == 64 &&
+                cfgRooms[i].publicKey.substring(0, 16) == id.id) {
+                newPacketId = MeshManager::instance().sendRoomPost(i, text);
+                break;
+            }
         }
     }
 

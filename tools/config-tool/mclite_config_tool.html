@@ -698,6 +698,17 @@ body.show-hints .hint.collapsible,
     <div class="hint" style="margin-top:6px">Hashtag channels derive encryption from the name (lowercase only: a-z, 0-9, -) — anyone with the same name can join. Private channels use a random key shared out-of-band and allow any name. The Public channel uses a well-known hardcoded key shared by all MeshCore devices — messages are readable by anyone on the network.</div>
   </div>
 
+  <!-- Rooms -->
+  <div class="section hidden" data-mode="advanced">
+    <div class="section-title">Room Servers <span class="badge" id="roomCount">0</span></div>
+    <div id="roomList"></div>
+    <div class="empty-state" id="roomEmpty">No room servers added yet.</div>
+    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn" onclick="addRoom()">+ Add Room Server</button>
+    </div>
+    <div class="hint" style="margin-top:6px">Room servers are community message boards — posts arrive on the conversation list with an <strong>R</strong> icon. The server's public key (64 hex chars) and password are shared out-of-band by whoever runs the room. Empty password = public room. Up to 8 rooms.</div>
+  </div>
+
   <!-- Display -->
   <div class="section hidden" data-mode="advanced">
     <div class="section-title">Display</div>
@@ -1430,6 +1441,81 @@ function removeChannel(i) {
   renderChannels();
 }
 
+// ===== Rooms =====
+let rooms = [];
+
+function renderRooms() {
+  const list  = document.getElementById('roomList');
+  const empty = document.getElementById('roomEmpty');
+  document.getElementById('roomCount').textContent = rooms.length + '/8';
+
+  // Disable add button at cap
+  document.querySelectorAll('[onclick="addRoom()"]').forEach(btn => btn.disabled = rooms.length >= 8);
+
+  if (rooms.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = rooms.map((r, i) => `
+    <div class="contact-card">
+      <div class="contact-header">
+        <span class="contact-num">Room ${i + 1}</span>
+        <button class="btn-remove" onclick="removeRoom(${i})">Remove</button>
+      </div>
+      <div class="field">
+        <label>Name<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+        <input type="text" value="${esc(r.name)}" maxlength="32"
+               onchange="rooms[${i}].name=this.value"
+               placeholder="e.g. Ruhrgebiet">
+        <div class="hint collapsible">Display name shown in the conversation list and chat header.</div>
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label>Public Key (64 hex chars)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+        <input type="text" value="${esc(r.public_key)}" maxlength="64"
+               pattern="[0-9a-fA-F]{64}"
+               onchange="rooms[${i}].public_key=this.value.toLowerCase()"
+               placeholder="Server's Ed25519 public key"
+               style="font-family:monospace; font-size:0.8rem;">
+        <div class="hint collapsible">Shared out-of-band by whoever runs the room — must be exactly 64 hex characters.</div>
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label>Password<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+        <input type="text" value="${esc(r.password || '')}" maxlength="15"
+               onchange="rooms[${i}].password=this.value"
+               placeholder="(empty = public room)">
+        <div class="hint collapsible">Up to 15 characters. Leave empty to join a room that requires no password (public).</div>
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label>Allow SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+        <select onchange="rooms[${i}].allow_sos=(this.value==='true')">
+          <option value="true" ${r.allow_sos !== false ? 'selected' : ''}>Yes</option>
+          <option value="false" ${r.allow_sos === false ? 'selected' : ''}>No</option>
+        </select>
+        <div class="hint collapsible">Trigger SOS alert when a post in this room starts with the SOS keyword. Disable for noisy public rooms where you do not want random posters waking your alarm.</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addRoom() {
+  if (rooms.length >= 8) { toast('Maximum 8 rooms reached (firmware limit)'); return; }
+  rooms.push({ name: '', public_key: '', password: '', allow_sos: true });
+  renderRooms();
+  // Focus the new name input
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('#roomList input[type=text]');
+    if (inputs.length >= 3) inputs[inputs.length - 3].focus();
+  }, 50);
+}
+
+function removeRoom(i) {
+  rooms.splice(i, 1);
+  renderRooms();
+}
+
 // Generate random 16-byte PSK for private channels (MeshCore standard key size)
 function generateChannelPSK(i) {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -1718,6 +1804,12 @@ function buildConfig() {
       if (ch.scope) obj.scope = ch.scope;
       return obj;
     }),
+    room_servers: rooms.filter(r => r.public_key && r.public_key.length === 64).map(r => ({
+      name: r.name || '',
+      public_key: r.public_key.toLowerCase(),
+      password: (r.password || '').slice(0, 15),
+      allow_sos: r.allow_sos !== false
+    })),
     display: {
       brightness: parseInt(document.getElementById('dispBrightness').value),
       auto_dim_seconds: parseInt(document.getElementById('dispAutoDim').value),
@@ -1862,6 +1954,15 @@ function loadConfig(cfg) {
     scope: ch.scope || ''
   }));
   renderChannels();
+
+  // Room servers
+  rooms = (cfg.room_servers || []).map(r => ({
+    name: r.name || '',
+    public_key: (r.public_key || '').toLowerCase(),
+    password: r.password || '',
+    allow_sos: r.allow_sos !== false
+  }));
+  renderRooms();
 
   // Display
   if (cfg.display) {
@@ -2828,6 +2929,7 @@ function initHintToggle() {
 initHintToggle();
 renderContacts();
 renderChannels();
+renderRooms();
 maybeShowWizard();
 </script>
 </body>

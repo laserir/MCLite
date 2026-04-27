@@ -28,6 +28,13 @@ struct ChannelConfig {
     String  scope;             // Region scope override ("" = inherit global, "*" = wildcard, "#name" = region)
 };
 
+struct RoomServerConfig {
+    String name;       // Display name (user-chosen)
+    String publicKey;  // 64 hex chars (server's Ed25519 public key)
+    String password;   // Plaintext, ≤15 chars; "" = public room
+    bool   allowSos = true;  // Trigger SOS alert when a room post starts with the SOS keyword
+};
+
 struct RadioConfig {
     float   frequency       = 869.618f;
     uint8_t spreadingFactor = 8;
@@ -83,6 +90,7 @@ struct AppConfig {
     String          publicKey;   // base64
     std::vector<ContactConfig> contacts;
     std::vector<ChannelConfig> channels;
+    std::vector<RoomServerConfig> roomServers;
     DisplayConfig   display;
     MessagingConfig messaging;
     bool            soundEnabled = true;

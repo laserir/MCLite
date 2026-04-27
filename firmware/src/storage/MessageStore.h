@@ -22,11 +22,11 @@ struct Message {
     uint32_t packetId = 0;  // For ACK tracking
 };
 
-// Identifies a conversation (either DM or channel)
+// Identifies a conversation (DM, channel, or room)
 struct ConvoId {
-    enum Type { DM, CHANNEL };
+    enum Type { DM, CHANNEL, ROOM };
     Type   type;
-    String id;  // Contact shortId for DM, channel name for channels
+    String id;  // Contact shortId for DM, channel name for channels, room shortId for rooms
 
     bool operator==(const ConvoId& other) const {
         return type == other.type && id == other.id;
@@ -41,6 +41,7 @@ struct Conversation {
     bool    readOnly  = false;  // Hide input bar in chat view
     bool    hasUnread = false;
     uint32_t lastActivity = 0;
+    uint32_t syncSince    = 0;  // ROOM: last synced post timestamp; 0 for DM/CHANNEL
     std::vector<Message> messages;  // RAM cache
 
     const Message* lastMessage() const {
@@ -75,10 +76,14 @@ public:
     // Mark conversation as read
     void markRead(const ConvoId& id);
 
+    // ROOM-only: persist sender_timestamp as syncSince. Triggers saveHistory().
+    void updateRoomSyncSince(const ConvoId& id, uint32_t timestamp);
+
     static MessageStore& instance();
 
 private:
-    static constexpr size_t MAX_CONVERSATIONS = 48;  // MAX_CONTACTS(32) + MAX_GROUP_CHANNELS(16)
+    // MAX_CONTACTS(40) + MAX_GROUP_CHANNELS(16); 40 covers 32 chat contacts + 8 rooms
+    static constexpr size_t MAX_CONVERSATIONS = 56;
 
     MessageStore() { _convos.reserve(MAX_CONVERSATIONS); }
 

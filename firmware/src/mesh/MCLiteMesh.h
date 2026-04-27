@@ -32,6 +32,12 @@ using MeshAckCb      = std::function<void(uint32_t packetId)>;
 using MeshFailCb     = std::function<void(uint32_t packetId)>;
 using MeshAdvertCb   = std::function<void(const ContactInfo& contact, bool isNew)>;
 using MeshTelemetryCb = std::function<void(const ContactInfo& contact, const TelemetryData& data)>;
+using MeshRoomMsgCb   = std::function<void(const ContactInfo& contact,
+                                            const uint8_t* sender_prefix /* 4 B */,
+                                            uint32_t sender_timestamp,
+                                            const char* text)>;
+using MeshRoomLoginCb = std::function<void(const ContactInfo& contact,
+                                            uint8_t status, uint8_t permissions)>;
 
 // Pending ACK entry
 struct AckEntry {
@@ -71,6 +77,15 @@ public:
     bool sendGroup(int channelIdx, const char* senderName, const char* text,
                    uint32_t timestamp);
 
+    // Send room post — returns internal packetId, 0 on failure (mirrors sendDM)
+    uint32_t sendRoomPost(size_t roomIdx, const char* text, uint32_t timestamp,
+                          uint8_t maxRetries);
+
+    // Send room login. Locates the registered ROOM contact for roomIdx and calls
+    // BaseChatMesh::sendLogin. Returns the int result of sendLogin
+    // (MSG_SEND_FAILED / SENT_FLOOD / SENT_DIRECT). estTimeout filled on success.
+    int loginRoom(size_t roomIdx, const char* password, uint32_t& estTimeout);
+
     // Register callbacks
     void onMessage(MeshMessageCb cb)   { _onMessage = cb; }
     void onGroupMsg(MeshGroupMsgCb cb) { _onGroupMsg = cb; }
@@ -78,6 +93,8 @@ public:
     void onFail(MeshFailCb cb)         { _onFail = cb; }
     void onAdvert(MeshAdvertCb cb)     { _onAdvert = cb; }
     void onTelemetry(MeshTelemetryCb cb) { _onTelemetry = cb; }
+    void onRoomMsg(MeshRoomMsgCb cb)     { _onRoomMsg = cb; }
+    void onRoomLogin(MeshRoomLoginCb cb) { _onRoomLogin = cb; }
 
     // Request telemetry from a contact — returns true on success
     bool requestTelemetry(size_t contactIdx, uint32_t& estTimeout);
@@ -162,8 +179,15 @@ private:
     MeshFailCb     _onFail;
     MeshAdvertCb    _onAdvert;
     MeshTelemetryCb _onTelemetry;
+    MeshRoomMsgCb   _onRoomMsg;
+    MeshRoomLoginCb _onRoomLogin;
     uint32_t        _pendingTelemTag = 0;
     uint8_t         _pendingTelemKey[PUB_KEY_SIZE] = {};
+
+    // Cached BaseChatMesh contact-index per registered room (avoids linear scan
+    // on every login/post). Set during begin(); -1 means slot unused.
+    static constexpr size_t MAX_ROOMS_RUNTIME = 8;
+    int8_t _roomContactIdx[MAX_ROOMS_RUNTIME] = {-1, -1, -1, -1, -1, -1, -1, -1};
 
     // ACK tracking
     AckEntry _acks[MAX_PENDING_ACKS];

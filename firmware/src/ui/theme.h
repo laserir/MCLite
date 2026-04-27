@@ -6,6 +6,7 @@
 #define ICON_DM       "@"                  // DM contact
 #define ICON_CHANNEL  "#"                  // Public channel
 #define ICON_PRIVATE  "*"                  // Private channel
+#define ICON_ROOM     "R"                  // Room server
 #define ICON_LOCK     LV_SYMBOL_CLOSE      // PIN lock screen
 
 namespace mclite {
@@ -32,6 +33,7 @@ constexpr lv_color_t BATTERY_LOW     = LV_COLOR_MAKE(0xFF, 0x44, 0x44);  // Red
 constexpr lv_color_t BATTERY_OK      = LV_COLOR_MAKE(0x00, 0xCC, 0x66);  // Green
 constexpr lv_color_t GPS_LAST_KNOWN  = LV_COLOR_MAKE(0xFF, 0xAA, 0x00);  // Amber/yellow
 constexpr lv_color_t OFFGRID_ACCENT  = LV_COLOR_MAKE(0xFF, 0x8C, 0x00);  // Warm orange (offgrid mode indicator)
+constexpr lv_color_t ROOM_ACCENT     = LV_COLOR_MAKE(0xA2, 0x59, 0xFF);  // Purple (room server icon/header)
 
 // Spacing
 constexpr int PAD_SMALL   = 4;

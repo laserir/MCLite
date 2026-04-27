@@ -115,6 +115,27 @@ bool ConfigManager::parseJson(const String& json) {
         }
     }
 
+    // Room servers
+    _config.roomServers.clear();
+    JsonArray rooms = doc["room_servers"];
+    if (rooms) {
+        for (JsonObject r : rooms) {
+            RoomServerConfig rc;
+            rc.name      = r["name"] | "Room";
+            rc.publicKey = r["public_key"] | "";
+            rc.password  = r["password"]   | "";
+            rc.allowSos  = r["allow_sos"]  | true;
+            // Match MeshCore's BaseChatMesh::sendLogin truncation (BaseChatMesh.cpp:553)
+            if (rc.password.length() > 15) {
+                rc.password = rc.password.substring(0, 15);
+            }
+            // Skip rooms with empty pubkey (nothing to log in to)
+            if (rc.publicKey.length() > 0) {
+                _config.roomServers.push_back(rc);
+            }
+        }
+    }
+
     // Channels
     _config.channels.clear();
     JsonArray channels = doc["channels"];
@@ -290,6 +311,15 @@ String ConfigManager::toJson() const {
         obj["always_sound"]    = c.alwaysSound;
         obj["allow_sos"]       = c.allowSos;
         obj["send_sos"]        = c.sendSos;
+    }
+
+    JsonArray rooms = doc["room_servers"].to<JsonArray>();
+    for (const auto& r : _config.roomServers) {
+        JsonObject obj = rooms.add<JsonObject>();
+        obj["name"]       = r.name;
+        obj["public_key"] = r.publicKey;
+        obj["password"]   = r.password;
+        obj["allow_sos"]  = r.allowSos;
     }
 
     JsonArray channels = doc["channels"].to<JsonArray>();

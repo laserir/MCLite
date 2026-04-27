@@ -166,7 +166,9 @@ void ChatScreen::open(const ConvoId& id) {
     bool ro = convo && convo->readOnly;
     if (convo) {
         String prefix;
-        if (id.type == ConvoId::CHANNEL) {
+        if (id.type == ConvoId::ROOM) {
+            prefix = ICON_ROOM " ";
+        } else if (id.type == ConvoId::CHANNEL) {
             prefix = convo->isPrivate ? ICON_PRIVATE " " : ICON_CHANNEL " ";
         } else {
             prefix = ICON_DM " ";
@@ -263,9 +265,10 @@ void ChatScreen::addBubble(const Message& msg) {
     }
     lv_obj_set_style_bg_opa(bubble, LV_OPA_COVER, 0);
 
-    // Sender name (for channel messages, incoming only)
-    if (!msg.fromSelf && msg.senderName.length() > 0 &&
-        _currentConvo && _currentConvo->type == ConvoId::CHANNEL) {
+    // Sender name (for channel and room messages, incoming only)
+    if (!msg.fromSelf && msg.senderName.length() > 0 && _currentConvo &&
+        (_currentConvo->type == ConvoId::CHANNEL ||
+         _currentConvo->type == ConvoId::ROOM)) {
         lv_obj_t* sender = lv_label_create(bubble);
         lv_obj_set_style_text_font(sender, FONT_SMALL, 0);
         lv_obj_set_style_text_color(sender, theme::ACCENT, 0);
