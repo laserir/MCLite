@@ -1106,6 +1106,24 @@ void UIManager::checkBatteryAlert() {
                 String displayName = convo ? convo->displayName : ch.name;
                 MessageStore::instance().addMessage(id, displayName, ch.isPrivate(), msg);
             }
+            // Also send to rooms with sendSos enabled. Same broadcast policy as SOS.
+            const auto& rooms = cfg.roomServers;
+            for (size_t i = 0; i < rooms.size() && i < MAX_ROOMS; i++) {
+                if (!rooms[i].sendSos) continue;
+                if (rooms[i].publicKey.length() != 64) continue;
+                uint32_t packetId = mesh.sendRoomPost(i, alertText);
+
+                ConvoId id{ConvoId::ROOM, rooms[i].publicKey.substring(0, 16)};
+                Message msg;
+                msg.fromSelf  = true;
+                msg.text      = alertText;
+                msg.timestamp = ts;
+                msg.status    = packetId ? MessageStatus::SENDING : MessageStatus::FAILED;
+                msg.packetId  = packetId;
+                Conversation* convo = MessageStore::instance().getConversation(id);
+                String displayName = convo ? convo->displayName : rooms[i].name;
+                MessageStore::instance().addMessage(id, displayName, false, msg);
+            }
         }
 
         _batteryAlertSent = true;
