@@ -31,8 +31,8 @@ Most features below are optional. The primary goal is to keep things extremely s
 - **Notification sounds** -- chime on incoming messages, alarm on SOS. Supports custom WAV files from SD card
 - **Auto-dim** -- screen and keyboard backlight dim after inactivity to save battery
 - **Multiple input methods** -- QWERTY keyboard, trackball, and touchscreen
-- **Screen lock** -- hold the trackball for 1 second to lock. Key lock (`"lock": "key"`) blocks all input and unlocks with another 1s hold. PIN lock (`"lock": "pin"`) requires a code to unlock. Optional auto-lock on display dim
-- **Region scope** -- tag outgoing packets with MeshCore transport codes so repeaters can filter by region. Set a global scope or override per channel
+- **Screen lock** -- hold the trackball for 1 second to lock. Key lock blocks all input and unlocks with another 1s hold. PIN lock requires a code to unlock. Optional auto-lock on display dim
+- **Region scope** -- tag outgoing packets with MeshCore transport codes so repeaters can filter by region. Set a global scope or override per channel/room
 - **Path hash mode** -- configurable repeater path fingerprint size (1/2/3 bytes per hop). Larger sizes reduce path collisions in dense meshes at the cost of a few extra bytes per hop. Defaults to 1 byte for compatibility with pre-v1.15 peers
 - **Offgrid mode** -- one-flag toggle that switches to the community offgrid frequency (433/869/918 MHz, auto-picked from your normal frequency) and relays packets for other offgrid nodes. Camping / hiking / SAR scenarios where no repeaters exist. Toggle on-device from the admin screen or via config tool, reboot to apply. While offgrid, only other offgrid peers receive your messages, SOS, and battery alerts.
 - **Zero-config for end users** -- all settings live in one JSON file on the SD card. Set it up once, copy to every device in your group
@@ -142,6 +142,19 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
     }
   ],
 
+  // Room servers — community message boards run by MeshCore room servers (max 8)
+  "room_servers": [
+    {
+      "name": "Ruhrgebiet",            // Display name shown in conversation list
+      "public_key": "...64-hex...",    // Server's Ed25519 public key (shared out-of-band)
+      "password": "secret",            // Up to 15 chars; "" = public room
+      "allow_sos": true,               // Trigger SOS alert on posts starting with the SOS keyword
+      "send_sos": false,               // Include this room in your outgoing SOS broadcast (default off — community rooms shouldn't be spammed)
+      "read_only": false,              // Listen-only mode — hides the input bar
+      "scope": ""                      // Per-room scope override (omit or "" = inherit global)
+    }
+  ],
+
   "display": {
     "brightness": 180,                 // 0-255
     "auto_dim_seconds": 30,            // Dim screen after N seconds of inactivity (0 = off)
@@ -228,6 +241,7 @@ Region codes in that tool are GeoNames admin1 codes, not the local administrativ
 | @ | Direct message (contact) |
 | # | Public or hashtag channel |
 | * | Private channel |
+| R | Room server (purple) |
 | Green eye | Contact recently seen on the mesh |
 | Green dot | Unread messages |
 | Battery / GPS | Contact's last reported telemetry |
