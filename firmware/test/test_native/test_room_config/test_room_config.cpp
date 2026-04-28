@@ -126,6 +126,20 @@ void test_room_servers_read_only_round_trip() {
     TEST_ASSERT_FALSE(cfg->config().roomServers[0].readOnly);
 }
 
+void test_room_servers_pubkey_lowercased_on_parse() {
+    // Hand-edited uppercase hex is normalized to lowercase, so UIManager's
+    // string-compare against the lowercase shortId works regardless of case.
+    String json = "{\"room_servers\":[{";
+    json += "\"name\":\"X\",\"public_key\":\"";
+    json += "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789";
+    json += "\"}]}";
+    TEST_ASSERT_TRUE(cfg->parseJson(json));
+    TEST_ASSERT_EQUAL(1, (int)cfg->config().roomServers.size());
+    TEST_ASSERT_EQUAL_STRING(
+        "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+        cfg->config().roomServers[0].publicKey.c_str());
+}
+
 void test_room_servers_scope_round_trip() {
     String json = "{\"room_servers\":[{";
     json += "\"name\":\"EU Room\",\"public_key\":\""; json += PUBKEY_64HEX; json += "\",";
@@ -174,6 +188,7 @@ int main() {
     RUN_TEST(test_room_servers_allow_sos_false_round_trip);
     RUN_TEST(test_room_servers_send_sos_default_and_explicit);
     RUN_TEST(test_room_servers_read_only_round_trip);
+    RUN_TEST(test_room_servers_pubkey_lowercased_on_parse);
     RUN_TEST(test_room_servers_scope_round_trip);
     return UNITY_END();
 }

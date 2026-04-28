@@ -95,6 +95,14 @@ public:
         return true;
     }
 
+    // Arduino String exposes toLowerCase / toUpperCase as in-place mutations.
+    void toLowerCase() {
+        for (auto& c : _str) c = (char)std::tolower((unsigned char)c);
+    }
+    void toUpperCase() {
+        for (auto& c : _str) c = (char)std::toupper((unsigned char)c);
+    }
+
 private:
     std::string _str;
 };

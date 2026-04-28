@@ -128,6 +128,12 @@ bool ConfigManager::parseJson(const String& json) {
             rc.sendSos   = r["send_sos"]   | false;
             rc.readOnly  = r["read_only"]  | false;
             rc.scope     = r["scope"]      | "";
+            // Normalize pubkey to lowercase. UIManager compares
+            // publicKey.substring(0, 16) against ConvoId::id (always lowercase
+            // from pubKeyToShortId), so hand-edited uppercase hex would
+            // otherwise silently break outgoing paths (handleSend, retry,
+            // chat-open re-login, SOS broadcast).
+            rc.publicKey.toLowerCase();
             // Match MeshCore's BaseChatMesh::sendLogin truncation (BaseChatMesh.cpp:553)
             if (rc.password.length() > 15) {
                 rc.password = rc.password.substring(0, 15);
