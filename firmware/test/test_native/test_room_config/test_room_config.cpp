@@ -85,6 +85,67 @@ void test_room_servers_allow_sos_false_round_trip() {
     TEST_ASSERT_FALSE(cfg->config().roomServers[0].allowSos);
 }
 
+void test_room_servers_send_sos_default_and_explicit() {
+    // Default: send_sos false (community rooms shouldn't be spammed)
+    String json = "{\"room_servers\":[{";
+    json += "\"name\":\"R\",\"public_key\":\""; json += PUBKEY_64HEX; json += "\"}]}";
+    TEST_ASSERT_TRUE(cfg->parseJson(json));
+    TEST_ASSERT_FALSE(cfg->config().roomServers[0].sendSos);
+
+    // Explicit true round-trips
+    cfg->config() = AppConfig{};
+    String json2 = "{\"room_servers\":[{";
+    json2 += "\"name\":\"SAR\",\"public_key\":\""; json2 += PUBKEY_64HEX; json2 += "\",";
+    json2 += "\"send_sos\":true}]}";
+    TEST_ASSERT_TRUE(cfg->parseJson(json2));
+    TEST_ASSERT_TRUE(cfg->config().roomServers[0].sendSos);
+
+    String reserialized = cfg->toJson();
+    cfg->config() = AppConfig{};
+    TEST_ASSERT_TRUE(cfg->parseJson(reserialized));
+    TEST_ASSERT_TRUE(cfg->config().roomServers[0].sendSos);
+}
+
+void test_room_servers_read_only_round_trip() {
+    String json = "{\"room_servers\":[{";
+    json += "\"name\":\"Listen\",\"public_key\":\""; json += PUBKEY_64HEX; json += "\",";
+    json += "\"read_only\":true}]}";
+    TEST_ASSERT_TRUE(cfg->parseJson(json));
+    TEST_ASSERT_TRUE(cfg->config().roomServers[0].readOnly);
+
+    String reserialized = cfg->toJson();
+    cfg->config() = AppConfig{};
+    TEST_ASSERT_TRUE(cfg->parseJson(reserialized));
+    TEST_ASSERT_TRUE(cfg->config().roomServers[0].readOnly);
+
+    // Default off — and not serialized when false (keeps file lean)
+    cfg->config() = AppConfig{};
+    String j2 = "{\"room_servers\":[{";
+    j2 += "\"name\":\"X\",\"public_key\":\""; j2 += PUBKEY_64HEX; j2 += "\"}]}";
+    TEST_ASSERT_TRUE(cfg->parseJson(j2));
+    TEST_ASSERT_FALSE(cfg->config().roomServers[0].readOnly);
+}
+
+void test_room_servers_scope_round_trip() {
+    String json = "{\"room_servers\":[{";
+    json += "\"name\":\"EU Room\",\"public_key\":\""; json += PUBKEY_64HEX; json += "\",";
+    json += "\"scope\":\"#europe\"}]}";
+    TEST_ASSERT_TRUE(cfg->parseJson(json));
+    TEST_ASSERT_EQUAL_STRING("#europe", cfg->config().roomServers[0].scope.c_str());
+
+    String reserialized = cfg->toJson();
+    cfg->config() = AppConfig{};
+    TEST_ASSERT_TRUE(cfg->parseJson(reserialized));
+    TEST_ASSERT_EQUAL_STRING("#europe", cfg->config().roomServers[0].scope.c_str());
+
+    // Default empty
+    cfg->config() = AppConfig{};
+    String j2 = "{\"room_servers\":[{";
+    j2 += "\"name\":\"X\",\"public_key\":\""; j2 += PUBKEY_64HEX; j2 += "\"}]}";
+    TEST_ASSERT_TRUE(cfg->parseJson(j2));
+    TEST_ASSERT_EQUAL_STRING("", cfg->config().roomServers[0].scope.c_str());
+}
+
 void test_room_servers_empty_password_round_trip() {
     // Public room: empty password is valid (BaseChatMesh::sendLogin handles strlen("")==0)
     String json = "{\"room_servers\":[{";
@@ -111,5 +172,8 @@ int main() {
     RUN_TEST(test_room_servers_round_trip);
     RUN_TEST(test_room_servers_empty_password_round_trip);
     RUN_TEST(test_room_servers_allow_sos_false_round_trip);
+    RUN_TEST(test_room_servers_send_sos_default_and_explicit);
+    RUN_TEST(test_room_servers_read_only_round_trip);
+    RUN_TEST(test_room_servers_scope_round_trip);
     return UNITY_END();
 }

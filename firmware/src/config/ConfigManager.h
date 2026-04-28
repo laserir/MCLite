@@ -32,7 +32,10 @@ struct RoomServerConfig {
     String name;       // Display name (user-chosen)
     String publicKey;  // 64 hex chars (server's Ed25519 public key)
     String password;   // Plaintext, ≤15 chars; "" = public room
-    bool   allowSos = true;  // Trigger SOS alert when a room post starts with the SOS keyword
+    bool   allowSos = true;   // Trigger SOS alert when a room post starts with the SOS keyword
+    bool   sendSos  = false;  // Include this room in outgoing SOS broadcasts (default off — community rooms shouldn't be spammed)
+    bool   readOnly = false;  // Hide input bar in chat view (listen-only)
+    String scope;             // Region scope override ("" = inherit global, "*" = wildcard, "#name" = region)
 };
 
 struct RadioConfig {

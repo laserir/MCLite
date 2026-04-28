@@ -189,6 +189,10 @@ private:
     static constexpr size_t MAX_ROOMS_RUNTIME = 8;
     int8_t _roomContactIdx[MAX_ROOMS_RUNTIME] = {-1, -1, -1, -1, -1, -1, -1, -1};
 
+    // Per-room scope override, parsed at begin() from cfg.roomServers[i].scope.
+    // Null TransportKey = inherit global scope (the default).
+    TransportKey _roomScope[MAX_ROOMS_RUNTIME];
+
     // ACK tracking
     AckEntry _acks[MAX_PENDING_ACKS];
     uint32_t _nextPacketId = 1;

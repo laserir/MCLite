@@ -978,6 +978,38 @@ void UIManager::sendSOSToAll() {
         delay(50);
     }
 
+    // Also send to rooms with send_sos enabled. Rooms are pubkey-addressed
+    // (DM-style ACK pipeline) so the local message starts SENDING, not SENT.
+    const auto& rooms = ConfigManager::instance().config().roomServers;
+    for (size_t i = 0; i < rooms.size() && i < MAX_ROOMS; i++) {
+        if (!rooms[i].sendSos) continue;
+        if (rooms[i].publicKey.length() != 64) continue;
+
+        uint32_t packetId = mesh.sendRoomPost(i, sosText);
+        Serial.printf("[SOS] ROOM %s: packetId=%u %s\n",
+                      rooms[i].name.c_str(), packetId,
+                      packetId ? "queued" : "FAILED (pool?)");
+
+        String shortId = rooms[i].publicKey.substring(0, 16);
+        ConvoId id{ConvoId::ROOM, shortId};
+        Message msg;
+        msg.fromSelf  = true;
+        msg.text      = sosText;
+        msg.timestamp = gps.isTimeSynced()
+            ? gps.currentTimestamp() : (millis() / 1000);
+        msg.status    = packetId ? MessageStatus::SENDING : MessageStatus::FAILED;
+        msg.packetId  = packetId;
+
+        Conversation* convo = MessageStore::instance().getConversation(id);
+        String displayName = convo ? convo->displayName : rooms[i].name;
+        MessageStore::instance().addMessage(id, displayName, false, msg);
+
+        if (packetId) sent++;
+
+        MeshManager::instance().update();
+        delay(50);
+    }
+
     // Show confirmation toast via a brief modal
     char confirmBuf[64];
     snprintf(confirmBuf, sizeof(confirmBuf), t("sos_sent"), sent);

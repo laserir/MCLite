@@ -165,14 +165,24 @@ bool MCLiteMesh::begin(const char* deviceName) {
         for (int s = 0; s < 8; s++) sprintf(shortId + s*2, "%02x", pub[s]);
         shortId[16] = '\0';
 
-        // Seed sync_since from MessageStore (loads /mclite/history/room_<id>.json)
+        // Seed sync_since from MessageStore (loads /mclite/history/room_<id>.json).
+        // readOnly is honored so the input bar hides on listen-only rooms.
         ConvoId rid { ConvoId::ROOM, String(shortId) };
         auto& store = MessageStore::instance();
-        store.ensureConversation(rid, rs.name, /*isPrivate=*/false);
+        store.ensureConversation(rid, rs.name, /*isPrivate=*/false, rs.readOnly);
         store.loadHistory(rid);
         uint32_t syncSince = 0;
         if (Conversation* convo = store.getConversation(rid)) {
             syncSince = convo->syncSince;
+        }
+
+        // Parse per-room scope override (null TransportKey = inherit _globalScope)
+        if (rs.scope.length() > 0) {
+            _roomScope[i] = scopeToTransportKey(rs.scope);
+            if (!_roomScope[i].isNull()) {
+                Serial.printf("[MCLiteMesh] Room '%s' scope: %s\n",
+                              rs.name.c_str(), rs.scope.c_str());
+            }
         }
 
         ContactInfo ci;
@@ -279,6 +289,21 @@ void MCLiteMesh::sendWithScope(const TransportKey& scope, mesh::Packet* pkt, uin
 }
 
 void MCLiteMesh::sendFloodScoped(const ContactInfo& recipient, mesh::Packet* pkt, uint32_t delay_millis) {
+    // Room contacts may have a per-room scope override (mirrors channel-scope behavior).
+    // DMs always inherit the global scope today (no per-contact override exposed).
+    if (recipient.type == ADV_TYPE_ROOM) {
+        for (size_t i = 0; i < MAX_ROOMS_RUNTIME; i++) {
+            if (_roomContactIdx[i] < 0) continue;
+            ContactInfo* room_ci = getContactByIdx(_roomContactIdx[i]);
+            if (room_ci && memcmp(room_ci->id.pub_key, recipient.id.pub_key, PUB_KEY_SIZE) == 0) {
+                if (!_roomScope[i].isNull()) {
+                    sendWithScope(_roomScope[i], pkt, delay_millis);
+                    return;
+                }
+                break;  // matched but no override — fall through to global scope
+            }
+        }
+    }
     sendWithScope(_globalScope, pkt, delay_millis);
 }
 

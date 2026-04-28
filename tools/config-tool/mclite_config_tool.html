@@ -1488,13 +1488,40 @@ function renderRooms() {
                placeholder="(empty = public room)">
         <div class="hint collapsible">Up to 15 characters. Leave empty to join a room that requires no password (public).</div>
       </div>
-      <div class="field" style="margin-top:8px">
-        <label>Allow SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-        <select onchange="rooms[${i}].allow_sos=(this.value==='true')">
-          <option value="true" ${r.allow_sos !== false ? 'selected' : ''}>Yes</option>
-          <option value="false" ${r.allow_sos === false ? 'selected' : ''}>No</option>
-        </select>
-        <div class="hint collapsible">Trigger SOS alert when a post in this room starts with the SOS keyword. Disable for noisy public rooms where you do not want random posters waking your alarm.</div>
+      <div class="row" style="margin-top:8px; gap:16px;">
+        <div class="field">
+          <label>Allow SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+          <select onchange="rooms[${i}].allow_sos=(this.value==='true')">
+            <option value="true" ${r.allow_sos !== false ? 'selected' : ''}>Yes</option>
+            <option value="false" ${r.allow_sos === false ? 'selected' : ''}>No</option>
+          </select>
+          <div class="hint collapsible">Trigger SOS alert when a post in this room starts with the SOS keyword. Disable for noisy public rooms.</div>
+        </div>
+        <div class="field">
+          <label>Send SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+          <select onchange="rooms[${i}].send_sos=(this.value==='true')">
+            <option value="false" ${r.send_sos === true ? '' : 'selected'}>No</option>
+            <option value="true" ${r.send_sos === true ? 'selected' : ''}>Yes</option>
+          </select>
+          <div class="hint collapsible">Include this room in your outgoing SOS broadcast. Default off — only enable for trusted SAR/rescue rooms; community rooms shouldn't be spammed.</div>
+        </div>
+        <div class="field">
+          <label>Read Only<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+          <select onchange="rooms[${i}].read_only=(this.value==='true')">
+            <option value="false" ${r.read_only ? '' : 'selected'}>No</option>
+            <option value="true" ${r.read_only ? 'selected' : ''}>Yes</option>
+          </select>
+          <div class="hint collapsible">Listen-only mode — hides the input bar in chat view.</div>
+        </div>
+        <div class="field">
+          <label>Scope Override<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+          <input type="text" value="${esc(r.scope || '')}" maxlength="32"
+                 pattern="|\\*|#[a-z0-9\\-]+"
+                 onchange="rooms[${i}].scope=this.value"
+                 placeholder="(inherit global)"
+                 title="Leave empty for global scope, * for wildcard, or #name for a region">
+          <div class="hint collapsible">Override the global radio scope for posts to this room. Same syntax as channel scope.</div>
+        </div>
       </div>
     </div>
   `).join('');
@@ -1502,7 +1529,8 @@ function renderRooms() {
 
 function addRoom() {
   if (rooms.length >= 8) { toast('Maximum 8 rooms reached (firmware limit)'); return; }
-  rooms.push({ name: '', public_key: '', password: '', allow_sos: true });
+  rooms.push({ name: '', public_key: '', password: '', allow_sos: true,
+               send_sos: false, read_only: false, scope: '' });
   renderRooms();
   // Focus the new name input
   setTimeout(() => {
@@ -1804,12 +1832,18 @@ function buildConfig() {
       if (ch.scope) obj.scope = ch.scope;
       return obj;
     }),
-    room_servers: rooms.filter(r => r.public_key && r.public_key.length === 64).map(r => ({
-      name: r.name || '',
-      public_key: r.public_key.toLowerCase(),
-      password: (r.password || '').slice(0, 15),
-      allow_sos: r.allow_sos !== false
-    })),
+    room_servers: rooms.filter(r => r.public_key && r.public_key.length === 64).map(r => {
+      const obj = {
+        name: r.name || '',
+        public_key: r.public_key.toLowerCase(),
+        password: (r.password || '').slice(0, 15),
+        allow_sos: r.allow_sos !== false,
+        send_sos: r.send_sos === true
+      };
+      if (r.read_only) obj.read_only = true;
+      if (r.scope) obj.scope = r.scope;
+      return obj;
+    }),
     display: {
       brightness: parseInt(document.getElementById('dispBrightness').value),
       auto_dim_seconds: parseInt(document.getElementById('dispAutoDim').value),
@@ -1960,7 +1994,10 @@ function loadConfig(cfg) {
     name: r.name || '',
     public_key: (r.public_key || '').toLowerCase(),
     password: r.password || '',
-    allow_sos: r.allow_sos !== false
+    allow_sos: r.allow_sos !== false,
+    send_sos: r.send_sos === true,
+    read_only: r.read_only === true,
+    scope: r.scope || ''
   }));
   renderRooms();
 

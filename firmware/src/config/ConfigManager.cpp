@@ -125,6 +125,9 @@ bool ConfigManager::parseJson(const String& json) {
             rc.publicKey = r["public_key"] | "";
             rc.password  = r["password"]   | "";
             rc.allowSos  = r["allow_sos"]  | true;
+            rc.sendSos   = r["send_sos"]   | false;
+            rc.readOnly  = r["read_only"]  | false;
+            rc.scope     = r["scope"]      | "";
             // Match MeshCore's BaseChatMesh::sendLogin truncation (BaseChatMesh.cpp:553)
             if (rc.password.length() > 15) {
                 rc.password = rc.password.substring(0, 15);
@@ -320,6 +323,9 @@ String ConfigManager::toJson() const {
         obj["public_key"] = r.publicKey;
         obj["password"]   = r.password;
         obj["allow_sos"]  = r.allowSos;
+        obj["send_sos"]   = r.sendSos;
+        if (r.readOnly) obj["read_only"] = true;
+        if (r.scope.length() > 0) obj["scope"] = r.scope;
     }
 
     JsonArray channels = doc["channels"].to<JsonArray>();
