@@ -160,6 +160,16 @@ bool MCLiteMesh::begin(const char* deviceName) {
             pub[b] = (uint8_t)strtoul(byteStr, nullptr, 16);
         }
 
+        // Detect pubkey collision with an already-registered chat contact.
+        // BaseChatMesh routes inbound packets by pubkey lookup (first match wins),
+        // so a duplicate would shadow the room contact and signed messages would
+        // arrive on the chat dispatch path instead — silently breaking the room.
+        if (lookupContactByPubKey(pub, PUB_KEY_SIZE) != nullptr) {
+            Serial.printf("[MCLiteMesh] Skipping room '%s': pubkey collides with "
+                          "an existing chat contact\n", rs.name.c_str());
+            continue;
+        }
+
         // Compute 8-byte shortId hex (16 chars) for the per-room history file
         char shortId[17];
         for (int s = 0; s < 8; s++) sprintf(shortId + s*2, "%02x", pub[s]);

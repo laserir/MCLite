@@ -1791,6 +1791,28 @@ function validate() {
     }
   });
 
+  // Room server validation: 64-hex pubkey, password ≤15, no pubkey duplicates.
+  // Empty rows are skipped so users can still leave a half-filled draft.
+  const roomKeys = new Set();
+  rooms.forEach((r, i) => {
+    if (!r.public_key) return;  // empty row, skip silently
+    const key = r.public_key.trim().toLowerCase();
+    if (!/^[0-9a-fA-F]{64}$/.test(key)) {
+      valid = false;
+      toast('Room ' + (i + 1) + ': public key must be 64 hex characters');
+      return;
+    }
+    if (roomKeys.has(key)) {
+      valid = false;
+      toast('Duplicate room public key (room ' + (i + 1) + ')');
+    }
+    roomKeys.add(key);
+    if ((r.password || '').length > 15) {
+      valid = false;
+      toast('Room ' + (i + 1) + ': password must be ≤15 characters');
+    }
+  });
+
   return valid;
 }
 

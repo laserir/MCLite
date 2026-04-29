@@ -655,6 +655,9 @@ void UIManager::roomLoginTick() {
     unsigned long now = millis();
     size_t roomCount = rooms.size() < MAX_ROOMS ? rooms.size() : MAX_ROOMS;
 
+    // Stagger login bursts: at most one room login per tick. With 8 rooms at boot
+    // this spreads the initial login flood over 8 s (STATUS_UPDATE_MS cadence),
+    // avoiding packet-pool pressure during the first second after radio-ready.
     for (size_t i = 0; i < roomCount; i++) {
         if (_roomLoggedIn[i]) continue;
         if (now < _nextLoginAttemptMs[i] && _lastLoginMs[i] != 0) continue;
@@ -670,6 +673,7 @@ void UIManager::roomLoginTick() {
             Serial.printf("[UI] Room '%s' login attempt %u; next in %us\n",
                           rooms[i].name.c_str(), (unsigned)_loginAttempt[i],
                           (unsigned)delaySec);
+            return;  // one login per tick
         }
     }
 }
