@@ -158,7 +158,11 @@ bool ConfigManager::parseJson(const String& json) {
                 Serial.printf("[Config] Channel '%s' missing 'index' field, defaulting to 0\n", cc.name.c_str());
             cc.index    = ch["index"] | 0;
             cc.allowSos = ch["allow_sos"] | true;
-            cc.sendSos  = ch["send_sos"] | true;
+            // Default send_sos: true only for private channels (trusted, small group);
+            // false for public/hashtag (avoid spamming community channels). Matches
+            // room-server default. Explicit field always wins.
+            bool defaultSendSos = (cc.type == "private");
+            cc.sendSos  = ch["send_sos"] | defaultSendSos;
             cc.readOnly = ch["read_only"] | false;
             cc.scope    = ch["scope"] | "";
             // Private channels require a PSK; hashtag channels can derive from name
@@ -454,7 +458,7 @@ bool ConfigManager::generate() {
     mc.name = "#mclite";
     mc.type = "hashtag";
     mc.index = 1;
-    mc.sendSos = true;
+    mc.sendSos = false;  // Hashtag channels default to false (community-spam avoidance)
     mc.readOnly = false;
     {
         uint8_t hash[32];

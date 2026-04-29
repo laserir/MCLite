@@ -781,8 +781,8 @@ body.show-hints .hint.collapsible,
       <div class="field">
         <label>Quick Replies<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="cannedMessages">
-          <option value="false" selected>Off</option>
-          <option value="true">On</option>
+          <option value="false">Off</option>
+          <option value="true" selected>On</option>
         </select>
         <div class="hint collapsible">Quick-reply picker in chat (OK, Copy, Need help, etc.).</div>
       </div>
@@ -1413,7 +1413,10 @@ function renderChannels() {
 
 async function addChannel(type) {
   if (channels.length >= 16) { toast('Maximum 16 channels reached (firmware limit)'); return; }
-  const ch = { name: '', type: type, psk: '', index: channels.length, allow_sos: true, send_sos: true, read_only: false, scope: '' };
+  // Default send_sos: true only for private channels (trusted small group);
+  // false for hashtag (community channel — avoid SOS spam). Mirrors firmware default.
+  const defaultSendSos = (type === 'private');
+  const ch = { name: '', type: type, psk: '', index: channels.length, allow_sos: true, send_sos: defaultSendSos, read_only: false, scope: '' };
   channels.push(ch);
   renderChannels();
   setTimeout(() => {
@@ -2116,7 +2119,7 @@ function resetAll() {
   document.getElementById('msgRetries').value = 3;
   document.getElementById('msgTelemetry').value = 'true';
   document.getElementById('msgShowTelemetry').value = 'both';
-  document.getElementById('cannedMessages').value = 'false';
+  document.getElementById('cannedMessages').value = 'true';
   document.getElementById('soundEnabled').value = 'true';
   document.getElementById('sosKeyword').value = 'SOS';
   document.getElementById('sosRepeat').value = 3;
@@ -2605,7 +2608,7 @@ function wizStartFromScratch() {
   document.getElementById('msgRetries').value = 3;
   document.getElementById('msgTelemetry').value = 'true';
   document.getElementById('msgShowTelemetry').value = 'both';
-  document.getElementById('cannedMessages').value = 'false';
+  document.getElementById('cannedMessages').value = 'true';
   document.getElementById('soundEnabled').value = 'true';
   document.getElementById('sosKeyword').value = 'SOS';
   document.getElementById('sosRepeat').value = 3;
@@ -2632,7 +2635,7 @@ function wizStartFromScratch() {
 async function addDefaultHashtag() {
   const name = '#mclite';
   const psk = await deriveHashtagPSK(name);
-  channels.push({ name, type: 'hashtag', psk, index: channels.length, allow_sos: true, send_sos: true, read_only: false, scope: '' });
+  channels.push({ name, type: 'hashtag', psk, index: channels.length, allow_sos: true, send_sos: false, read_only: false, scope: '' });
   renderChannels();
 }
 
@@ -2817,7 +2820,8 @@ async function wizApplyAndShowSummary() {
   }
   for (const tag of wizState.hashtags) {
     const psk = await deriveHashtagPSK(tag);
-    channels.push({ name: tag, type: 'hashtag', psk, index: channels.length, allow_sos: true, send_sos: true, read_only: false, scope: '' });
+    // Hashtag default send_sos: false (community channel — avoid SOS spam)
+    channels.push({ name: tag, type: 'hashtag', psk, index: channels.length, allow_sos: true, send_sos: false, read_only: false, scope: '' });
   }
   // Auto-create fleet private channel
   if (isFleet && wizState.fleetPrivateChannel) {

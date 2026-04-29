@@ -37,7 +37,7 @@ constexpr const char* LOCATION_FORMAT    = "decimal";
 constexpr uint8_t  MAX_RETRIES           = 3;   // DM retry attempts (1-5)
 constexpr bool     REQUEST_TELEMETRY     = true;
 constexpr const char* SHOW_TELEMETRY    = "both";  // "battery", "location", "both", "none"
-constexpr bool     CANNED_MESSAGES_ENABLED = false;
+constexpr bool     CANNED_MESSAGES_ENABLED = true;
 
 // Sound
 constexpr bool     SOUND_ENABLED         = true;

@@ -225,6 +225,27 @@ void test_private_channel_without_psk_skipped() {
     TEST_ASSERT_EQUAL(0, cfg->config().channels.size());
 }
 
+void test_channel_send_sos_type_aware_default() {
+    // Hashtag/public channels default send_sos=false (community-spam avoidance)
+    // Private channels default send_sos=true (trusted small group)
+    parse("{\"channels\":["
+          "{\"name\":\"#tag\",\"type\":\"hashtag\",\"index\":0},"
+          "{\"name\":\"P\",\"type\":\"private\",\"psk\":\"a1b2c3d4e5f6a7b8a1b2c3d4e5f6a7b8\",\"index\":1}"
+          "]}");
+    TEST_ASSERT_EQUAL(2, cfg->config().channels.size());
+    TEST_ASSERT_FALSE(cfg->config().channels[0].sendSos);  // hashtag → false
+    TEST_ASSERT_TRUE(cfg->config().channels[1].sendSos);   // private → true
+}
+
+void test_channel_send_sos_explicit_overrides_default() {
+    parse("{\"channels\":["
+          "{\"name\":\"#shout\",\"type\":\"hashtag\",\"index\":0,\"send_sos\":true},"
+          "{\"name\":\"Q\",\"type\":\"private\",\"psk\":\"a1b2c3d4e5f6a7b8a1b2c3d4e5f6a7b8\",\"index\":1,\"send_sos\":false}"
+          "]}");
+    TEST_ASSERT_TRUE(cfg->config().channels[0].sendSos);   // explicit true wins
+    TEST_ASSERT_FALSE(cfg->config().channels[1].sendSos);  // explicit false wins
+}
+
 void test_hashtag_channel_without_psk_accepted() {
     // Hashtag channels derive PSK from name — no explicit PSK needed
     parse("{\"channels\":[{\"name\":\"#test\",\"type\":\"hashtag\",\"index\":0}]}");
@@ -414,6 +435,8 @@ int main() {
     RUN_TEST(test_channel_duplicate_index_skipped);
     RUN_TEST(test_private_channel_without_psk_skipped);
     RUN_TEST(test_hashtag_channel_without_psk_accepted);
+    RUN_TEST(test_channel_send_sos_type_aware_default);
+    RUN_TEST(test_channel_send_sos_explicit_overrides_default);
 
     // Canned messages
     RUN_TEST(test_canned_messages_bool_true);

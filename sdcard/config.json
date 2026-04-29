@@ -31,7 +31,7 @@
       "type": "hashtag",
       "index": 1,
       "allow_sos": true,
-      "send_sos": true,
+      "send_sos": false,
       "scope": ""
     }
   ],
@@ -50,7 +50,7 @@
     "max_retries": 3,
     "request_telemetry": true,
     "show_telemetry": "both",
-    "canned_messages": false
+    "canned_messages": true
   },
   "sound": {
     "enabled": true,

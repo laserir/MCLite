@@ -129,7 +129,7 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
       "type": "hashtag",
       "index": 1,
       "allow_sos": true,
-      "send_sos": true
+      "send_sos": false              // Hashtag default false — community channels shouldn't get SOS spam
     },
     {
       "name": "Team Alpha",
@@ -137,7 +137,7 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
       "psk": "a1b2c3d4e5f6a7b8a1b2c3d4e5f6a7b8",
       "index": 2,
       "allow_sos": true,
-      "send_sos": false,
+      "send_sos": true,                // Private channel default true (trusted small group)
       "scope": "#local"                // Override global scope for this channel (omit or "" = inherit global)
     }
   ],
@@ -171,7 +171,7 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
     "max_retries": 3,                  // DM delivery retry attempts (1-5)
     "request_telemetry": true,         // Tap contact name to see battery/location (optional)
     "show_telemetry": "both",          // Badges on convo list: "battery", "location", "both", "none"
-    "canned_messages": false           // Quick-reply picker: false = off, true = on (default messages),
+    "canned_messages": true            // Quick-reply picker: true = on (default messages, default), false = off,
                                        //   or ["Reply 1", "Reply 2"] = on with custom messages (max 8)
   },
 
