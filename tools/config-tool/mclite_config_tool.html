@@ -270,12 +270,6 @@ body.show-hints .hint.collapsible,
   margin: 12px 0;
 }
 #importInput { display: none; }
-.empty-state {
-  text-align: center;
-  padding: 20px;
-  color: var(--text3);
-  font-size: 0.85rem;
-}
 /* Fleet mode */
 .mode-toggle {
   display: flex;
@@ -522,9 +516,1665 @@ body.show-hints .hint.collapsible,
   accent-color: var(--accent);
 }
 .wiz-check label { font-size: 0.9rem; cursor: pointer; }
+
+/* ============================================================
+   v4 SHELL — instrument-panel layout
+   ============================================================ */
+:root {
+  --shell-bg: #0a0c10;
+  --shell-panel: #11141b;
+  --shell-panel-2: #161a23;
+  --shell-line: #1f2530;
+  --shell-line-2: #2a3242;
+  --shell-text: #e6e9ef;
+  --shell-text-dim: #7a8294;
+  --shell-text-faint: #4a5060;
+  --shell-amber: #ffb547;
+  --shell-amber-dim: #8a5f1f;
+  --shell-scope: #4ade80;
+  --shell-scope-dim: #1f5a35;
+  --shell-red: #ff5c5c;
+  --shell-red-dim: #6b2020;
+  --shell-blue: #5b9eff;
+  --rail-w: 240px;
+  --topbar-h: 52px;
+  --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace;
+  --sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+body.v4 {
+  background: var(--shell-bg);
+  color: var(--shell-text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  /* faint scanline texture */
+  background-image:
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.012) 0,
+      rgba(255,255,255,0.012) 1px,
+      transparent 1px,
+      transparent 3px);
+}
+
+/* Hide the old container — we wrap everything in the new shell */
+body.v4 > .container { display: none; }
+
+/* === Top bar === */
+.v4-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  background: var(--shell-panel);
+  border-bottom: 1px solid var(--shell-line);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+  z-index: 50;
+}
+.v4-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.v4-brand-mark {
+  width: 22px; height: 22px;
+  border: 1.5px solid var(--shell-amber);
+  border-radius: 3px;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+.v4-brand-mark::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background:
+    radial-gradient(circle at center, var(--shell-amber) 0 1.5px, transparent 2px),
+    repeating-radial-gradient(circle at center,
+      transparent 0 3px,
+      var(--shell-amber-dim) 3px 3.5px,
+      transparent 3.5px 6px);
+  opacity: 0.85;
+  border-radius: 1px;
+}
+.v4-brand-name {
+  color: var(--shell-text);
+  font-weight: 600;
+}
+.v4-brand-tag {
+  color: var(--shell-text-dim);
+  font-weight: 400;
+}
+.v4-topbar-spacer { flex: 1; }
+.v4-mode-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.v4-mode-pill {
+  display: inline-flex;
+  border: 1px solid var(--shell-line-2);
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--shell-bg);
+}
+.v4-mode-pill button {
+  background: transparent;
+  border: none;
+  color: var(--shell-text-dim);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.v4-mode-pill button:hover { color: var(--shell-text); }
+.v4-mode-pill button.active {
+  background: var(--shell-amber);
+  color: #1a1208;
+}
+.v4-topbar-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.v4-icon-btn {
+  background: transparent;
+  border: 1px solid var(--shell-line-2);
+  color: var(--shell-text-dim);
+  font-family: var(--sans);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.v4-icon-btn:hover {
+  color: var(--shell-text);
+  border-color: var(--shell-text-dim);
+}
+.v4-icon-btn svg { width: 13px; height: 13px; }
+.v4-export-btn {
+  background: var(--shell-amber);
+  border: 1px solid var(--shell-amber);
+  color: #1a1208;
+  font-weight: 600;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.v4-export-btn:hover { filter: brightness(1.1); }
+.v4-export-btn:disabled {
+  background: var(--shell-line);
+  border-color: var(--shell-line);
+  color: var(--shell-text-faint);
+  cursor: not-allowed;
+}
+.v4-menu-wrap {
+  position: relative;
+  display: inline-block;
+}
+.v4-menu-btn {
+  background: transparent;
+  border: 1px solid var(--shell-line-2);
+  color: var(--shell-text-dim);
+  width: 30px; height: 30px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.v4-menu-btn:hover { color: var(--shell-text); border-color: var(--shell-text-dim); }
+.v4-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--shell-panel-2);
+  border: 1px solid var(--shell-line-2);
+  border-radius: 4px;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  padding: 4px;
+  z-index: 60;
+  display: none;
+}
+.v4-menu-dropdown.open { display: block; }
+.v4-menu-dropdown button {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--shell-text);
+  text-align: left;
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.v4-menu-dropdown button:hover { background: var(--shell-line); }
+.v4-menu-divider {
+  height: 1px;
+  background: var(--shell-line);
+  margin: 4px 0;
+}
+
+/* === Workspace === */
+.v4-workspace {
+  position: fixed;
+  top: var(--topbar-h);
+  left: 0; right: 0; bottom: 0;
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr;
+  overflow: hidden;
+}
+
+/* === Left rail === */
+.v4-rail {
+  background: var(--shell-panel);
+  border-right: 1px solid var(--shell-line);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.v4-rail-section {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--shell-line);
+}
+.v4-rail-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Identity badge */
+.v4-identity-card {
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line-2);
+  border-radius: 4px;
+  padding: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  position: relative;
+}
+.v4-identity-card:hover { border-color: var(--shell-text-dim); }
+.v4-identity-card.has-key { border-color: var(--shell-scope-dim); }
+.v4-identity-card.empty { border-color: var(--shell-amber-dim); }
+.v4-identity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.v4-identity-led {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.v4-identity-led.on {
+  background: var(--shell-scope);
+  box-shadow: 0 0 6px var(--shell-scope);
+}
+.v4-identity-led.off {
+  background: var(--shell-amber);
+  box-shadow: 0 0 6px var(--shell-amber);
+  animation: v4-pulse 1.5s ease-in-out infinite;
+}
+@keyframes v4-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.v4-identity-text {
+  flex: 1;
+  min-width: 0;
+}
+.v4-identity-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--shell-text-dim);
+}
+.v4-identity-key {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--shell-text);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v4-identity-key.empty { color: var(--shell-amber); }
+
+/* Identity popover */
+.v4-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 6px;
+  background: var(--shell-panel-2);
+  border: 1px solid var(--shell-line-2);
+  border-radius: 4px;
+  padding: 12px;
+  z-index: 70;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  display: none;
+}
+.v4-popover.open { display: block; }
+.v4-popover-row { margin-bottom: 10px; }
+.v4-popover-row:last-child { margin-bottom: 0; }
+.v4-popover-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+  margin-bottom: 4px;
+}
+.v4-popover-value {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--shell-text);
+  word-break: break-all;
+  background: var(--shell-bg);
+  padding: 6px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--shell-line);
+  user-select: all;
+  line-height: 1.4;
+}
+.v4-popover-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.v4-popover-actions button {
+  flex: 1;
+  background: var(--shell-line);
+  border: 1px solid var(--shell-line-2);
+  color: var(--shell-text);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.v4-popover-actions button:hover { background: var(--shell-line-2); }
+.v4-popover-actions button.primary {
+  background: var(--shell-amber);
+  border-color: var(--shell-amber);
+  color: #1a1208;
+  font-weight: 600;
+}
+.v4-popover-actions button.primary:hover { filter: brightness(1.1); }
+
+/* Section nav */
+.v4-rail-nav { padding: 8px 0; flex: 1; }
+.v4-nav-group { margin-bottom: 4px; }
+.v4-nav-group-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+  padding: 8px 14px 4px;
+}
+.v4-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--shell-text-dim);
+  border-left: 2px solid transparent;
+  transition: color 0.1s, background 0.1s, border-color 0.1s;
+  position: relative;
+}
+.v4-nav-item:hover {
+  color: var(--shell-text);
+  background: rgba(255,255,255,0.02);
+}
+.v4-nav-item.active {
+  color: var(--shell-text);
+  background: var(--shell-panel-2);
+  border-left-color: var(--shell-amber);
+}
+.v4-nav-item .v4-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--shell-line-2);
+  flex-shrink: 0;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.v4-nav-item .v4-dot.ok {
+  background: var(--shell-scope);
+  box-shadow: 0 0 4px rgba(74,222,128,0.5);
+}
+.v4-nav-item .v4-dot.warn {
+  background: var(--shell-amber);
+  box-shadow: 0 0 4px rgba(255,181,71,0.5);
+}
+.v4-nav-item .v4-dot.err {
+  background: var(--shell-red);
+  box-shadow: 0 0 4px rgba(255,92,92,0.5);
+}
+.v4-nav-item .v4-nav-name { flex: 1; }
+.v4-nav-item .v4-nav-count {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--shell-text-faint);
+  background: var(--shell-bg);
+  padding: 1px 6px;
+  border-radius: 8px;
+  min-width: 18px;
+  text-align: center;
+}
+.v4-nav-item.active .v4-nav-count { color: var(--shell-text-dim); }
+
+/* Hidden in basic mode */
+body.v4:not(.adv) .v4-nav-item[data-mode="advanced"] { display: none; }
+/* Hide a group's label too when none of its nav items are visible.
+   In practice this fires for "System" in Basic mode, since all its panes
+   are advanced-only. */
+body.v4:not(.adv) .v4-nav-group:not(:has(.v4-nav-item:not([data-mode="advanced"]))) {
+  display: none;
+}
+
+.v4-rail-foot {
+  padding: 12px 14px;
+  border-top: 1px solid var(--shell-line);
+  background: var(--shell-panel);
+}
+.v4-readiness {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+  margin-bottom: 6px;
+}
+.v4-readiness-bar {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.v4-readiness-cell {
+  height: 4px;
+  background: var(--shell-line);
+  border-radius: 1px;
+}
+.v4-readiness-cell.fill { background: var(--shell-scope); }
+.v4-readiness-cell.warn-fill { background: var(--shell-amber); }
+.v4-readiness-text {
+  font-size: 11.5px;
+  color: var(--shell-text-dim);
+}
+
+/* === View cluster (Expert mode + Hints) === */
+.v4-view-cluster {
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--shell-line);
+}
+.v4-switch-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 0;
+}
+.v4-switch-row + .v4-switch-row {
+  border-top: 1px dashed var(--shell-line);
+  margin-top: 4px;
+  padding-top: 10px;
+}
+.v4-switch-text {
+  flex: 1;
+  min-width: 0;
+}
+.v4-switch-label {
+  font-size: 12.5px;
+  color: var(--shell-text);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.v4-switch-hint {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--shell-text-faint);
+  margin-top: 3px;
+  line-height: 1.3;
+}
+.v4-switch {
+  position: relative;
+  width: 30px;
+  height: 16px;
+  background: var(--shell-line);
+  border: 1px solid var(--shell-line-2);
+  border-radius: 10px;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+  margin-top: 2px;
+}
+.v4-switch::after {
+  content: '';
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--shell-text-dim);
+  transition: transform 0.15s, background 0.15s;
+}
+.v4-switch-row:hover .v4-switch { border-color: var(--shell-text-faint); }
+.v4-switch-row.on .v4-switch {
+  background: var(--shell-amber-dim);
+  border-color: var(--shell-amber);
+}
+.v4-switch-row.on .v4-switch::after {
+  background: var(--shell-amber);
+  transform: translateX(14px);
+  box-shadow: 0 0 4px rgba(255,181,71,0.6);
+}
+
+/* === Mode segmented control (top of rail) === */
+.v4-mode-section {
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--shell-line);
+}
+.v4-mode-segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line-2);
+  border-radius: 4px;
+  overflow: hidden;
+  padding: 2px;
+  gap: 2px;
+}
+.v4-mode-segmented button {
+  background: transparent;
+  border: none;
+  color: var(--shell-text-dim);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 6px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.v4-mode-segmented button:hover:not(.active) {
+  color: var(--shell-text);
+  background: var(--shell-line);
+}
+.v4-mode-segmented button.active {
+  background: var(--shell-amber);
+  color: #1a1208;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+.v4-mode-segmented button svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
+/* === Center pane === */
+.v4-center {
+  overflow-y: auto;
+  padding: 24px 32px 80px;
+  position: relative;
+}
+.v4-center-head {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--shell-line);
+}
+.v4-center-eyebrow {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--shell-amber);
+  margin-bottom: 6px;
+}
+.v4-center-title {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--shell-text);
+  margin: 0;
+}
+.v4-center-sub {
+  font-size: 12.5px;
+  color: var(--shell-text-dim);
+  margin-top: 4px;
+}
+
+/* Issues banner */
+.v4-issues {
+  background: rgba(255,92,92,0.06);
+  border: 1px solid rgba(255,92,92,0.3);
+  border-left: 3px solid var(--shell-red);
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  font-size: 12.5px;
+  color: var(--shell-text);
+  display: none;
+}
+.v4-issues.visible { display: block; }
+.v4-issues-title {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-red);
+  margin-bottom: 6px;
+}
+.v4-issues ul { list-style: none; margin: 0; padding: 0; }
+.v4-issues li { padding: 2px 0; color: var(--shell-text-dim); }
+
+/* Override the existing .section to fit center pane */
+body.v4 .section {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 0;
+}
+body.v4 .section[data-pane] { display: none; }
+body.v4 .section[data-pane].active { display: block; }
+body.v4 .section-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--shell-line);
+}
+body.v4 .section-title .badge {
+  background: var(--shell-line);
+  color: var(--shell-text-dim);
+  font-family: var(--mono);
+}
+body.v4 .field label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--shell-text-dim);
+  margin-bottom: 6px;
+}
+body.v4 .field input,
+body.v4 .field select {
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line-2);
+  color: var(--shell-text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.2;
+  padding: 0 11px;
+  height: 36px;
+  border-radius: 4px;
+  transition: border-color 0.15s, background 0.15s;
+  box-sizing: border-box;
+}
+/* Mono variant: same height/padding as a regular text input but with a
+   monospace font and slightly tinted background so hex/key fields are
+   visually distinguishable. Box height is pinned so font-size doesn't
+   leak into vertical layout. */
+body.v4 .field input.v4-mono-input,
+body.v4 .v4-mono-input {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  background-color: var(--shell-panel-2);
+}
+/* Selects are visually distinct from text inputs:
+   - Slightly raised background (panel-2 instead of pure black)
+   - Amber chevron on the right
+   - Cursor: pointer on hover */
+body.v4 .field select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--shell-panel-2);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23ffb547' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  padding-right: 30px;
+  cursor: pointer;
+  border-color: var(--shell-line-2);
+  /* subtle inner highlight to feel slightly raised */
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+}
+body.v4 .field select:hover {
+  border-color: var(--shell-text-faint);
+  background-color: #1c2230;
+}
+body.v4 .field input:focus,
+body.v4 .field select:focus {
+  border-color: var(--shell-amber);
+  outline: none;
+}
+body.v4 .field input[type="number"] { font-family: var(--mono); }
+body.v4 .key-display {
+  font-family: var(--mono);
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line);
+  font-size: 11.5px;
+  color: var(--shell-text-dim);
+}
+body.v4 .preset-tag {
+  background: var(--shell-line);
+  color: var(--shell-amber);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+body.v4 .btn {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  border-radius: 4px;
+  background: var(--shell-line);
+  color: var(--shell-text);
+  border: 1px solid var(--shell-line-2);
+  padding: 8px 14px;
+  transition: background 0.15s, border-color 0.15s;
+}
+body.v4 .btn:hover { background: var(--shell-line-2); border-color: var(--shell-text-faint); }
+body.v4 .btn-outline {
+  background: transparent;
+}
+body.v4 .btn-green {
+  background: var(--shell-scope);
+  border-color: var(--shell-scope);
+  color: #0a1a10;
+  font-weight: 600;
+}
+body.v4 .btn-green:hover { filter: brightness(1.1); background: var(--shell-scope); }
+body.v4 .channel-type.hashtag { background: rgba(74,222,128,0.12); color: var(--shell-scope); font-family: var(--mono); }
+body.v4 .channel-type.private { background: rgba(255,181,71,0.12); color: var(--shell-amber); font-family: var(--mono); }
+body.v4 .channel-type.public  { background: rgba(91,158,255,0.12); color: var(--shell-blue); font-family: var(--mono); }
+body.v4 .contact-card,
+body.v4 .fleet-device-card {
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line);
+  border-radius: 4px;
+}
+body.v4 .hint {
+  color: var(--shell-text-faint);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+body.v4 .field label .info-icon {
+  border-color: var(--shell-text-faint);
+  color: var(--shell-text-faint);
+}
+body.v4 .field label .info-icon:hover,
+body.v4 .field.hint-revealed label .info-icon {
+  color: var(--shell-amber);
+  border-color: var(--shell-amber);
+}
+body.v4 .fleet-note {
+  background: rgba(255,181,71,0.06);
+  border-left-color: var(--shell-amber);
+  color: var(--shell-text-dim);
+}
+body.v4 .field.invalid input { border-color: var(--shell-red); }
+body.v4 .field .error { color: var(--shell-red); }
+body.v4 .divider { background: var(--shell-line); }
+
+/* === Validation highlighting === */
+/* Static fields use .field.invalid (existing). For dynamic cards
+   (contacts/channels/rooms/fleet), we add .field-error to specific
+   inputs and .card-error to the surrounding card. */
+body.v4 .field-error,
+body.v4 input.field-error,
+body.v4 select.field-error {
+  border-color: var(--shell-red) !important;
+  background-color: rgba(255,92,92,0.06) !important;
+  box-shadow: 0 0 0 1px rgba(255,92,92,0.15) inset;
+}
+body.v4 .card-error.contact-card,
+body.v4 .card-error.fleet-device-card {
+  border-color: var(--shell-red-dim) !important;
+  border-left-color: var(--shell-red) !important;
+}
+body.v4 .card-error .contact-num {
+  color: var(--shell-red) !important;
+}
+/* A small chevron prefix on the card header so the issue is locatable
+   even if the failing input is below the fold. */
+body.v4 .card-error .contact-header::before {
+  content: '⚠';
+  display: inline-block;
+  color: var(--shell-red);
+  margin-right: 6px;
+  font-size: 12px;
+  vertical-align: -1px;
+}
+body.v4 .fleet-device-card.card-error::before {
+  content: '⚠';
+  display: inline-block;
+  color: var(--shell-red);
+  font-size: 12px;
+  margin-right: 2px;
+  margin-left: -4px;
+}
+
+/* === Identity section (Device pane, single mode) === */
+/* Tinted panel with LED, key fingerprint, and inline actions —
+   carries forward the rail "instrument" look in-line. */
+body.v4 #identitySection {
+  background: var(--shell-panel);
+  border: 1px solid var(--shell-line-2);
+  border-left: 3px solid var(--shell-amber-dim);
+  border-radius: 4px;
+  padding: 14px 16px 16px;
+  margin-top: 16px;
+  position: relative;
+}
+body.v4 #identitySection.has-id { border-left-color: var(--shell-scope); }
+body.v4 #identitySection .section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: none;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+body.v4 #identitySection .section-title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--shell-amber);
+  box-shadow: 0 0 6px var(--shell-amber);
+  animation: v4-pulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+body.v4 #identitySection.has-id .section-title::before {
+  background: var(--shell-scope);
+  box-shadow: 0 0 6px var(--shell-scope);
+  animation: none;
+}
+body.v4 #identitySection .section-title .badge {
+  margin-left: auto;
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line);
+}
+body.v4 #identitySection .field {
+  margin-bottom: 10px;
+}
+body.v4 #identitySection .field label {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+}
+body.v4 #identitySection .key-display {
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line);
+  font-size: 11px;
+  padding: 8px 10px;
+  line-height: 1.4;
+}
+body.v4 #identitySection .key-display:empty::before {
+  content: '— not generated —';
+  color: var(--shell-text-faint);
+}
+body.v4 #identitySection .key-actions {
+  margin-top: 10px;
+  gap: 8px;
+}
+body.v4 #identitySection .key-actions .btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 7px 12px;
+}
+body.v4 #identitySection > .hint {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--shell-bg);
+  border-radius: 3px;
+  border-left: 2px solid var(--shell-line-2);
+}
+
+/* === Radio: region cards + active params display === */
+/* Hide the original Preset select and the original parameter row inputs;
+   we drive them via the cards, but they remain in the DOM so the existing
+   applyPreset/detectPreset/buildConfig code keeps working unchanged. */
+body.v4 #radioPreset { display: none; }
+
+.v4-radio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.v4-region-card {
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line-2);
+  border-radius: 4px;
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+  font-family: var(--sans);
+  color: var(--shell-text);
+}
+.v4-region-card:hover {
+  border-color: var(--shell-text-faint);
+  background: var(--shell-panel-2);
+}
+.v4-region-card.active {
+  border-color: var(--shell-amber);
+  background: rgba(255,181,71,0.06);
+  box-shadow: inset 0 0 0 1px var(--shell-amber);
+}
+.v4-region-card-name {
+  font-weight: 500;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.v4-region-card-name::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--shell-line-2);
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+.v4-region-card.active .v4-region-card-name::after {
+  border-color: var(--shell-amber);
+  background:
+    radial-gradient(circle, var(--shell-amber) 30%, transparent 35%);
+  box-shadow: 0 0 4px rgba(255,181,71,0.5);
+}
+.v4-region-card-freq {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--shell-text-dim);
+  letter-spacing: 0.04em;
+}
+.v4-region-card.custom {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-style: dashed;
+}
+.v4-region-card.custom .v4-region-card-name {
+  flex: 0 0 auto;
+}
+.v4-region-card.custom .v4-region-card-freq {
+  flex: 1;
+  margin-left: auto;
+}
+.v4-region-card.custom .v4-region-icon {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--shell-text-faint);
+}
+
+/* Tweak parameters link (Expert mode, when no editing) */
+.v4-tweak-link-wrap {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+body.v4-radio-edit .v4-tweak-link-wrap { display: none; }
+.v4-tweak-link {
+  background: transparent;
+  border: 1px solid var(--shell-line-2);
+  color: var(--shell-text-dim);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.v4-tweak-link:hover {
+  color: var(--shell-text);
+  border-color: var(--shell-text-faint);
+}
+.v4-tweak-icon {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--shell-amber);
+}
+
+/* Edit mode: tight grid of inputs with a header bar carrying the Done button */
+.v4-radio-edit-row {
+  display: none;
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line);
+  border-left: 3px solid var(--shell-amber);
+  border-radius: 4px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+body.v4-radio-edit .v4-radio-edit-row { display: block; }
+.v4-radio-edit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--shell-line);
+}
+.v4-radio-edit-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+}
+.v4-edit-done {
+  background: var(--shell-amber);
+  border: 1px solid var(--shell-amber);
+  color: #1a1208;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.v4-edit-done:hover { filter: brightness(1.1); }
+.v4-radio-edit-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  gap: 12px;
+}
+.v4-radio-edit-fields .field { margin-bottom: 0; }
+.v4-radio-edit-fields label { font-size: 9px; letter-spacing: 0.12em; }
+
+/* Advanced disclosure for scope/path-hash/offgrid */
+.v4-advanced-disclosure {
+  border: 1px solid var(--shell-line);
+  border-radius: 4px;
+  margin-top: 16px;
+  background: var(--shell-bg);
+}
+.v4-advanced-summary {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--shell-text-dim);
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.v4-advanced-summary::-webkit-details-marker { display: none; }
+.v4-advanced-summary::before {
+  content: '▸';
+  display: inline-block;
+  transition: transform 0.15s;
+  color: var(--shell-text-faint);
+}
+.v4-advanced-disclosure[open] .v4-advanced-summary::before { transform: rotate(90deg); }
+.v4-advanced-summary:hover { color: var(--shell-text); }
+.v4-advanced-content {
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--shell-line);
+}
+.v4-advanced-content .field {
+  margin-bottom: 12px;
+}
+.v4-advanced-content .field:last-child { margin-bottom: 0; }
+
+/* Compact variant — used inside contact/channel/room cards.
+   Less visual weight than the section-level disclosure. */
+.v4-card-advanced {
+  margin-top: 12px;
+  background: transparent;
+  border: none;
+  border-top: 1px dashed var(--shell-line);
+  border-radius: 0;
+}
+.v4-card-advanced > .v4-advanced-summary {
+  padding: 8px 0 6px;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--shell-text-faint);
+}
+.v4-card-advanced > .v4-advanced-summary:hover {
+  color: var(--shell-text-dim);
+}
+.v4-card-advanced > .v4-advanced-content {
+  padding: 4px 0 4px;
+  border-top: none;
+}
+
+/* === Keyboard shortcut hints === */
+/* Small inline kbd-style label for visible shortcut hints. Used on the
+   Export button and inside the ⋯ menu so users discover shortcuts
+   without needing a separate help dialog. */
+.v4-kbd {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--shell-text-faint);
+  margin-left: 8px;
+  opacity: 0.85;
+  font-weight: 500;
+  vertical-align: 1px;
+}
+.v4-export-btn .v4-kbd {
+  color: rgba(26, 18, 8, 0.55);
+  font-weight: 600;
+}
+.v4-menu-dropdown button {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+}
+.v4-menu-dropdown button .v4-kbd {
+  margin-left: 16px;
+}
+
+/* === Slider+number combos === */
+/* Used for brightness, battery threshold, TX power — fields where
+   "approximately right" is good enough and a slider gives nicer
+   feedback than typing. The original number input is kept inline
+   to its right; both sync via input events. */
+.v4-slider-combo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.v4-slider-combo input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 36px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  /* Override the global input styles that would otherwise inherit here */
+  border: none !important;
+  min-height: 0 !important;
+  box-shadow: none !important;
+}
+.v4-slider-combo input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--shell-line);
+  border-radius: 2px;
+  border: 1px solid var(--shell-line-2);
+}
+.v4-slider-combo input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: var(--shell-line);
+  border-radius: 2px;
+  border: 1px solid var(--shell-line-2);
+}
+.v4-slider-combo input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--shell-amber);
+  border: 2px solid var(--shell-bg);
+  box-shadow: 0 0 0 1px var(--shell-amber), 0 0 6px rgba(255,181,71,0.4);
+  cursor: pointer;
+  margin-top: -7px;
+  transition: transform 0.1s, box-shadow 0.15s;
+}
+.v4-slider-combo input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--shell-amber);
+  border: 2px solid var(--shell-bg);
+  box-shadow: 0 0 0 1px var(--shell-amber), 0 0 6px rgba(255,181,71,0.4);
+  cursor: pointer;
+}
+.v4-slider-combo input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.v4-slider-combo input[type="range"]:focus {
+  outline: none;
+}
+.v4-slider-combo input[type="range"]:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 1px var(--shell-amber), 0 0 0 4px rgba(255,181,71,0.2);
+}
+/* Number side: narrower than a regular input, mono font for clarity */
+.v4-slider-combo .v4-slider-number {
+  flex: 0 0 88px;
+  font-family: var(--mono);
+  text-align: right;
+}
+.v4-slider-combo .v4-slider-unit {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--shell-text-faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex: 0 0 auto;
+  min-width: 26px;
+}
+
+/* === Add-slot cards (Contacts / Channels / Rooms) === */
+/* Section-level explanatory hint that disappears once the list has
+   items — keeps the empty pane informative without clutter once
+   populated. */
+.v4-section-empty-hint {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--shell-text-dim);
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line);
+  border-left: 2px solid var(--shell-amber-dim);
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+.v4-section-empty-hint strong {
+  color: var(--shell-text);
+  font-weight: 500;
+}
+/* Hide the empty-hint once items are present in the matching list. */
+.section:has(#contactList:not(:empty)) #contactEmptyHint,
+.section:has(#channelList:not(:empty)) #channelEmptyHint,
+.section:has(#roomList:not(:empty)) #roomEmptyHint { display: none; }
+
+/* Dashed-border placeholder cards that act as "click here to add"
+   slots instead of a separate button below the list. */
+.v4-add-slot {
+  background: transparent;
+  border: 1px dashed var(--shell-line-2);
+  border-radius: 4px;
+  padding: 14px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  width: 100%;
+  text-align: left;
+}
+.v4-add-slot:hover:not(:disabled) {
+  border-color: var(--shell-amber);
+  color: var(--shell-amber);
+  background: rgba(255,181,71,0.04);
+}
+.v4-add-slot:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.v4-add-slot .v4-add-icon {
+  font-size: 14px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  flex-shrink: 0;
+  font-family: var(--sans);
+  font-weight: 300;
+  letter-spacing: 0;
+}
+.v4-add-slot .v4-add-hint {
+  margin-left: auto;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--shell-text-faint);
+  font-weight: 400;
+}
+
+/* Channel slots: three side-by-side, each labeled with type */
+.v4-channel-slots {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.v4-channel-slots .v4-add-slot {
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 12px 14px;
+  gap: 6px;
+}
+.v4-channel-slots .v4-add-slot .v4-slot-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.v4-channel-slots .v4-add-slot .v4-add-hint {
+  margin-left: 0;
+  font-size: 10.5px;
+}
+/* Type-color tinting for channel slots */
+.v4-channel-slots .v4-add-slot[data-type="hashtag"]:hover:not(:disabled) {
+  border-color: var(--shell-scope);
+  color: var(--shell-scope);
+  background: rgba(74,222,128,0.04);
+}
+.v4-channel-slots .v4-add-slot[data-type="private"]:hover:not(:disabled) {
+  border-color: var(--shell-amber);
+  color: var(--shell-amber);
+  background: rgba(255,181,71,0.04);
+}
+.v4-channel-slots .v4-add-slot[data-type="public"]:hover:not(:disabled) {
+  border-color: var(--shell-blue);
+  color: var(--shell-blue);
+  background: rgba(91,158,255,0.04);
+}
+
+/* Spacing between existing list items and the slot cards */
+#contactList:not(:empty) + .v4-add-slot,
+#roomList:not(:empty) + .v4-add-slot {
+  margin-top: 10px;
+}
+#channelList:not(:empty) + .v4-channel-slots {
+  margin-top: 10px;
+}
+@media (max-width: 760px) {
+  .v4-channel-slots { grid-template-columns: 1fr; }
+}
+
+/* === Fleet device cards: per-row identity LED + IDENTITY label === */
+body.v4 .fleet-device-card {
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line);
+  border-left: 3px solid var(--shell-amber-dim);
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  transition: border-left-color 0.15s;
+}
+body.v4 .fleet-device-card.has-key {
+  border-left-color: var(--shell-scope);
+}
+body.v4 .fleet-device-card .fleet-idx {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--shell-text-faint);
+  letter-spacing: 0.06em;
+  min-width: 22px;
+}
+body.v4 .fleet-device-card input {
+  flex: 0 1 180px;
+  background: var(--shell-panel);
+  border: 1px solid var(--shell-line-2);
+  color: var(--shell-text);
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 7px 10px;
+  border-radius: 3px;
+  max-width: 180px;
+}
+body.v4 .fleet-device-card input:focus {
+  border-color: var(--shell-amber);
+  outline: none;
+}
+.fleet-id-cluster {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--shell-panel);
+  border: 1px solid var(--shell-line);
+  border-radius: 3px;
+  padding: 6px 10px;
+  min-width: 0;
+}
+.fleet-led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.fleet-led.on {
+  background: var(--shell-scope);
+  box-shadow: 0 0 6px var(--shell-scope);
+}
+.fleet-led.off {
+  background: var(--shell-amber);
+  box-shadow: 0 0 6px var(--shell-amber);
+  animation: v4-pulse 1.5s ease-in-out infinite;
+}
+.fleet-id-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+  flex-shrink: 0;
+}
+.fleet-device-card.has-key .fleet-id-label {
+  color: var(--shell-scope);
+}
+body.v4 .fleet-device-card .fleet-key {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--shell-text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+body.v4 .fleet-device-card .fleet-key.has-key {
+  color: var(--shell-text);
+}
+body.v4 .fleet-device-card .btn-remove {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--shell-red);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 5px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+body.v4 .fleet-device-card .btn-remove:hover:not(:disabled) {
+  border-color: var(--shell-red-dim);
+  background: rgba(255,92,92,0.08);
+}
+
+/* Narrow viewport: stack the cluster below the name input */
+@media (max-width: 760px) {
+  body.v4 .fleet-device-card {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  body.v4 .fleet-device-card input {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+  .fleet-id-cluster {
+    flex-basis: 100%;
+    order: 3;
+  }
+}
+
+/* === Toast adjustments === */
+body.v4 .toast {
+  background: var(--shell-amber);
+  color: #1a1208;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+}
+
+/* === Responsive: collapse to stepper on narrow viewports === */
+@media (max-width: 760px) {
+  :root { --rail-w: 100%; }
+  .v4-workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .v4-rail {
+    border-right: none;
+    border-bottom: 1px solid var(--shell-line);
+    max-height: 220px;
+  }
+  .v4-center { padding: 20px 16px 60px; }
+  .v4-topbar { padding: 0 10px; gap: 8px; }
+  .v4-mode-group { display: none; }
+  .v4-brand-tag { display: none; }
+}
+
+/* === Scrollbar styling === */
+body.v4 *::-webkit-scrollbar { width: 8px; height: 8px; }
+body.v4 *::-webkit-scrollbar-track { background: transparent; }
+body.v4 *::-webkit-scrollbar-thumb {
+  background: var(--shell-line);
+  border-radius: 4px;
+}
+body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
+
 </style>
 </head>
-<body>
+<body class="v4">
+
+<!-- ============================================================
+     v4 SHELL — top bar + 3-pane workspace
+     The old .container is hidden; existing sections are moved into
+     .v4-center via JS at startup. All field IDs and event handlers
+     remain unchanged.
+     ============================================================ -->
+
+<div class="v4-topbar">
+  <div class="v4-brand">
+    <div class="v4-brand-mark"></div>
+    <span class="v4-brand-name">MCLITE</span>
+    <span class="v4-brand-tag">/ config</span>
+  </div>
+  <div class="v4-topbar-spacer"></div>
+  <div class="v4-topbar-actions">
+    <button class="v4-export-btn" id="v4_exportBtn" onclick="doExport()">Export<span class="v4-kbd" data-kbd="E"></span></button>
+    <div class="v4-menu-wrap">
+      <button class="v4-menu-btn" onclick="v4ToggleMenu(event)" title="More" aria-label="More actions">⋯</button>
+      <div class="v4-menu-dropdown" id="v4_menu" onclick="event.stopPropagation()">
+        <button onclick="v4ImportFromMenu()"><span>Import config…</span><span class="v4-kbd" data-kbd="I"></span></button>
+        <div class="v4-menu-divider"></div>
+        <button onclick="openWizard(); v4CloseMenu();"><span>Setup wizard</span></button>
+        <button onclick="resetAll(); v4CloseMenu();"><span>New config</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="v4-workspace" id="v4_workspace">
+
+  <!-- ===== Left rail ===== -->
+  <aside class="v4-rail">
+    <div class="v4-mode-section">
+      <div class="v4-rail-label">Mode</div>
+      <div class="v4-mode-segmented" role="tablist" aria-label="Device mode">
+        <button id="v4_btnSingle" class="active" onclick="setFleetMode(false)" title="Configure one device">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="8" height="10" rx="1"/><circle cx="8" cy="11" r="0.6" fill="currentColor"/></svg>
+          Single device
+        </button>
+        <button id="v4_btnFleet" onclick="setFleetMode(true)" title="Configure multiple devices at once">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="6" height="8" rx="0.8"/><rect x="9" y="3" width="5" height="8" rx="0.8"/><circle cx="5" cy="9.5" r="0.5" fill="currentColor"/><circle cx="11.5" cy="9.5" r="0.5" fill="currentColor"/></svg>
+          Fleet
+        </button>
+      </div>
+    </div>
+
+    <div class="v4-view-cluster">
+      <div class="v4-rail-label">View</div>
+      <div class="v4-switch-row" id="v4_expertRow" onclick="v4ToggleExpert()">
+        <div class="v4-switch-text">
+          <div class="v4-switch-label">Expert mode</div>
+          <div class="v4-switch-hint">Show advanced sections</div>
+        </div>
+        <div class="v4-switch"></div>
+      </div>
+      <div class="v4-switch-row" id="v4_hintsRow" onclick="v4ToggleHints()">
+        <div class="v4-switch-text">
+          <div class="v4-switch-label">Show hints</div>
+          <div class="v4-switch-hint">Inline help under fields</div>
+        </div>
+        <div class="v4-switch"></div>
+      </div>
+    </div>
+
+    <nav class="v4-rail-nav" id="v4_nav">
+      <!-- Filled by JS -->
+    </nav>
+
+    <div class="v4-rail-foot">
+      <div class="v4-readiness">Readiness</div>
+      <div class="v4-readiness-bar" id="v4_readinessBar">
+        <div class="v4-readiness-cell"></div><div class="v4-readiness-cell"></div>
+        <div class="v4-readiness-cell"></div><div class="v4-readiness-cell"></div>
+        <div class="v4-readiness-cell"></div><div class="v4-readiness-cell"></div>
+        <div class="v4-readiness-cell"></div><div class="v4-readiness-cell"></div>
+        <div class="v4-readiness-cell"></div><div class="v4-readiness-cell"></div>
+      </div>
+      <div class="v4-readiness-text" id="v4_readinessText">Configure to continue</div>
+    </div>
+  </aside>
+
+  <!-- ===== Center pane (sections move here at startup) ===== -->
+  <main class="v4-center" id="v4_center">
+    <div class="v4-center-head">
+      <div class="v4-center-eyebrow" id="v4_eyebrow">SECTION</div>
+      <h1 class="v4-center-title" id="v4_title">—</h1>
+      <div class="v4-center-sub" id="v4_sub"></div>
+    </div>
+    <div class="v4-issues" id="v4_issues">
+      <div class="v4-issues-title">Issues blocking export</div>
+      <ul id="v4_issuesList"></ul>
+    </div>
+    <div id="v4_sectionHost">
+      <!-- existing .section elements move in here -->
+    </div>
+  </main>
+
+</div>
 
 <div class="container">
   <h1>MCLite Config Tool</h1>
@@ -592,19 +2242,49 @@ body.show-hints .hint.collapsible,
   </div>
 
   <!-- Radio -->
-  <div class="section hidden" data-mode="advanced">
-    <div class="section-title">Radio <span id="presetLabel" class="preset-tag">EU/UK Narrow</span></div>
-    <div class="field">
-      <label>Preset</label>
-      <select id="radioPreset" onchange="applyPreset()">
-        <option value="eu_narrow" selected>EU/UK/CH (869.618 MHz)</option>
-        <option value="us_ca">US/Canada (910.525 MHz)</option>
-        <option value="au_wide">Australia Wide (915.800 MHz)</option>
-        <option value="au_vic">Australia Victoria (916.575 MHz)</option>
-        <option value="custom">Custom</option>
-      </select>
+  <div class="section">
+    <div class="section-title">Radio<span id="presetLabel" class="preset-tag" style="display:none">EU/UK Narrow</span></div>
+
+    <!-- Region cards (drive radioPreset) -->
+    <div class="v4-radio-grid" id="v4_regionGrid">
+      <button type="button" class="v4-region-card" data-region="eu_narrow" onclick="v4SelectRegion('eu_narrow')">
+        <div class="v4-region-card-name">EU / UK / CH</div>
+        <div class="v4-region-card-freq">869.618 MHz · SF8 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="us_ca" onclick="v4SelectRegion('us_ca')">
+        <div class="v4-region-card-name">US / Canada</div>
+        <div class="v4-region-card-freq">910.525 MHz · SF7 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="au_wide" onclick="v4SelectRegion('au_wide')">
+        <div class="v4-region-card-name">Australia Wide</div>
+        <div class="v4-region-card-freq">915.800 MHz · SF10 · 250 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="au_vic" onclick="v4SelectRegion('au_vic')">
+        <div class="v4-region-card-name">Australia Victoria</div>
+        <div class="v4-region-card-freq">916.575 MHz · SF10 · 250 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card custom hidden" data-mode="advanced" data-region="custom" onclick="v4SelectRegion('custom')">
+        <span class="v4-region-icon">⚙</span>
+        <div class="v4-region-card-name">Custom</div>
+        <div class="v4-region-card-freq">Set your own parameters</div>
+      </button>
     </div>
-    <div class="row">
+
+    <!-- Tweak parameters link — visible in Expert (non-custom) when not editing -->
+    <div class="v4-tweak-link-wrap hidden" data-mode="advanced" id="v4_tweakWrap">
+      <button type="button" class="v4-tweak-link" id="v4_editToggle" onclick="v4ToggleRadioEdit()">
+        <span class="v4-tweak-icon">⚙</span>
+        Tweak parameters
+      </button>
+    </div>
+
+    <!-- Editable parameter row — visible in Expert mode (when custom is active or EDIT is toggled) -->
+    <div class="v4-radio-edit-row hidden" data-mode="advanced" id="v4_radioEditRow">
+      <div class="v4-radio-edit-head">
+        <span class="v4-radio-edit-title">Tweaking parameters</span>
+        <button type="button" class="v4-edit-done" id="v4_editDone" onclick="v4ToggleRadioEdit()">Done</button>
+      </div>
+      <div class="v4-radio-edit-fields">
       <div class="field">
         <label>Frequency (MHz)</label>
         <input type="number" id="radioFreq" value="869.618" step="0.001" min="100" max="1000">
@@ -623,8 +2303,6 @@ body.show-hints .hint.collapsible,
           <option value="12">SF12</option>
         </select>
       </div>
-    </div>
-    <div class="row">
       <div class="field">
         <label>Bandwidth (kHz)</label>
         <select id="radioBW">
@@ -636,77 +2314,116 @@ body.show-hints .hint.collapsible,
         </select>
       </div>
       <div class="field">
+        <label>Coding Rate</label>
+        <select id="radioCR">
+          <option value="5">4/5</option>
+          <option value="6">4/6</option>
+          <option value="7">4/7</option>
+          <option value="8" selected>4/8</option>
+        </select>
+      </div>
+      <div class="field">
         <label>TX Power (dBm)</label>
         <input type="number" id="radioTX" value="22" min="-9" max="22">
         <div class="error">-9–22 dBm</div>
       </div>
+      </div>
     </div>
-    <div class="field">
-      <label>Coding Rate</label>
-      <select id="radioCR">
-        <option value="5">4/5</option>
-        <option value="6">4/6</option>
-        <option value="7">4/7</option>
-        <option value="8" selected>4/8</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Region Scope<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-      <input type="text" id="radioScope" value="*" maxlength="32"
-             pattern="\*|#[a-z0-9\-]+" title="Enter * for no filtering, or #name for a region (e.g. #europe)">
-      <div class="hint collapsible">Transport code region for repeater filtering. <code>*</code> = no filtering, <code>#name</code> = hashtag region.</div>
-    </div>
-    <div class="field">
-      <label>Path Hash Mode<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-      <select id="radioPathHashMode">
-        <option value="0" selected>0 — 1 byte/hop (default, legacy)</option>
-        <option value="1">1 — 2 bytes/hop</option>
-        <option value="2">2 — 3 bytes/hop</option>
-      </select>
-      <div class="hint collapsible">Bytes per repeater fingerprint in packet path. Larger = fewer collisions in dense meshes, but more airtime per hop. Keep at 0 for compatibility with v1.10 and earlier peers.</div>
-    </div>
-    <div class="field">
-      <label>Offgrid Mode<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-      <select id="offgridEnabled">
-        <option value="false" selected>Off</option>
-        <option value="true">On</option>
-      </select>
-      <div class="hint collapsible">When on, the device joins the offgrid community frequency (auto-selected from 433 / 869 / 918 MHz based on your normal frequency) and relays packets for other offgrid nodes. Use for camping, SAR, or any situation with no repeater infrastructure. SF / BW / coding rate / TX power stay as configured. Reboot to apply. You can also toggle this on-device from the admin screen.</div>
-      <div class="hint" id="offgridDerivedFreq" style="margin-top:6px; font-weight:500;">Derived offgrid freq: &mdash;</div>
-    </div>
+
+    <!-- Legacy preset select kept in DOM (hidden) so existing JS keeps working -->
+    <select id="radioPreset" onchange="applyPreset()" style="display:none">
+      <option value="eu_narrow" selected>EU/UK/CH (869.618 MHz)</option>
+      <option value="us_ca">US/Canada (910.525 MHz)</option>
+      <option value="au_wide">Australia Wide (915.800 MHz)</option>
+      <option value="au_vic">Australia Victoria (916.575 MHz)</option>
+      <option value="custom">Custom</option>
+    </select>
+
+    <!-- Advanced parameters (scope, path hash, offgrid) — visible only in Expert mode -->
+    <details class="v4-advanced-disclosure hidden" data-mode="advanced">
+      <summary class="v4-advanced-summary">Advanced parameters</summary>
+      <div class="v4-advanced-content">
+        <div class="field">
+          <label>Region Scope<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+          <input type="text" id="radioScope" value="*" maxlength="32"
+                 pattern="\*|#[a-z0-9\-]+" title="Enter * for no filtering, or #name for a region (e.g. #europe)">
+          <div class="hint collapsible">Transport code region for repeater filtering. <code>*</code> = no filtering, <code>#name</code> = hashtag region.</div>
+        </div>
+        <div class="field">
+          <label>Path Hash Mode<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+          <select id="radioPathHashMode">
+            <option value="0" selected>0 — 1 byte/hop (default, legacy)</option>
+            <option value="1">1 — 2 bytes/hop</option>
+            <option value="2">2 — 3 bytes/hop</option>
+          </select>
+          <div class="hint collapsible">Bytes per repeater fingerprint in packet path. Larger = fewer collisions in dense meshes, but more airtime per hop. Keep at 0 for compatibility with v1.10 and earlier peers.</div>
+        </div>
+        <div class="field">
+          <label>Offgrid Mode<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+          <select id="offgridEnabled">
+            <option value="false" selected>Off</option>
+            <option value="true">On</option>
+          </select>
+          <div class="hint collapsible">When on, the device joins the offgrid community frequency (auto-selected from 433 / 869 / 918 MHz based on your normal frequency) and relays packets for other offgrid nodes. Use for camping, SAR, or any situation with no repeater infrastructure. SF / BW / coding rate / TX power stay as configured. Reboot to apply. You can also toggle this on-device from the admin screen.</div>
+          <div class="hint" id="offgridDerivedFreq" style="margin-top:6px; font-weight:500;">Derived offgrid freq: &mdash;</div>
+        </div>
+      </div>
+    </details>
   </div>
 
   <!-- Contacts -->
   <div class="section">
     <div class="section-title">Contacts <span class="badge" id="contactCount">0</span></div>
     <div class="fleet-note hidden" id="fleetContactNote">Fleet contacts are auto-generated. Additional contacts can be added below.</div>
+    <div class="v4-section-empty-hint" id="contactEmptyHint">Contacts are people you message directly. You'll need their <strong>public key</strong> — they share it from their device's identity screen.</div>
     <div id="contactList"></div>
-    <div class="empty-state" id="contactEmpty">No contacts added yet.</div>
-    <button class="btn" onclick="addContact()" style="margin-top:8px">+ Add Contact</button>
+    <button type="button" class="v4-add-slot" id="addContactSlot" onclick="addContact()">
+      <span class="v4-add-icon">+</span>
+      <span>Add contact</span>
+      <span class="v4-add-hint">Paste their public key</span>
+    </button>
   </div>
 
   <!-- Channels -->
   <div class="section">
     <div class="section-title">Channels <span class="badge" id="channelCount">0</span></div>
+    <div class="v4-section-empty-hint" id="channelEmptyHint">Channels are group conversations. <strong>Hashtag</strong> channels derive encryption from the name (lowercase: a-z, 0-9, -). <strong>Private</strong> channels use a random key shared out-of-band. <strong>Public</strong> uses the well-known MeshCore key — readable by anyone on the network.</div>
     <div id="channelList"></div>
-    <div class="empty-state" id="channelEmpty">No channels added yet.</div>
-    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-      <button class="btn" onclick="addChannel('hashtag')">+ Hashtag Channel (#)</button>
-      <button class="btn btn-outline" onclick="addChannel('private')">+ Private Channel</button>
-      <button class="btn btn-outline" id="addPublicBtn" onclick="addPublicChannel()">+ Public Channel</button>
+    <div class="v4-channel-slots" id="channelSlots">
+      <button type="button" class="v4-add-slot" data-type="hashtag" onclick="addChannel('hashtag')">
+        <div class="v4-slot-row">
+          <span class="v4-add-icon">+</span>
+          <span>Hashtag</span>
+        </div>
+        <span class="v4-add-hint">Encryption derived from name</span>
+      </button>
+      <button type="button" class="v4-add-slot" data-type="private" onclick="addChannel('private')">
+        <div class="v4-slot-row">
+          <span class="v4-add-icon">+</span>
+          <span>Private</span>
+        </div>
+        <span class="v4-add-hint">Random key shared out-of-band</span>
+      </button>
+      <button type="button" class="v4-add-slot" data-type="public" id="addPublicBtn" onclick="addPublicChannel()">
+        <div class="v4-slot-row">
+          <span class="v4-add-icon">+</span>
+          <span>Public</span>
+        </div>
+        <span class="v4-add-hint">Well-known MeshCore key</span>
+      </button>
     </div>
-    <div class="hint" style="margin-top:6px">Hashtag channels derive encryption from the name (lowercase only: a-z, 0-9, -) — anyone with the same name can join. Private channels use a random key shared out-of-band and allow any name. The Public channel uses a well-known hardcoded key shared by all MeshCore devices — messages are readable by anyone on the network.</div>
   </div>
 
   <!-- Rooms -->
   <div class="section">
     <div class="section-title">Room Servers <span class="badge" id="roomCount">0</span></div>
+    <div class="v4-section-empty-hint" id="roomEmptyHint">Room servers are community message boards — like a town square. The server's <strong>public key</strong> (64 hex) and password are shared out-of-band by whoever runs the room. Empty password = public room. Up to 8 rooms.</div>
     <div id="roomList"></div>
-    <div class="empty-state" id="roomEmpty">No room servers added yet.</div>
-    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-      <button class="btn" onclick="addRoom()">+ Add Room Server</button>
-    </div>
-    <div class="hint" style="margin-top:6px">Room servers are community message boards — posts arrive on the conversation list with an <strong>R</strong> icon. The server's public key (64 hex chars) and password are shared out-of-band by whoever runs the room. Empty password = public room. Up to 8 rooms.</div>
+    <button type="button" class="v4-add-slot" id="addRoomSlot" onclick="addRoom()">
+      <span class="v4-add-icon">+</span>
+      <span>Add room server</span>
+      <span class="v4-add-hint">Community message board</span>
+    </button>
   </div>
 
   <!-- Display -->
@@ -714,18 +2431,31 @@ body.show-hints .hint.collapsible,
     <div class="section-title">Display</div>
     <div class="row">
       <div class="field">
-        <label>Brightness (0–255)</label>
-        <input type="number" id="dispBrightness" value="180" min="10" max="255">
+        <label>Brightness</label>
+        <div class="v4-slider-combo">
+          <input type="range" id="dispBrightnessSlider" min="10" max="255" value="180"
+                 oninput="v4SyncSliderToNumber('dispBrightness', this.value)">
+          <input type="number" class="v4-slider-number" id="dispBrightness" value="180" min="10" max="255"
+                 oninput="v4SyncNumberToSlider('dispBrightnessSlider', this.value)">
+          <span class="v4-slider-unit">/255</span>
+        </div>
         <div class="error">10–255</div>
       </div>
       <div class="field">
-        <label>Auto-dim (seconds, 0=off)</label>
+        <label>Auto-dim (seconds)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <input type="number" id="dispAutoDim" value="30" min="0" max="3600">
         <div class="error">0–3600</div>
+        <div class="hint collapsible">Seconds of inactivity before the screen dims. Set to <code>0</code> to disable auto-dim.</div>
       </div>
       <div class="field">
-        <label>Dim Brightness (0–255)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-        <input type="number" id="dispDimBrightness" value="20" min="0" max="255">
+        <label>Dim Brightness<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+        <div class="v4-slider-combo">
+          <input type="range" id="dispDimBrightnessSlider" min="0" max="255" value="20"
+                 oninput="v4SyncSliderToNumber('dispDimBrightness', this.value)">
+          <input type="number" class="v4-slider-number" id="dispDimBrightness" value="20" min="0" max="255"
+                 oninput="v4SyncNumberToSlider('dispDimBrightnessSlider', this.value)">
+          <span class="v4-slider-unit">/255</span>
+        </div>
         <div class="error">0–255</div>
         <div class="hint collapsible">Set to 0 to turn screen off completely when inactive.</div>
       </div>
@@ -740,8 +2470,14 @@ body.show-hints .hint.collapsible,
         <div class="hint collapsible">Turn keyboard backlight on/off with auto-dim.</div>
       </div>
       <div class="field">
-        <label>Kbd Brightness (1–255)</label>
-        <input type="number" id="kbdBrightness" value="127" min="1" max="255">
+        <label>Keyboard Brightness</label>
+        <div class="v4-slider-combo">
+          <input type="range" id="kbdBrightnessSlider" min="1" max="255" value="127"
+                 oninput="v4SyncSliderToNumber('kbdBrightness', this.value)">
+          <input type="number" class="v4-slider-number" id="kbdBrightness" value="127" min="1" max="255"
+                 oninput="v4SyncNumberToSlider('kbdBrightnessSlider', this.value)">
+          <span class="v4-slider-unit">/255</span>
+        </div>
         <div class="error">1–255</div>
       </div>
     </div>
@@ -823,8 +2559,8 @@ body.show-hints .hint.collapsible,
         </select>
       </div>
       <div class="field">
-        <label style="color:#888">Custom notification sound<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-        <div class="hint collapsible">Place <code>notification.wav</code> on SD root. Format: 16-bit PCM WAV, mono or stereo, max 3 seconds.</div>
+        <label style="color:#888">Custom notification sound</label>
+        <div class="hint">Place <code>notification.wav</code> on SD root. Format: 16-bit PCM WAV, mono or stereo, max 3 seconds.</div>
       </div>
     </div>
     <div class="divider"></div>
@@ -840,10 +2576,10 @@ body.show-hints .hint.collapsible,
         <input type="number" id="sosRepeat" value="3" min="1" max="10">
         <div class="error">1–10</div>
       </div>
-    </div>
-    <div class="field">
-      <label style="color:#888">Custom SOS sound<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-      <div class="hint collapsible">Place <code>sos.wav</code> on SD root. Format: 16-bit PCM WAV, mono or stereo. Falls back to built-in morse pattern.</div>
+      <div class="field">
+        <label style="color:#888">Custom SOS sound</label>
+        <div class="hint">Place <code>sos.wav</code> on SD root. Format: 16-bit PCM WAV, mono or stereo. Falls back to built-in morse pattern.</div>
+      </div>
     </div>
   </div>
 
@@ -924,19 +2660,25 @@ body.show-hints .hint.collapsible,
     <div class="section-title">Battery</div>
     <div class="row">
       <div class="field">
-        <label>Low Battery Alert</label>
+        <label>Low Battery Alert<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="batteryAlertEnabled">
           <option value="false" selected>Off</option>
           <option value="true">On</option>
         </select>
+        <div class="hint collapsible">Send alert to contacts with Send SOS enabled when battery drops below the threshold.</div>
       </div>
       <div class="field">
-        <label>Alert Threshold (%)</label>
-        <input type="number" id="batteryThreshold" value="10" min="5" max="50">
+        <label>Alert Threshold</label>
+        <div class="v4-slider-combo">
+          <input type="range" id="batteryThresholdSlider" min="5" max="50" value="10"
+                 oninput="v4SyncSliderToNumber('batteryThreshold', this.value)">
+          <input type="number" class="v4-slider-number" id="batteryThreshold" value="10" min="5" max="50"
+                 oninput="v4SyncNumberToSlider('batteryThresholdSlider', this.value)">
+          <span class="v4-slider-unit">%</span>
+        </div>
         <div class="error">5–50%</div>
       </div>
     </div>
-    <div class="hint">Send alert to contacts with Send SOS enabled when battery drops below this level.</div>
   </div>
 
   <!-- Security -->
@@ -997,6 +2739,18 @@ body.show-hints .hint.collapsible,
 
 <div class="toast" id="toast"></div>
 
+<!-- Generic Confirm Modal (in-DOM, works inside sandboxed iframes) -->
+<div class="wizard-overlay hidden" id="v4ConfirmModal">
+  <div class="wizard-box" style="max-width:420px;">
+    <h2 id="v4ConfirmTitle" style="margin-bottom:8px;">Are you sure?</h2>
+    <p id="v4ConfirmMsg" style="font-size:0.9rem; color:var(--text2); margin-bottom:16px; line-height:1.5;"></p>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-outline" id="v4ConfirmNo" style="flex:1; padding:10px;">Cancel</button>
+      <button class="btn btn-green" id="v4ConfirmYes" style="flex:1; padding:10px;">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <!-- Post-Export Modal -->
 <div class="wizard-overlay hidden" id="exportModal">
   <div class="wizard-box" style="max-width:480px;">
@@ -1004,6 +2758,9 @@ body.show-hints .hint.collapsible,
     <div style="font-size:0.9rem; color:var(--text2); line-height:1.8;">
       <strong style="color:var(--text);">1.</strong> Unzip and copy <strong>all contents</strong> to the root of your SD card<br>
       <strong style="color:var(--text);">2.</strong> Insert the SD card and power on
+    </div>
+    <div id="exportFallback" style="margin-top:12px; padding:10px 12px; background:rgba(255,181,71,0.08); border:1px solid rgba(255,181,71,0.3); border-radius:4px; font-size:0.82rem; color:var(--shell-text-dim);">
+      Download didn't start? <button onclick="v4ManualDownload()" style="background:transparent; border:none; color:var(--shell-amber); text-decoration:underline; cursor:pointer; font-size:inherit; padding:0;">Click here to save the ZIP manually</button>
     </div>
     <button class="btn btn-green" onclick="document.getElementById('exportModal').classList.add('hidden');" style="width:100%; margin-top:16px; padding:12px; font-size:0.95rem;">Done</button>
   </div>
@@ -1178,8 +2935,9 @@ function detectPreset() {
   const sf = parseInt(document.getElementById('radioSF').value);
   const bw = parseFloat(document.getElementById('radioBW').value);
   const cr = parseInt(document.getElementById('radioCR').value);
+  const tx = parseInt(document.getElementById('radioTX').value);
   for (const [key, p] of Object.entries(PRESETS)) {
-    if (Math.abs(freq - p.freq) < 0.01 && sf === p.sf && Math.abs(bw - p.bw) < 0.1 && cr === p.cr) {
+    if (Math.abs(freq - p.freq) < 0.01 && sf === p.sf && Math.abs(bw - p.bw) < 0.1 && cr === p.cr && tx === p.tx) {
       document.getElementById('radioPreset').value = key;
       document.getElementById('presetLabel').textContent = p.label;
       return;
@@ -1194,7 +2952,6 @@ let contacts = [];
 
 function renderContacts() {
   const list = document.getElementById('contactList');
-  const empty = document.getElementById('contactEmpty');
   const maxContacts = fleetMode ? 32 - (fleetDevices.length - 1) : 32;
   document.getElementById('contactCount').textContent = contacts.length + '/' + maxContacts;
   // Disable add button when at limit
@@ -1202,79 +2959,84 @@ function renderContacts() {
   if (addContactBtn) addContactBtn.disabled = contacts.length >= maxContacts;
   if (contacts.length === 0) {
     list.innerHTML = '';
-    empty.style.display = '';
     return;
   }
-  empty.style.display = 'none';
   list.innerHTML = contacts.map((c, i) => `
     <div class="contact-card">
       <div class="contact-header">
         <span class="contact-num">Contact ${i + 1}</span>
         <button class="btn-remove" onclick="removeContact(${i})">Remove</button>
       </div>
-      <div class="field">
-        <label>Alias (display name)</label>
-        <input type="text" value="${esc(c.alias)}" maxlength="16"
-               onchange="contacts[${i}].alias=this.value" placeholder="e.g. Alice">
-      </div>
-      <div class="field" style="margin-top:8px">
-        <label>Public Key (hex)</label>
-        <input type="text" value="${esc(c.public_key)}"
-               onchange="contacts[${i}].public_key=this.value"
-               placeholder="Paste contact's public key" style="font-family:monospace; font-size:0.8rem;">
-      </div>
       <div class="row" style="margin-top:8px">
         <div class="field">
-          <label>Allow Telemetry<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="contacts[${i}].allow_telemetry=(this.value==='true')">
-            <option value="true" ${c.allow_telemetry !== false ? 'selected' : ''}>Yes</option>
-            <option value="false" ${c.allow_telemetry === false ? 'selected' : ''}>No</option>
-          </select>
-          <div class="hint collapsible">Base telemetry (required for location/environment)</div>
+          <label>Alias (display name)</label>
+          <input type="text" value="${esc(c.alias)}" maxlength="16"
+                 onchange="contacts[${i}].alias=this.value" placeholder="e.g. Alice">
         </div>
-        <div class="field">
-          <label>Allow Location<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="contacts[${i}].allow_location=(this.value==='true')">
-            <option value="false" ${c.allow_location !== true ? 'selected' : ''}>No</option>
-            <option value="true" ${c.allow_location === true ? 'selected' : ''}>Yes</option>
-          </select>
-          <div class="hint collapsible">GPS position (requires telemetry)</div>
-        </div>
-        <div class="field">
-          <label>Allow Environment<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="contacts[${i}].allow_environment=(this.value==='true')">
-            <option value="false" ${c.allow_environment !== true ? 'selected' : ''}>No</option>
-            <option value="true" ${c.allow_environment === true ? 'selected' : ''}>Yes</option>
-          </select>
-          <div class="hint collapsible">Temp, humidity (requires telemetry)</div>
+        <div class="field" style="flex:2">
+          <label>Public Key (hex)</label>
+          <input type="text" class="v4-mono-input" value="${esc(c.public_key)}"
+                 onchange="contacts[${i}].public_key=this.value"
+                 placeholder="Paste contact's public key">
         </div>
       </div>
-      <div class="row" style="margin-top:8px">
-        <div class="field">
-          <label>Always Sound<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="contacts[${i}].always_sound=(this.value==='true')">
-            <option value="false" ${c.always_sound !== true ? 'selected' : ''}>No</option>
-            <option value="true" ${c.always_sound === true ? 'selected' : ''}>Yes</option>
-          </select>
-          <div class="hint collapsible">Play sound even when muted</div>
+      <details class="v4-advanced-disclosure v4-card-advanced">
+        <summary class="v4-advanced-summary">Permissions &amp; SOS</summary>
+        <div class="v4-advanced-content">
+          <div class="row">
+            <div class="field">
+              <label>Allow Telemetry<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="contacts[${i}].allow_telemetry=(this.value==='true')">
+                <option value="true" ${c.allow_telemetry !== false ? 'selected' : ''}>Yes</option>
+                <option value="false" ${c.allow_telemetry === false ? 'selected' : ''}>No</option>
+              </select>
+              <div class="hint collapsible">Base telemetry (required for location/environment)</div>
+            </div>
+            <div class="field">
+              <label>Allow Location<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="setContactPermission(${i}, 'allow_location', this.value==='true')">
+                <option value="false" ${c.allow_location !== true ? 'selected' : ''}>No</option>
+                <option value="true" ${c.allow_location === true ? 'selected' : ''}>Yes</option>
+              </select>
+              <div class="hint collapsible">GPS position (requires telemetry — auto-enables it)</div>
+            </div>
+            <div class="field">
+              <label>Allow Environment<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="setContactPermission(${i}, 'allow_environment', this.value==='true')">
+                <option value="false" ${c.allow_environment !== true ? 'selected' : ''}>No</option>
+                <option value="true" ${c.allow_environment === true ? 'selected' : ''}>Yes</option>
+              </select>
+              <div class="hint collapsible">Temp, humidity (requires telemetry — auto-enables it)</div>
+            </div>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <div class="field">
+              <label>Always Sound<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="contacts[${i}].always_sound=(this.value==='true')">
+                <option value="false" ${c.always_sound !== true ? 'selected' : ''}>No</option>
+                <option value="true" ${c.always_sound === true ? 'selected' : ''}>Yes</option>
+              </select>
+              <div class="hint collapsible">Play sound even when muted</div>
+            </div>
+            <div class="field">
+              <label>Allow SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="contacts[${i}].allow_sos=(this.value==='true')">
+                <option value="true" ${c.allow_sos !== false ? 'selected' : ''}>Yes</option>
+                <option value="false" ${c.allow_sos === false ? 'selected' : ''}>No</option>
+              </select>
+              <div class="hint collapsible">Trigger SOS alert from this contact</div>
+            </div>
+            <div class="field">
+              <label>Send SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="contacts[${i}].send_sos=(this.value==='true')">
+                <option value="true" ${c.send_sos !== false ? 'selected' : ''}>Yes</option>
+                <option value="false" ${c.send_sos === false ? 'selected' : ''}>No</option>
+              </select>
+              <div class="hint collapsible">Include in outgoing SOS broadcast</div>
+            </div>
+          </div>
         </div>
-        <div class="field">
-          <label>Allow SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="contacts[${i}].allow_sos=(this.value==='true')">
-            <option value="true" ${c.allow_sos !== false ? 'selected' : ''}>Yes</option>
-            <option value="false" ${c.allow_sos === false ? 'selected' : ''}>No</option>
-          </select>
-          <div class="hint collapsible">Trigger SOS alert from this contact</div>
-        </div>
-        <div class="field">
-          <label>Send SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="contacts[${i}].send_sos=(this.value==='true')">
-            <option value="true" ${c.send_sos !== false ? 'selected' : ''}>Yes</option>
-            <option value="false" ${c.send_sos === false ? 'selected' : ''}>No</option>
-          </select>
-          <div class="hint collapsible">Include in outgoing SOS broadcast</div>
-        </div>
-      </div>
+      </details>
     </div>
   `).join('');
 }
@@ -1297,27 +3059,50 @@ function removeContact(i) {
   if (fleetMode) renderFleetDevices(); // update fleet add button state
 }
 
+// Set a contact permission with implicit dependencies. allow_location and
+// allow_environment both require allow_telemetry — turning either on auto-
+// enables telemetry. Updates the telemetry select in-place so the open
+// disclosure state stays preserved.
+function setContactPermission(i, field, value) {
+  if (!contacts[i]) return;
+  contacts[i][field] = value;
+  if (value === true && (field === 'allow_location' || field === 'allow_environment')) {
+    if (contacts[i].allow_telemetry === false) {
+      contacts[i].allow_telemetry = true;
+      // Find this card's telemetry select and update it without rebuilding
+      // the whole list (which would collapse all open disclosures).
+      const card = document.querySelector(`#contactList .contact-card[data-idx="${i}"]`);
+      if (card) {
+        const sel = card.querySelector('[data-field="allow_telemetry"]');
+        if (sel) sel.value = 'true';
+      }
+      toast('Telemetry enabled — required for ' + (field === 'allow_location' ? 'location' : 'environment'));
+    }
+  }
+}
+
 // ===== Channels =====
 let channels = [];
 
 function renderChannels() {
   const list = document.getElementById('channelList');
-  const empty = document.getElementById('channelEmpty');
   document.getElementById('channelCount').textContent = channels.length + '/16';
 
   // Enable/disable channel buttons based on limits
   const atLimit = channels.length >= 16;
   const hasPublic = channels.some(c => c.type === 'public');
   const pubBtn = document.getElementById('addPublicBtn');
-  if (pubBtn) pubBtn.disabled = hasPublic || atLimit;
+  if (pubBtn) {
+    // Hide entirely when a public channel already exists (only one allowed)
+    pubBtn.style.display = hasPublic ? 'none' : '';
+    pubBtn.disabled = atLimit;
+  }
   document.querySelectorAll('[onclick="addChannel(\'hashtag\')"], [onclick="addChannel(\'private\')"]').forEach(btn => btn.disabled = atLimit);
 
   if (channels.length === 0) {
     list.innerHTML = '';
-    empty.style.display = '';
     return;
   }
-  empty.style.display = 'none';
   list.innerHTML = channels.map((ch, i) => {
     const isPublic = ch.type === 'public';
     const isPrivate = ch.type === 'private';
@@ -1331,25 +3116,25 @@ function renderChannels() {
       pskSection = `
       <div class="field" style="margin-top:8px">
         <label>Pre-Shared Key (hardcoded)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-        <input type="text" value="${esc(ch.psk)}" readonly
-               style="font-family:monospace; font-size:0.8rem; color:var(--text3);">
+        <input type="text" class="v4-mono-input" value="${esc(ch.psk)}" readonly
+               style="color:var(--text3);">
         <div class="hint collapsible">Well-known MeshCore Public channel key. All devices use this same key.</div>
       </div>`;
     } else if (isHashtag) {
       pskSection = `
       <div class="field" style="margin-top:8px">
         <label>Pre-Shared Key (derived from name)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-        <input type="text" value="${esc(ch.psk)}" readonly
-               style="font-family:monospace; font-size:0.8rem; color:var(--text3);">
+        <input type="text" class="v4-mono-input" value="${esc(ch.psk)}" readonly
+               style="color:var(--text3);">
         <div class="hint collapsible">Auto-derived via SHA256("${esc(ch.name)}"). Any MeshCore device with this channel name will compute the same key.</div>
       </div>`;
     } else {
       pskSection = `
       <div class="field" style="margin-top:8px">
         <label>Pre-Shared Key (hex, 16 bytes)</label>
-        <input type="text" value="${esc(ch.psk)}"
+        <input type="text" class="v4-mono-input" value="${esc(ch.psk)}"
                onchange="channels[${i}].psk=this.value"
-               placeholder="Shared secret for this channel" style="font-family:monospace; font-size:0.8rem;">
+               placeholder="Shared secret for this channel">
         <div style="margin-top:4px">
           <button class="btn btn-outline" style="font-size:0.72rem; padding:2px 8px;"
                   onclick="generateChannelPSK(${i})">Generate PSK</button>
@@ -1372,41 +3157,46 @@ function renderChannels() {
                placeholder="${isHashtag ? 'e.g. #london, #emergency' : 'e.g. SecureOps'}">
       </div>
       ${pskSection}
-      <div class="row" style="margin-top:8px; gap:16px;">
-        <div class="field">
-          <label>Allow SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="channels[${i}].allow_sos=(this.value==='true')">
-            <option value="true" ${ch.allow_sos !== false ? 'selected' : ''}>Yes</option>
-            <option value="false" ${ch.allow_sos === false ? 'selected' : ''}>No</option>
-          </select>
-          <div class="hint collapsible">Trigger SOS alert from this channel</div>
+      <details class="v4-advanced-disclosure v4-card-advanced">
+        <summary class="v4-advanced-summary">SOS &amp; routing</summary>
+        <div class="v4-advanced-content">
+          <div class="row" style="gap:16px;">
+            <div class="field">
+              <label>Allow SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="channels[${i}].allow_sos=(this.value==='true')">
+                <option value="true" ${ch.allow_sos !== false ? 'selected' : ''}>Yes</option>
+                <option value="false" ${ch.allow_sos === false ? 'selected' : ''}>No</option>
+              </select>
+              <div class="hint collapsible">Trigger SOS alert from this channel</div>
+            </div>
+            <div class="field">
+              <label>Send SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="channels[${i}].send_sos=(this.value==='true')">
+                <option value="true" ${ch.send_sos !== false ? 'selected' : ''}>Yes</option>
+                <option value="false" ${ch.send_sos === false ? 'selected' : ''}>No</option>
+              </select>
+              <div class="hint collapsible">Include in outgoing SOS broadcast</div>
+            </div>
+            <div class="field">
+              <label>Read Only<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="channels[${i}].read_only=(this.value==='true')">
+                <option value="false" ${ch.read_only ? '' : 'selected'}>No</option>
+                <option value="true" ${ch.read_only ? 'selected' : ''}>Yes</option>
+              </select>
+              <div class="hint collapsible">Listen-only mode (hides input bar)</div>
+            </div>
+            <div class="field">
+              <label>Scope Override<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <input type="text" value="${esc(ch.scope || '')}" maxlength="32"
+                     pattern="|\\*|#[a-z0-9\\-]+"
+                     onchange="channels[${i}].scope=this.value"
+                     placeholder="(inherit global)"
+                     title="Leave empty to use global scope, * for wildcard, or #name for a region">
+              <div class="hint collapsible">Override global radio scope for this channel</div>
+            </div>
+          </div>
         </div>
-        <div class="field">
-          <label>Send SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="channels[${i}].send_sos=(this.value==='true')">
-            <option value="true" ${ch.send_sos !== false ? 'selected' : ''}>Yes</option>
-            <option value="false" ${ch.send_sos === false ? 'selected' : ''}>No</option>
-          </select>
-          <div class="hint collapsible">Include in outgoing SOS broadcast</div>
-        </div>
-        <div class="field">
-          <label>Read Only<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="channels[${i}].read_only=(this.value==='true')">
-            <option value="false" ${ch.read_only ? '' : 'selected'}>No</option>
-            <option value="true" ${ch.read_only ? 'selected' : ''}>Yes</option>
-          </select>
-          <div class="hint collapsible">Listen-only mode (hides input bar)</div>
-        </div>
-        <div class="field">
-          <label>Scope Override<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <input type="text" value="${esc(ch.scope || '')}" maxlength="32"
-                 pattern="|\*|#[a-z0-9\-]+"
-                 onchange="channels[${i}].scope=this.value"
-                 placeholder="(inherit global)"
-                 title="Leave empty to use global scope, * for wildcard, or #name for a region">
-          <div class="hint collapsible">Override global radio scope for this channel</div>
-        </div>
-      </div>
+      </details>
     </div>`;
   }).join('');
 }
@@ -1449,7 +3239,6 @@ let rooms = [];
 
 function renderRooms() {
   const list  = document.getElementById('roomList');
-  const empty = document.getElementById('roomEmpty');
   document.getElementById('roomCount').textContent = rooms.length + '/8';
 
   // Disable add button at cap
@@ -1457,10 +3246,8 @@ function renderRooms() {
 
   if (rooms.length === 0) {
     list.innerHTML = '';
-    empty.style.display = '';
     return;
   }
-  empty.style.display = 'none';
 
   list.innerHTML = rooms.map((r, i) => `
     <div class="contact-card">
@@ -1468,21 +3255,22 @@ function renderRooms() {
         <span class="contact-num">Room ${i + 1}</span>
         <button class="btn-remove" onclick="removeRoom(${i})">Remove</button>
       </div>
-      <div class="field">
-        <label>Name<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-        <input type="text" value="${esc(r.name)}" maxlength="32"
-               onchange="rooms[${i}].name=this.value"
-               placeholder="e.g. Ruhrgebiet">
-        <div class="hint collapsible">Display name shown in the conversation list and chat header.</div>
-      </div>
-      <div class="field" style="margin-top:8px">
-        <label>Public Key (64 hex chars)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-        <input type="text" value="${esc(r.public_key)}" maxlength="64"
-               pattern="[0-9a-fA-F]{64}"
-               onchange="rooms[${i}].public_key=this.value.toLowerCase()"
-               placeholder="Server's Ed25519 public key"
-               style="font-family:monospace; font-size:0.8rem;">
-        <div class="hint collapsible">Shared out-of-band by whoever runs the room — must be exactly 64 hex characters.</div>
+      <div class="row" style="margin-top:8px">
+        <div class="field">
+          <label>Alias (display name)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+          <input type="text" value="${esc(r.name)}" maxlength="32"
+                 onchange="rooms[${i}].name=this.value"
+                 placeholder="e.g. Ruhrgebiet">
+          <div class="hint collapsible">Display name shown in the conversation list and chat header.</div>
+        </div>
+        <div class="field" style="flex:2">
+          <label>Public Key (hex)<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+          <input type="text" class="v4-mono-input" value="${esc(r.public_key)}" maxlength="64"
+                 pattern="[0-9a-fA-F]{64}"
+                 onchange="rooms[${i}].public_key=this.value.toLowerCase()"
+                 placeholder="Server's Ed25519 public key">
+          <div class="hint collapsible">Shared out-of-band by whoever runs the room — must be exactly 64 hex characters.</div>
+        </div>
       </div>
       <div class="field" style="margin-top:8px">
         <label>Password<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
@@ -1491,41 +3279,46 @@ function renderRooms() {
                placeholder="(empty = public room)">
         <div class="hint collapsible">Up to 15 characters. Leave empty to join a room that requires no password (public).</div>
       </div>
-      <div class="row" style="margin-top:8px; gap:16px;">
-        <div class="field">
-          <label>Allow SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="rooms[${i}].allow_sos=(this.value==='true')">
-            <option value="true" ${r.allow_sos !== false ? 'selected' : ''}>Yes</option>
-            <option value="false" ${r.allow_sos === false ? 'selected' : ''}>No</option>
-          </select>
-          <div class="hint collapsible">Trigger SOS alert when a post in this room starts with the SOS keyword. Disable for noisy public rooms.</div>
+      <details class="v4-advanced-disclosure v4-card-advanced">
+        <summary class="v4-advanced-summary">SOS &amp; routing</summary>
+        <div class="v4-advanced-content">
+          <div class="row" style="gap:16px;">
+            <div class="field">
+              <label>Allow SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="rooms[${i}].allow_sos=(this.value==='true')">
+                <option value="true" ${r.allow_sos !== false ? 'selected' : ''}>Yes</option>
+                <option value="false" ${r.allow_sos === false ? 'selected' : ''}>No</option>
+              </select>
+              <div class="hint collapsible">Trigger SOS alert when a post in this room starts with the SOS keyword. Disable for noisy public rooms.</div>
+            </div>
+            <div class="field">
+              <label>Send SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="rooms[${i}].send_sos=(this.value==='true')">
+                <option value="false" ${r.send_sos === true ? '' : 'selected'}>No</option>
+                <option value="true" ${r.send_sos === true ? 'selected' : ''}>Yes</option>
+              </select>
+              <div class="hint collapsible">Include this room in your outgoing SOS broadcast. Default off — only enable for trusted SAR/rescue rooms; community rooms shouldn't be spammed.</div>
+            </div>
+            <div class="field">
+              <label>Read Only<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <select onchange="rooms[${i}].read_only=(this.value==='true')">
+                <option value="false" ${r.read_only ? '' : 'selected'}>No</option>
+                <option value="true" ${r.read_only ? 'selected' : ''}>Yes</option>
+              </select>
+              <div class="hint collapsible">Listen-only mode — hides the input bar in chat view.</div>
+            </div>
+            <div class="field">
+              <label>Scope Override<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+              <input type="text" value="${esc(r.scope || '')}" maxlength="32"
+                     pattern="|\\*|#[a-z0-9\\-]+"
+                     onchange="rooms[${i}].scope=this.value"
+                     placeholder="(inherit global)"
+                     title="Leave empty for global scope, * for wildcard, or #name for a region">
+              <div class="hint collapsible">Override the global radio scope for posts to this room. Same syntax as channel scope.</div>
+            </div>
+          </div>
         </div>
-        <div class="field">
-          <label>Send SOS<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="rooms[${i}].send_sos=(this.value==='true')">
-            <option value="false" ${r.send_sos === true ? '' : 'selected'}>No</option>
-            <option value="true" ${r.send_sos === true ? 'selected' : ''}>Yes</option>
-          </select>
-          <div class="hint collapsible">Include this room in your outgoing SOS broadcast. Default off — only enable for trusted SAR/rescue rooms; community rooms shouldn't be spammed.</div>
-        </div>
-        <div class="field">
-          <label>Read Only<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select onchange="rooms[${i}].read_only=(this.value==='true')">
-            <option value="false" ${r.read_only ? '' : 'selected'}>No</option>
-            <option value="true" ${r.read_only ? 'selected' : ''}>Yes</option>
-          </select>
-          <div class="hint collapsible">Listen-only mode — hides the input bar in chat view.</div>
-        </div>
-        <div class="field">
-          <label>Scope Override<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <input type="text" value="${esc(r.scope || '')}" maxlength="32"
-                 pattern="|\\*|#[a-z0-9\\-]+"
-                 onchange="rooms[${i}].scope=this.value"
-                 placeholder="(inherit global)"
-                 title="Leave empty for global scope, * for wildcard, or #name for a region">
-          <div class="hint collapsible">Override the global radio scope for posts to this room. Same syntax as channel scope.</div>
-        </div>
-      </div>
+      </details>
     </div>
   `).join('');
 }
@@ -1927,12 +3720,7 @@ async function exportConfig() {
   ];
   const zipData = buildZip(files);
   const blob = new Blob([zipData], { type: 'application/zip' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'mclite-config.zip';
-  a.click();
-  URL.revokeObjectURL(url);
+  triggerDownload(blob, 'mclite-config.zip');
   toast('mclite-config.zip exported');
   document.getElementById('exportModal').classList.remove('hidden');
 }
@@ -2091,14 +3879,19 @@ function loadConfig(cfg) {
   if (channels.length > 16) toast('Warning: imported config has ' + channels.length + ' channels (firmware max 16)');
 }
 
-function resetAll() {
-  if (!confirm('Start a new config? Unsaved changes will be lost.')) return;
+// Shared reset routine used by both "New config" entry points: the
+// ⋯ menu (resetAll) and the wizard's welcome screen (wizStartFromScratch).
+// Sets every field to its default, clears all collections, generates a
+// fresh keypair, adds default channels (Public + #mclite), and shows a
+// toast when complete.
+async function applyDefaultsAndGenerate() {
   identity = { privateKey: '', publicKey: '' };
   contacts = [];
   channels = [];
+  rooms = [];
   fleetDevices = [];
   if (fleetMode) setFleetMode(false);
-  if (advancedMode) setAdvancedMode(false);
+  if (typeof advancedMode !== 'undefined' && advancedMode) setAdvancedMode(false);
   document.getElementById('language').value = '';
   document.getElementById('deviceName').value = 'MCLite';
   document.getElementById('radioPreset').value = 'eu_narrow';
@@ -2137,7 +3930,22 @@ function resetAll() {
   toggleLockFields();
   renderContacts();
   renderChannels();
-  toast('Config reset');
+  renderRooms();
+  await generateIdentity();
+  addPublicChannel();
+  await addDefaultHashtag();
+  toast('New config ready');
+}
+
+async function resetAll() {
+  const ok = await v4Confirm({
+    title: 'Start a new config?',
+    message: 'Unsaved changes to the current config will be lost. A fresh keypair and default channels will be generated.',
+    confirmLabel: 'Start fresh',
+    cancelLabel: 'Cancel'
+  });
+  if (!ok) return;
+  await applyDefaultsAndGenerate();
 }
 
 // ===== Utils =====
@@ -2221,13 +4029,19 @@ function renderFleetDevices() {
   if (addDevBtn) addDevBtn.disabled = (fleetDevices.length - 1 + contacts.length >= 32);
   const list = document.getElementById('fleetDeviceList');
   list.innerHTML = fleetDevices.map((d, i) => {
-    const keyText = d.publicKey ? d.publicKey.substring(0, 20) + '...' : 'No key';
-    const keyCls = d.publicKey ? 'fleet-key has-key' : 'fleet-key';
-    return `<div class="fleet-device-card">
-      <span style="color:var(--text3);font-size:0.75rem;min-width:18px;">${i+1}</span>
+    const hasKey = !!d.publicKey;
+    const keyText = hasKey ? d.publicKey.substring(0, 12) + '…' + d.publicKey.substring(d.publicKey.length - 6) : '— not generated —';
+    const keyCls = hasKey ? 'fleet-key has-key' : 'fleet-key';
+    const ledCls = hasKey ? 'fleet-led on' : 'fleet-led off';
+    return `<div class="fleet-device-card${hasKey ? ' has-key' : ''}">
+      <span class="fleet-idx">${String(i+1).padStart(2,'0')}</span>
       <input type="text" value="${esc(d.name)}" maxlength="20"
              onchange="fleetDevices[${i}].name=this.value" placeholder="Device name">
-      <span class="${keyCls}" title="${esc(d.publicKey)}">${keyText}</span>
+      <div class="fleet-id-cluster" title="${hasKey ? esc(d.publicKey) : 'Click Generate All Keys'}">
+        <span class="${ledCls}"></span>
+        <span class="fleet-id-label">ID</span>
+        <span class="${keyCls}">${keyText}</span>
+      </div>
       <button class="btn-remove" onclick="removeFleetDevice(${i})"${fleetDevices.length <= 2 ? ' disabled style="opacity:0.3"' : ''}>Remove</button>
     </div>`;
   }).join('');
@@ -2452,14 +4266,30 @@ async function exportFleet() {
   }
   const zipData = buildZip(files);
   const blob = new Blob([zipData], { type: 'application/zip' });
+  triggerDownload(blob, 'mclite-fleet.zip');
+  toast('Fleet ZIP exported (' + configs.length + ' devices)');
+  document.getElementById('exportModal').classList.remove('hidden');
+}
+
+// Robust download trigger — works in normal tabs, falls back to a manual
+// link in sandboxed environments (preview iframes etc) where automatic
+// downloads may be blocked.
+function triggerDownload(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'mclite-fleet.zip';
+  a.download = filename;
+  a.rel = 'noopener';
+  // Append for Firefox compatibility, then click
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
-  toast('Fleet ZIP exported (' + configs.length + ' devices)');
-  document.getElementById('exportModal').classList.remove('hidden');
+  setTimeout(() => {
+    a.remove();
+    // Defer revoke so the browser has time to start the download
+    URL.revokeObjectURL(url);
+  }, 1500);
+  // Stash the most recent download for the fallback button in the modal
+  window._lastExportBlob = { blob, filename };
 }
 
 async function doExport() {
@@ -2468,7 +4298,7 @@ async function doExport() {
 }
 
 // Auto-detect preset changes when radio fields are manually edited
-['radioFreq','radioSF','radioBW','radioCR'].forEach(id => {
+['radioFreq','radioSF','radioBW','radioCR','radioTX'].forEach(id => {
   document.getElementById(id).addEventListener('change', detectPreset);
 });
 
@@ -2512,14 +4342,15 @@ function openWizard() {
   // Pre-fill from current config state
   wizState.page = 1;
   wizState.deviceCount = fleetMode ? fleetDevices.length : 1;
-  // Detect region from current radio settings
+  // Detect region from current radio settings (mirror detectPreset — include tx)
   const freq = parseFloat(document.getElementById('radioFreq').value);
   const sf = parseInt(document.getElementById('radioSF').value);
   const bw = parseFloat(document.getElementById('radioBW').value);
   const cr = parseInt(document.getElementById('radioCR').value);
+  const tx = parseInt(document.getElementById('radioTX').value);
   wizState.region = 'eu_narrow';
   for (const [key, p] of Object.entries(PRESETS)) {
-    if (Math.abs(freq - p.freq) < 0.01 && sf === p.sf && Math.abs(bw - p.bw) < 0.1 && cr === p.cr) {
+    if (Math.abs(freq - p.freq) < 0.01 && sf === p.sf && Math.abs(bw - p.bw) < 0.1 && cr === p.cr && tx === p.tx) {
       wizState.region = key;
       break;
     }
@@ -2570,7 +4401,7 @@ function renderWizWelcome(box) {
         <small>Guided setup — recommended for first-time users</small>
       </button>
       <button class="btn btn-outline" onclick="wizStartFromScratch()">
-        Start from scratch
+        New config
         <small>Empty config with defaults — for experienced users</small>
       </button>
       <button class="btn btn-outline" onclick="wizImportConfig()">
@@ -2580,56 +4411,9 @@ function renderWizWelcome(box) {
     </div>`;
 }
 
-function wizStartFromScratch() {
+async function wizStartFromScratch() {
   closeWizard();
-  // Reset to defaults
-  identity = { privateKey: '', publicKey: '' };
-  contacts = [];
-  channels = [];
-  fleetDevices = [];
-  if (fleetMode) setFleetMode(false);
-  document.getElementById('language').value = '';
-  document.getElementById('deviceName').value = 'MCLite';
-  document.getElementById('radioPreset').value = 'eu_narrow';
-  applyPreset();
-  document.getElementById('radioScope').value = '*';
-  document.getElementById('radioPathHashMode').value = '0';
-  document.getElementById('pubKeyDisplay').textContent = 'Not yet generated';
-  document.getElementById('privKeyDisplay').textContent = 'Not yet generated';
-  document.getElementById('dispBrightness').value = 180;
-  document.getElementById('dispAutoDim').value = 30;
-  document.getElementById('dispDimBrightness').value = 20;
-  document.getElementById('dispBootText').value = '';
-  document.getElementById('kbdBacklight').value = 'true';
-  document.getElementById('kbdBrightness').value = 127;
-  document.getElementById('kbdBrightness').disabled = false;
-  document.getElementById('msgHistory').value = 'true';
-  document.getElementById('msgMax').value = 100;
-  document.getElementById('msgRetries').value = 3;
-  document.getElementById('msgTelemetry').value = 'true';
-  document.getElementById('msgShowTelemetry').value = 'both';
-  document.getElementById('cannedMessages').value = 'true';
-  document.getElementById('soundEnabled').value = 'true';
-  document.getElementById('sosKeyword').value = 'SOS';
-  document.getElementById('sosRepeat').value = 3;
-  document.getElementById('gpsEnabled').value = 'true';
-  document.getElementById('gpsTimezone').value = autoDetectPosixTz();
-  document.getElementById('gpsClockOffset').value = 0;
-  document.getElementById('gpsCoordFormat').value = 'decimal';
-  document.getElementById('gpsLastKnownMaxAge').value = 1800;
-  document.getElementById('batteryAlertEnabled').value = 'false';
-  document.getElementById('batteryThreshold').value = 10;
-  document.getElementById('lockMode').value = 'key';
-  document.getElementById('pinCode').value = '';
-  document.getElementById('autoLock').value = 'key';
-  document.getElementById('adminEnabled').value = 'true';
-  toggleLockFields();
-  // Auto-generate keypair and add default channels
-  generateIdentity().then(async () => {
-    addPublicChannel();
-    await addDefaultHashtag();
-    toast('New config ready');
-  });
+  await applyDefaultsAndGenerate();
 }
 
 async function addDefaultHashtag() {
@@ -2994,6 +4778,933 @@ renderContacts();
 renderChannels();
 renderRooms();
 maybeShowWizard();
+</script>
+
+<script>
+/* ============================================================
+   v4 SHELL WIRING
+   Keeps all original JS (validate, buildConfig, doExport, render*,
+   setFleetMode, setAdvancedMode, generateIdentity, etc.) intact.
+   This script only:
+     1. Moves existing .section nodes into the v4 center pane
+     2. Builds the rail nav
+     3. Mirrors mode state to v4 toggle pills
+     4. Updates status dots, identity badge, JSON preview on changes
+   ============================================================ */
+(function() {
+  'use strict';
+
+  // Section metadata: which v4 nav items exist and which existing
+  // section element backs each one. Keep order = display order.
+  // `mode: 'advanced'` means hidden when not in Advanced mode.
+  // `groups`: 'device', 'mesh', 'system'.
+  const PANES = [
+    { id: 'device',   label: 'Device',       group: 'device',
+      single: 'singleDeviceSection', fleet: 'fleetDeviceSection',
+      extras: ['identitySection'] },
+    { id: 'radio',    label: 'Radio',        group: 'device',
+      sectionFinder: () => findSection('Radio') },
+    { id: 'contacts', label: 'Contacts',     group: 'mesh',
+      sectionFinder: () => findSection('Contacts'),
+      counterId: 'contactCount' },
+    { id: 'channels', label: 'Channels',     group: 'mesh',
+      sectionFinder: () => findSection('Channels'),
+      counterId: 'channelCount' },
+    { id: 'rooms',    label: 'Room servers', group: 'mesh',
+      sectionFinder: () => findSection('Room Servers'),
+      counterId: 'roomCount' },
+    { id: 'display',  label: 'Display',      group: 'system', mode: 'advanced',
+      sectionFinder: () => findSection('Display') },
+    { id: 'messaging',label: 'Messaging',    group: 'system', mode: 'advanced',
+      sectionFinder: () => findSection('Messaging') },
+    { id: 'sound',    label: 'Sound & SOS',  group: 'system', mode: 'advanced',
+      sectionFinder: () => findSection('Sound') },
+    { id: 'gps',      label: 'GPS & time',   group: 'system', mode: 'advanced',
+      sectionFinder: () => findSection('GPS') },
+    { id: 'battery',  label: 'Battery',      group: 'system', mode: 'advanced',
+      sectionFinder: () => findSection('Battery') },
+    { id: 'security', label: 'Security',     group: 'system', mode: 'advanced',
+      sectionFinder: () => findSection('Security') },
+  ];
+
+  const GROUP_LABELS = {
+    device: 'Device',
+    mesh:   'Mesh',
+    system: 'System',
+  };
+
+  const SUBTITLES = {
+    device:    'The device you are configuring.',
+    radio:     'LoRa radio parameters and regional preset.',
+    contacts:  'Contacts pre-loaded into the address book.',
+    channels:  'Group channels — public, hashtag, or private with shared key.',
+    rooms:     'Community message boards joined at boot.',
+    display:   'Screen and keyboard backlight behaviour.',
+    messaging: 'Message history, retries, and telemetry.',
+    sound:     'Notification sound and SOS alert behaviour.',
+    gps:       'Location, timezone, and coordinate format.',
+    battery:   'Low-battery alerting.',
+    security:  'Lock screen, PIN, and admin access.',
+  };
+
+  let currentPane = 'device';
+
+  // ---------- helpers ----------
+  function findSection(titleText) {
+    const titles = document.querySelectorAll('.container .section-title');
+    for (const t of titles) {
+      const text = t.childNodes[0] ? t.childNodes[0].textContent.trim() : '';
+      if (text === titleText) return t.closest('.section');
+    }
+    return null;
+  }
+
+  function moveSectionsIntoCenter() {
+    const host = document.getElementById('v4_sectionHost');
+    PANES.forEach(p => {
+      const els = [];
+      if (p.single) {
+        const a = document.getElementById(p.single);
+        const b = document.getElementById(p.fleet);
+        if (a) els.push(a);
+        if (b) els.push(b);
+      } else if (p.sectionFinder) {
+        const el = p.sectionFinder();
+        if (el) els.push(el);
+      }
+      if (p.extras) {
+        p.extras.forEach(eid => {
+          const e = document.getElementById(eid);
+          if (e) els.push(e);
+        });
+      }
+      els.forEach(el => {
+        el.setAttribute('data-pane', p.id);
+        host.appendChild(el);
+      });
+    });
+
+    // The legacy bottom export/footer block sits at the end of .container.
+    // Hide it (the v4 export is in the topbar).
+    const legacyBottom = document.querySelector('.container > div[style*="text-align:center"]');
+    if (legacyBottom) legacyBottom.style.display = 'none';
+    const legacyFoot = document.querySelector('.container > p[style*="text-align:center"]');
+    if (legacyFoot) legacyFoot.style.display = 'none';
+  }
+
+  // ---------- nav rendering ----------
+  function buildNav() {
+    const nav = document.getElementById('v4_nav');
+    const groups = {};
+    PANES.forEach(p => {
+      (groups[p.group] = groups[p.group] || []).push(p);
+    });
+    let html = '';
+    Object.keys(GROUP_LABELS).forEach(g => {
+      if (!groups[g]) return;
+      html += `<div class="v4-nav-group">`;
+      html += `<div class="v4-nav-group-label">${GROUP_LABELS[g]}</div>`;
+      groups[g].forEach(p => {
+        const modeAttr = p.mode === 'advanced' ? ' data-mode="advanced"' : '';
+        html += `
+          <div class="v4-nav-item" data-pane-target="${p.id}"${modeAttr} onclick="v4ShowPane('${p.id}')">
+            <div class="v4-dot" data-dot="${p.id}"></div>
+            <div class="v4-nav-name">${p.label}</div>
+            <div class="v4-nav-count" data-count="${p.id}" style="display:none"></div>
+          </div>`;
+      });
+      html += `</div>`;
+    });
+    nav.innerHTML = html;
+  }
+
+  // ---------- pane switching ----------
+  window.v4ShowPane = function(id) {
+    currentPane = id;
+    document.querySelectorAll('#v4_nav .v4-nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.paneTarget === id);
+    });
+    document.querySelectorAll('#v4_sectionHost .section').forEach(s => {
+      s.classList.toggle('active', s.dataset.pane === id);
+    });
+    const meta = PANES.find(p => p.id === id);
+    document.getElementById('v4_eyebrow').textContent = (GROUP_LABELS[meta.group] || '').toUpperCase() + ' / ' + (meta.label.toUpperCase());
+    document.getElementById('v4_title').textContent = meta.label;
+    document.getElementById('v4_sub').textContent = SUBTITLES[id] || '';
+    // Scroll center back to top
+    document.getElementById('v4_center').scrollTop = 0;
+  };
+
+  // ---------- mode mirroring ----------
+  // Wrap the originals so the v4 controls track state.
+  const _origSetAdv = window.setAdvancedMode;
+  window.setAdvancedMode = function(enabled) {
+    _origSetAdv(enabled);
+    document.body.classList.toggle('adv', !!enabled);
+    document.getElementById('v4_expertRow').classList.toggle('on', !!enabled);
+    // If currently on a hidden advanced pane, move to Device
+    if (!enabled) {
+      const cur = PANES.find(p => p.id === currentPane);
+      if (cur && cur.mode === 'advanced') v4ShowPane('device');
+    }
+    v4UpdateStatus();
+  };
+
+  window.v4ToggleExpert = function() {
+    const next = !document.body.classList.contains('adv');
+    setAdvancedMode(next);
+  };
+
+  const _origSetFleet = window.setFleetMode;
+  window.setFleetMode = function(enabled) {
+    _origSetFleet(enabled);
+    document.getElementById('v4_btnSingle').classList.toggle('active', !enabled);
+    document.getElementById('v4_btnFleet').classList.toggle('active', enabled);
+    // Mirror the export label change that the original code applied to the
+    // legacy hidden buttons.
+    const v4Btn = document.getElementById('v4_exportBtn');
+    if (v4Btn) v4Btn.textContent = enabled ? 'Export fleet' : 'Export';
+    if (currentPane === 'device') v4ShowPane('device');
+    v4UpdateStatus();
+  };
+
+  // Identity is now rendered inline in the Device pane by the original
+  // pubKeyDisplay/privKeyDisplay elements. We just wrap generateIdentity
+  // to refresh status (readiness, JSON preview) when it completes.
+  function syncIdentityBadge() { /* no-op — kept for backward compatibility with calls below */ }
+
+  document.addEventListener('click', () => {
+    const menu = document.getElementById('v4_menu');
+    if (menu) menu.classList.remove('open');
+  });
+
+  // Wrap loadConfig: when an imported file uses custom radio params (not
+  // matching any preset), auto-switch to Expert mode so the user can see
+  // and edit the values. In Basic mode the Custom card is hidden and the
+  // Active Parameters readout is hidden, so a custom config would otherwise
+  // be invisible.
+  const _origLoadConfig = window.loadConfig;
+  if (_origLoadConfig) {
+    window.loadConfig = function() {
+      const r = _origLoadConfig.apply(this, arguments);
+      // After load, detectPreset has set radioPreset.value. Reset the
+      // edit-mode body class to match the new preset state: custom → on,
+      // preset → off (so the readout is what the user sees first).
+      const presetSel = document.getElementById('radioPreset');
+      if (presetSel) {
+        if (presetSel.value === 'custom') {
+          document.body.classList.add('v4-radio-edit');
+          if (typeof advancedMode !== 'undefined' && !advancedMode) {
+            setAdvancedMode(true);
+            toast('Custom radio config — switched to Expert mode');
+          }
+        } else {
+          document.body.classList.remove('v4-radio-edit');
+        }
+      }
+      v4SyncRadioDisplay();
+      v4SyncAllSliders();
+      return r;
+    };
+  }
+
+  // Wrap generateIdentity to re-sync afterwards
+  const _origGenIdentity = window.generateIdentity;
+  if (_origGenIdentity) {
+    window.generateIdentity = async function() {
+      const r = await _origGenIdentity.apply(this, arguments);
+      v4UpdateStatus();
+      return r;
+    };
+  }
+
+  // Wrap applyDefaultsAndGenerate (resetAll / wizStartFromScratch path)
+  // so sliders and radio display get re-synced from the default values.
+  const _origApplyDefaults = window.applyDefaultsAndGenerate;
+  if (_origApplyDefaults) {
+    window.applyDefaultsAndGenerate = async function() {
+      const r = await _origApplyDefaults.apply(this, arguments);
+      v4SyncAllSliders();
+      v4SyncRadioDisplay();
+      return r;
+    };
+  }
+
+  // ---------- radio: region cards + active-params readout ----------
+  // Map preset keys to display strings. PRESETS lives in the original
+  // script; we read it via window so we don't duplicate values.
+  function v4FormatCR(crNum) {
+    return '4/' + crNum;
+  }
+  function v4SyncRadioDisplay() {
+    const presetSel = document.getElementById('radioPreset');
+    const grid = document.getElementById('v4_regionGrid');
+    if (!presetSel || !grid) return;
+    const active = presetSel.value;
+    // Highlight the active card
+    grid.querySelectorAll('.v4-region-card').forEach(c => {
+      c.classList.toggle('active', c.dataset.region === active);
+    });
+    // Custom mode forces the edit row on (no readout to show). For preset
+    // modes, leave the edit-mode body class alone — the user controls it
+    // via the Tweak parameters / Done buttons.
+    if (active === 'custom') document.body.classList.add('v4-radio-edit');
+    // Hide the "Tweak parameters" link in custom mode — the edit row is
+    // already open and there's nothing to tweak FROM.
+    const tweakWrap = document.getElementById('v4_tweakWrap');
+    if (tweakWrap) {
+      tweakWrap.style.display = (active === 'custom') ? 'none' : '';
+    }
+    // Done button in the edit row only makes sense for presets — in custom
+    // mode there's no readout to return to, so hide it.
+    const doneBtn = document.getElementById('v4_editDone');
+    if (doneBtn) {
+      doneBtn.style.display = (active === 'custom') ? 'none' : '';
+    }
+  }
+  // Card click → set preset, fire applyPreset via the change event,
+  // then refresh our display.
+  window.v4SelectRegion = function(key) {
+    const sel = document.getElementById('radioPreset');
+    if (!sel) return;
+    sel.value = key;
+    // When picking a preset (anything other than custom), drop out of edit
+    // mode so the readout is shown again.
+    if (key !== 'custom') document.body.classList.remove('v4-radio-edit');
+    // Trigger the original applyPreset handler. dispatchEvent ensures
+    // any other change listeners also see it.
+    sel.dispatchEvent(new Event('change'));
+    v4SyncRadioDisplay();
+  };
+  // "Edit" toggle in the active-params header — surfaces the inputs even
+  // without switching preset to custom (useful for SF-only tweaks).
+  window.v4ToggleRadioEdit = function() {
+    document.body.classList.toggle('v4-radio-edit');
+    v4SyncRadioDisplay();
+  };
+
+  // ---------- slider+number combo sync ----------
+  // Slider drag → mirrors value to the matching number input AND fires
+  // its 'input' event so any other listeners (e.g. v4UpdateStatus) react.
+  window.v4SyncSliderToNumber = function(numberId, value) {
+    const numEl = document.getElementById(numberId);
+    if (!numEl) return;
+    if (numEl.value !== String(value)) {
+      numEl.value = value;
+      numEl.dispatchEvent(new Event('input', { bubbles: true }));
+      numEl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  };
+  // Typing in the number → mirrors to the slider (no event re-dispatch
+  // needed; the number's own input event already fires for listeners).
+  window.v4SyncNumberToSlider = function(sliderId, value) {
+    const slEl = document.getElementById(sliderId);
+    if (!slEl) return;
+    // Clamp so the slider thumb stays within track
+    const min = parseFloat(slEl.min);
+    const max = parseFloat(slEl.max);
+    let v = parseFloat(value);
+    if (isNaN(v)) v = min;
+    if (v < min) v = min;
+    if (v > max) v = max;
+    if (slEl.value !== String(v)) slEl.value = v;
+  };
+  // Sync sliders FROM their number inputs once at startup so loaded
+  // configs / defaults are reflected. Also covers programmatic .value
+  // assignments (loadConfig, resetAll) which don't fire input events
+  // by default — we wrap loadConfig already, but resetAll/wizard paths
+  // can leak; this catch-all runs after v4UpdateStatus.
+  function v4SyncAllSliders() {
+    const pairs = [
+      ['dispBrightnessSlider', 'dispBrightness'],
+      ['dispDimBrightnessSlider', 'dispDimBrightness'],
+      ['kbdBrightnessSlider', 'kbdBrightness'],
+      ['batteryThresholdSlider', 'batteryThreshold'],
+    ];
+    pairs.forEach(([sl, num]) => {
+      const slEl = document.getElementById(sl);
+      const numEl = document.getElementById(num);
+      if (slEl && numEl) v4SyncNumberToSlider(sl, numEl.value);
+    });
+  }
+  window._v4SyncAllSliders = v4SyncAllSliders;
+
+  // ---------- keyboard shortcuts ----------
+  // Detect Mac for the modifier symbol shown in the UI labels.
+  const isMac = /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent || '');
+  const modSym = isMac ? '⌘' : 'Ctrl+';
+  // Fill in the visible kbd hints in markup with the right modifier prefix.
+  document.querySelectorAll('[data-kbd]').forEach(el => {
+    el.textContent = modSym + el.dataset.kbd;
+  });
+  // Bind the shortcut keys. We bind only Export (⌘E) and Import (⌘I);
+  // ⌘N is left alone because browsers reserve it for "New Window" and
+  // intercepting it varies by browser.
+  document.addEventListener('keydown', (e) => {
+    const mod = isMac ? e.metaKey : e.ctrlKey;
+    if (!mod || e.altKey || e.shiftKey) return;
+    const k = e.key.toLowerCase();
+    if (k === 'e') {
+      const btn = document.getElementById('v4_exportBtn');
+      if (btn && !btn.disabled) {
+        e.preventDefault();
+        doExport();
+      }
+    } else if (k === 'i') {
+      e.preventDefault();
+      v4ImportFromMenu();
+    }
+  });
+  // Wrap applyPreset and detectPreset so display refreshes whenever they run.
+  const _origApplyPreset = window.applyPreset;
+  if (_origApplyPreset) {
+    window.applyPreset = function() {
+      const r = _origApplyPreset.apply(this, arguments);
+      v4SyncRadioDisplay();
+      return r;
+    };
+  }
+  const _origDetectPreset = window.detectPreset;
+  if (_origDetectPreset) {
+    window.detectPreset = function() {
+      const r = _origDetectPreset.apply(this, arguments);
+      v4SyncRadioDisplay();
+      return r;
+    };
+  }
+  // Also refresh on any input-change inside the radio inputs (covers
+  // direct typing in the edit row).
+  ['radioFreq', 'radioSF', 'radioBW', 'radioCR', 'radioTX'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', v4SyncRadioDisplay);
+    el.addEventListener('change', v4SyncRadioDisplay);
+  });
+
+  // ---------- counts on nav ----------
+  function setNavCount(id, count, showZero) {
+    const el = document.querySelector(`[data-count="${id}"]`);
+    if (!el) return;
+    if (count > 0 || showZero) {
+      el.textContent = count;
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  // ---------- status dots + readiness ----------
+  function v4UpdateStatus() {
+    syncIdentityBadge();
+
+    const issues = [];
+    // Per-pane dot states. We'll resolve them at the end so multiple
+    // checks against the same pane don't overwrite each other.
+    const paneState = {
+      device: 'untouched', radio: 'untouched',
+      contacts: 'untouched', channels: 'untouched', rooms: 'untouched',
+      display: 'untouched', messaging: 'untouched', sound: 'untouched',
+      gps: 'untouched', battery: 'untouched', security: 'untouched',
+    };
+    const elevate = (pane, state) => {
+      // Order: untouched < ok < warn < err. Higher wins.
+      const rank = { untouched: 0, ok: 1, warn: 2, err: 3 };
+      if (rank[state] > rank[paneState[pane]]) paneState[pane] = state;
+    };
+
+    // Collect dynamic-card errors as we go: { 'contact:0': ['alias','public_key'], ... }
+    const cardErrors = {};
+    const markCard = (type, idx, field) => {
+      const key = type + ':' + idx;
+      if (!cardErrors[key]) cardErrors[key] = new Set();
+      if (field) cardErrors[key].add(field);
+      else cardErrors[key].add('__card__'); // card with no specific field
+    };
+    // Static field marking (for #fieldId style)
+    const staticFieldErrors = new Set();
+    const markStatic = (id) => staticFieldErrors.add(id);
+
+    // ===== 1. Device name =====
+    const devName = (document.getElementById('deviceName') || {}).value || '';
+    if (!devName.trim()) {
+      issues.push('Device: name is required');
+      elevate('device', 'err');
+      markStatic('deviceName');
+    } else {
+      elevate('device', 'ok');
+    }
+
+    // ===== 2. Identity (single mode) or fleet keys (fleet mode) =====
+    let idOk = true;
+    if (typeof fleetMode !== 'undefined' && fleetMode) {
+      const allKeyed = (typeof fleetDevices !== 'undefined' && fleetDevices.length > 0)
+        ? fleetDevices.every(d => d.publicKey && d.privateKey) : false;
+      idOk = allKeyed;
+      if (!idOk) issues.push('Fleet: generate keys for every device');
+      // also check fleet device names
+      if (typeof fleetDevices !== 'undefined') {
+        const names = new Set();
+        fleetDevices.forEach((d, i) => {
+          const n = (d.name || '').trim();
+          if (!n) {
+            issues.push(`Fleet device ${i+1}: name is required`);
+            markCard('fleet', i, 'name');
+          } else if (names.has(n.toLowerCase())) {
+            issues.push(`Fleet device ${i+1}: duplicate name "${n}"`);
+            markCard('fleet', i, 'name');
+          } else {
+            names.add(n.toLowerCase());
+          }
+          if (!d.publicKey || !d.privateKey) {
+            markCard('fleet', i); // whole-card highlight when keys missing
+          }
+        });
+      }
+      if (issues.some(s => s.startsWith('Fleet'))) elevate('device', 'err');
+    } else {
+      idOk = !!(typeof identity !== 'undefined' && identity.publicKey && identity.privateKey);
+      if (!idOk) issues.push('Identity: generate a keypair');
+    }
+
+    // Sync the visual state of the identity section (LED, border colour)
+    const idSection = document.getElementById('identitySection');
+    if (idSection) {
+      idSection.classList.toggle('has-id', !!(typeof identity !== 'undefined' && identity.publicKey && identity.privateKey));
+    }
+
+    // ===== 3. Channels =====
+    const chCount = (typeof channels !== 'undefined') ? channels.length : 0;
+    setNavCount('channels', chCount, false);
+    if (chCount === 0) {
+      // No channels is a soft warning (you can still export, but the device
+      // won't talk to anyone) — surface as warn, not blocking.
+      elevate('channels', 'warn');
+    } else if (chCount > 16) {
+      issues.push(`Channels: too many (${chCount}, max 16)`);
+      elevate('channels', 'err');
+    } else {
+      elevate('channels', 'ok');
+    }
+    if (typeof channels !== 'undefined') {
+      const seen = new Set();
+      channels.forEach((c, i) => {
+        const label = `Channel ${i+1}`;
+        const name = (c.name || '').trim();
+        if (c.type === 'public') {
+          // Public channels are auto-named "Public" and need no PSK input
+        } else if (!name) {
+          issues.push(`${label}: name is required`);
+          elevate('channels', 'err');
+          markCard('channel', i, 'name');
+        } else if (c.type === 'hashtag' && !/^#[a-z0-9\-]+$/.test(name)) {
+          issues.push(`${label} (${name}): hashtag must be #lowercase / digits / - only`);
+          elevate('channels', 'err');
+          markCard('channel', i, 'name');
+        }
+        if (c.type === 'private') {
+          const psk = (c.psk || '').trim();
+          if (!psk) {
+            issues.push(`${label}${name ? ' (' + name + ')' : ''}: PSK is required (32 hex chars)`);
+            elevate('channels', 'err');
+            markCard('channel', i, 'psk');
+          } else if (!/^[0-9a-fA-F]{32}$/.test(psk)) {
+            issues.push(`${label}${name ? ' (' + name + ')' : ''}: PSK must be 32 hex chars`);
+            elevate('channels', 'err');
+            markCard('channel', i, 'psk');
+          }
+        }
+        if (name) {
+          if (seen.has(name.toLowerCase())) {
+            issues.push(`${label}: duplicate name "${name}"`);
+            elevate('channels', 'err');
+            markCard('channel', i, 'name');
+          } else {
+            seen.add(name.toLowerCase());
+          }
+        }
+      });
+    }
+
+    // ===== 4. Contacts =====
+    const ctCount = (typeof contacts !== 'undefined') ? contacts.length : 0;
+    setNavCount('contacts', ctCount, false);
+    const ctMax = (typeof fleetMode !== 'undefined' && fleetMode)
+      ? Math.max(0, 32 - ((typeof fleetDevices !== 'undefined' ? fleetDevices.length - 1 : 0)))
+      : 32;
+    if (ctCount > ctMax) {
+      issues.push(`Contacts: too many (${ctCount}, max ${ctMax})`);
+      elevate('contacts', 'err');
+    } else if (ctCount > 0) {
+      elevate('contacts', 'ok');
+    }
+    if (typeof contacts !== 'undefined') {
+      contacts.forEach((c, i) => {
+        const label = `Contact ${i+1}`;
+        const alias = (c.alias || '').trim();
+        const key = (c.public_key || '').trim();
+        // Both fields together — incomplete row is an issue
+        if (alias && !key) {
+          issues.push(`${label} (${alias}): public key is required`);
+          elevate('contacts', 'err');
+          markCard('contact', i, 'public_key');
+        } else if (key && !alias) {
+          issues.push(`${label}: alias is required`);
+          elevate('contacts', 'err');
+          markCard('contact', i, 'alias');
+        } else if (key && !/^[0-9a-fA-F]{64}$/.test(key)) {
+          issues.push(`${label}${alias ? ' (' + alias + ')' : ''}: public key must be 64 hex chars`);
+          elevate('contacts', 'err');
+          markCard('contact', i, 'public_key');
+        } else if (!alias && !key) {
+          issues.push(`${label}: empty row — fill it in or remove it`);
+          elevate('contacts', 'err');
+          markCard('contact', i, 'alias');
+          markCard('contact', i, 'public_key');
+        }
+      });
+    }
+
+    // ===== 5. Rooms =====
+    const rmCount = (typeof rooms !== 'undefined') ? rooms.length : 0;
+    setNavCount('rooms', rmCount, false);
+    if (rmCount > 0) elevate('rooms', 'ok');
+    if (typeof rooms !== 'undefined') {
+      const roomKeys = new Set();
+      rooms.forEach((r, i) => {
+        const label = `Room ${i+1}`;
+        const name = (r.name || '').trim();
+        const key = (r.public_key || '').trim().toLowerCase();
+        // Empty rooms (no name + no key) are incomplete rows
+        if (!name && !key) {
+          issues.push(`${label}: empty row — fill it in or remove it`);
+          elevate('rooms', 'err');
+          markCard('room', i, 'name');
+          markCard('room', i, 'public_key');
+          return;
+        }
+        if (!name) {
+          issues.push(`${label}: alias is required`);
+          elevate('rooms', 'err');
+          markCard('room', i, 'name');
+        }
+        if (!key) {
+          issues.push(`${label}${name ? ' (' + name + ')' : ''}: public key is required`);
+          elevate('rooms', 'err');
+          markCard('room', i, 'public_key');
+        } else if (!/^[0-9a-fA-F]{64}$/.test(key)) {
+          issues.push(`${label}${name ? ' (' + name + ')' : ''}: public key must be 64 hex chars`);
+          elevate('rooms', 'err');
+          markCard('room', i, 'public_key');
+        } else if (roomKeys.has(key)) {
+          issues.push(`${label}${name ? ' (' + name + ')' : ''}: duplicate public key`);
+          elevate('rooms', 'err');
+          markCard('room', i, 'public_key');
+        } else {
+          roomKeys.add(key);
+        }
+        if ((r.password || '').length > 15) {
+          issues.push(`${label}${name ? ' (' + name + ')' : ''}: password must be ≤15 chars`);
+          elevate('rooms', 'err');
+          markCard('room', i, 'password');
+        }
+      });
+    }
+
+    // ===== 6. Numeric range checks (mirrors validate()) =====
+    const numericChecks = [
+      ['radio',     [['radioFreq', 100, 1000], ['radioTX', -9, 22]]],
+      ['display',   [['dispBrightness',10,255],['dispAutoDim',0,3600],['dispDimBrightness',0,255]]],
+      ['messaging', [['msgMax',10,10000],['msgRetries',1,5]]],
+      ['sound',     [['sosRepeat',1,10]]],
+      ['gps',       [['gpsLastKnownMaxAge',60,7200],['gpsClockOffset',-12,14]]],
+      ['battery',   [['batteryThreshold',5,50]]],
+    ];
+    // Keyboard brightness only validates when backlight is enabled —
+    // mirrors the original validate() conditional behavior.
+    const kbdBacklight = document.getElementById('kbdBacklight');
+    if (kbdBacklight && kbdBacklight.value === 'true') {
+      numericChecks[1][1].push(['kbdBrightness', 1, 255]);
+    }
+    numericChecks.forEach(([pane, fields]) => {
+      let allOk = true;
+      fields.forEach(([id, lo, hi]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const v = parseFloat(el.value);
+        if (isNaN(v) || v < lo || v > hi) {
+          allOk = false;
+          issues.push(`${pane}.${id}: must be ${lo}–${hi}`);
+          elevate(pane, 'err');
+          markStatic(id);
+        }
+      });
+      if (allOk) elevate(pane, 'ok');
+    });
+
+    // ===== 7. Conditional kbd brightness check =====
+    const kbdBacklightEl = document.getElementById('kbdBacklight');
+    if (kbdBacklightEl && kbdBacklightEl.value === 'true') {
+      const kb = parseFloat((document.getElementById('kbdBrightness')||{}).value);
+      if (isNaN(kb) || kb < 1 || kb > 255) {
+        issues.push('display: keyboard brightness must be 1–255');
+        elevate('display', 'err');
+        markStatic('kbdBrightness');
+      }
+    }
+
+    // ===== 8. Security: PIN =====
+    const lockMode = (document.getElementById('lockMode') || {}).value || 'none';
+    const pin = (document.getElementById('pinCode') || {}).value || '';
+    if (lockMode === 'pin') {
+      if (!/^[a-zA-Z0-9]{4,8}$/.test(pin)) {
+        issues.push('Security: PIN must be 4–8 alphanumeric characters');
+        elevate('security', 'err');
+        markStatic('pinCode');
+      } else {
+        elevate('security', 'ok');
+      }
+    } else {
+      elevate('security', 'ok');
+    }
+
+    // ===== Apply pane states to dots =====
+    Object.keys(paneState).forEach(pane => {
+      const state = paneState[pane];
+      setDot(pane, state === 'untouched' ? '' : state);
+    });
+
+    // ===== Apply field-level error highlighting =====
+    // Clear all previous error classes first
+    document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+    document.querySelectorAll('.card-error').forEach(el => el.classList.remove('card-error'));
+    document.querySelectorAll('body.v4 .field.invalid').forEach(el => {
+      // Only clear those we manage; specifically the fields validated above.
+      if (el.querySelector('input, select')) el.classList.remove('invalid');
+    });
+    // Apply static field errors (#fieldId style)
+    staticFieldErrors.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const f = el.closest('.field');
+      if (f) f.classList.add('invalid');
+    });
+    // Apply dynamic card errors
+    Object.keys(cardErrors).forEach(key => {
+      const [type, idxStr] = key.split(':');
+      const idx = parseInt(idxStr, 10);
+      // Find the card by [data-card-type][data-idx]
+      const card = document.querySelector(`[data-card-type="${type}"][data-idx="${idx}"]`);
+      if (!card) return;
+      card.classList.add('card-error');
+      cardErrors[key].forEach(field => {
+        if (field === '__card__') return;
+        const input = card.querySelector(`[data-field="${field}"]`);
+        if (input) input.classList.add('field-error');
+      });
+    });
+
+    // ===== Issues banner =====
+    const banner = document.getElementById('v4_issues');
+    const list = document.getElementById('v4_issuesList');
+    if (issues.length) {
+      banner.classList.add('visible');
+      list.innerHTML = issues.map(i => `<li>${i.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</li>`).join('');
+    } else {
+      banner.classList.remove('visible');
+    }
+
+    // ===== Readiness =====
+    // Single source of truth: only "Ready to export" when there are no issues
+    // AND identity is set up. The bar fills based on how many panes are 'ok'.
+    const okPanes = Object.values(paneState).filter(s => s === 'ok').length;
+    const totalPanes = Object.keys(paneState).length;
+    const ratio = Math.min(1, okPanes / totalPanes);
+    const fillCount = Math.round(ratio * 10);
+    const cells = document.querySelectorAll('#v4_readinessBar .v4-readiness-cell');
+    const blocking = issues.length > 0 || !idOk;
+    cells.forEach((c, i) => {
+      c.classList.remove('fill', 'warn-fill');
+      if (i < fillCount) c.classList.add(blocking ? 'warn-fill' : 'fill');
+    });
+
+    let txt;
+    if (blocking) {
+      txt = `${issues.length} issue${issues.length === 1 ? '' : 's'} blocking export`;
+    } else if (chCount === 0) {
+      txt = 'Ready — but no channels configured';
+    } else {
+      txt = 'Ready to export';
+    }
+    document.getElementById('v4_readinessText').textContent = txt;
+
+    // Export button is gated by issues + identity only
+    const btn = document.getElementById('v4_exportBtn');
+    if (btn) btn.disabled = blocking;
+  }
+  window.v4UpdateStatus = v4UpdateStatus;
+
+  function setDot(paneId, state) {
+    const dot = document.querySelector(`[data-dot="${paneId}"]`);
+    if (!dot) return;
+    dot.classList.remove('ok', 'warn', 'err');
+    if (state) dot.classList.add(state);
+  }
+
+  // ---------- top bar menu ----------
+  window.v4ToggleMenu = function(e) {
+    e.stopPropagation();
+    document.getElementById('v4_menu').classList.toggle('open');
+  };
+  window.v4CloseMenu = function() {
+    document.getElementById('v4_menu').classList.remove('open');
+  };
+  // Import from the menu: trigger the hidden file input, then close the menu.
+  // Doing the .click() FIRST keeps it within the same user-gesture event so
+  // the browser allows the file picker to open.
+  window.v4ImportFromMenu = function() {
+    document.getElementById('importInput').click();
+    v4CloseMenu();
+  };
+
+  // Manual fallback when automatic download is blocked (e.g. sandboxed iframe).
+  // Opens the ZIP in a new tab so the user can save it via the browser UI.
+  window.v4ManualDownload = function() {
+    const last = window._lastExportBlob;
+    if (!last) { toast('Nothing to download yet'); return; }
+    const url = URL.createObjectURL(last.blob);
+    // Open in a new tab; user can save via the browser's download UI.
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+
+  // In-DOM confirm dialog. Replaces window.confirm() which is blocked
+  // in sandboxed iframes. Returns a Promise<boolean>.
+  window.v4Confirm = function(opts) {
+    opts = opts || {};
+    return new Promise((resolve) => {
+      const modal = document.getElementById('v4ConfirmModal');
+      const yesBtn = document.getElementById('v4ConfirmYes');
+      const noBtn  = document.getElementById('v4ConfirmNo');
+      document.getElementById('v4ConfirmTitle').textContent = opts.title || 'Are you sure?';
+      document.getElementById('v4ConfirmMsg').textContent   = opts.message || '';
+      yesBtn.textContent = opts.confirmLabel || 'Confirm';
+      noBtn.textContent  = opts.cancelLabel  || 'Cancel';
+      const cleanup = (val) => {
+        modal.classList.add('hidden');
+        yesBtn.onclick = null;
+        noBtn.onclick  = null;
+        resolve(val);
+      };
+      yesBtn.onclick = () => cleanup(true);
+      noBtn.onclick  = () => cleanup(false);
+      modal.classList.remove('hidden');
+      // Focus the cancel button by default for safety
+      setTimeout(() => noBtn.focus(), 50);
+    });
+  };
+  window.v4ToggleHints = function() {
+    const cb = document.getElementById('hintsToggle');
+    const next = cb ? !cb.checked : !document.body.classList.contains('show-hints');
+    if (cb) cb.checked = next;
+    setShowHints(next);
+  };
+
+  // Wrap setShowHints so the switch row stays in sync with state
+  const _origSetShowHints = window.setShowHints;
+  if (_origSetShowHints) {
+    window.setShowHints = function(on) {
+      _origSetShowHints(on);
+      const row = document.getElementById('v4_hintsRow');
+      if (row) row.classList.toggle('on', !!on);
+    };
+  }
+
+  // ---------- delegation: any input change triggers status refresh ----------
+
+  // After each render, tag every dynamic card with its array index and
+  // each editable input with its field name (parsed from the onchange
+  // handler text). This lets v4UpdateStatus apply per-field error
+  // highlighting without modifying the original render functions.
+  function tagDynamicCards() {
+    const tagSet = (selector, cardType) => {
+      document.querySelectorAll(selector).forEach((card, i) => {
+        card.setAttribute('data-card-type', cardType);
+        card.setAttribute('data-idx', i);
+        card.querySelectorAll('input, select, textarea').forEach(input => {
+          const oc = input.getAttribute('onchange') || '';
+          // Parse patterns like "contacts[3].alias=..." or
+          // "channels[2].psk=..." or "rooms[0].name=..." or
+          // "fleetDevices[1].name=..."
+          const m = oc.match(/(?:contacts|channels|rooms|fleetDevices)\[\d+\]\.([a-zA-Z_]+)/);
+          if (m) input.setAttribute('data-field', m[1]);
+          // setContactPermission(i, 'allow_location', ...) helper form
+          const m2 = oc.match(/setContactPermission\(\d+,\s*['"]([a-zA-Z_]+)['"]/);
+          if (m2) input.setAttribute('data-field', m2[1]);
+          // updateHashtagName(i, this.value) — channel name for hashtags
+          if (oc.indexOf('updateHashtagName(') !== -1) input.setAttribute('data-field', 'name');
+        });
+      });
+    };
+    tagSet('#contactList .contact-card', 'contact');
+    // Channel cards reuse the .contact-card class (legacy markup).
+    tagSet('#channelList .contact-card', 'channel');
+    tagSet('#roomList .contact-card', 'room');
+    tagSet('#fleetDeviceList .fleet-device-card', 'fleet');
+  }
+  // Expose so v4UpdateStatus can reach it
+  window._v4TagDynamicCards = tagDynamicCards;
+
+  function bindChangeListeners() {
+    const root = document.getElementById('v4_workspace');
+    ['input', 'change'].forEach(ev => {
+      root.addEventListener(ev, () => {
+        // Defer one tick so render*() can run if it was triggered by the same event
+        setTimeout(v4UpdateStatus, 0);
+      }, true);
+    });
+    // Patch render functions: tag cards immediately after render so the
+    // tags exist even before v4UpdateStatus runs, then call status update.
+    ['renderContacts', 'renderChannels', 'renderRooms', 'renderFleetDevices'].forEach(fn => {
+      const orig = window[fn];
+      if (typeof orig === 'function') {
+        window[fn] = function() {
+          const r = orig.apply(this, arguments);
+          tagDynamicCards();
+          setTimeout(v4UpdateStatus, 0);
+          return r;
+        };
+      }
+    });
+  }
+
+  // ---------- init ----------
+  function init() {
+    moveSectionsIntoCenter();
+    buildNav();
+    v4ShowPane('device');
+    bindChangeListeners();
+    syncIdentityBadge();
+    // Sync view cluster switches with state already applied by the original init
+    const hintsCb = document.getElementById('hintsToggle');
+    if (hintsCb && hintsCb.checked) {
+      document.getElementById('v4_hintsRow').classList.add('on');
+    }
+    if (typeof advancedMode !== 'undefined' && advancedMode) {
+      document.body.classList.add('adv');
+      document.getElementById('v4_expertRow').classList.add('on');
+    }
+    tagDynamicCards();
+    v4SyncRadioDisplay();
+    v4SyncAllSliders();
+    v4UpdateStatus();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
 </script>
 </body>
 </html>
