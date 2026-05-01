@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/mclite-banner.png" alt="MCLite — Off-grid messaging, made simple" width="100%">
+</p>
+
 # MCLite for T-Deck Plus
 
 Lightweight off-grid communicator firmware for the LilyGo T-Deck Plus. Built on [MeshCore](https://github.com/ripplebiz/MeshCore), MCLite is purpose-built for emergency and outdoor communication -- no internet, no cell towers, no training needed. Turn it on and communicate.
@@ -7,7 +11,9 @@ MCLite is ideal for groups, families, search and rescue teams, and anyone who ne
 Most features below are optional. The primary goal is to keep things extremely simple -- anyone who can use a smartphone can use MCLite without explanation. Advanced features like telemetry, GPS sharing, or PIN lock are there when you need them, but they stay out of the way until then.
 
 <p align="center">
-<a href="https://laserir.github.io/MCLite/tools/web-flasher/"><img src="https://img.shields.io/badge/Install_MCLite_Now-00cc66?style=for-the-badge&logo=espressif&logoColor=white&scale=2" height="50" alt="Install MCLite Now"></a>
+  <a href="https://laserir.github.io/MCLite/tools/web-flasher/"><img src="docs/images/btn-flash.svg" alt="Flash MCLite now" height="48"></a>
+  &nbsp;
+  <a href="https://laserir.github.io/MCLite/tools/config-tool/mclite_config_tool.html"><img src="docs/images/btn-config.svg" alt="Open Config Tool" height="48"></a>
 </p>
 
 <p align="center">
@@ -305,3 +311,32 @@ LGPL-2.1 libraries are dynamically linked. Users may replace them by rebuilding 
 ## Contributing
 
 Contributions are welcome. Please open an issue or pull request on GitHub.
+
+## Embed on your site
+
+Help spread MCLite by linking to it from your own page. Drop one of these snippets into any HTML — the buttons render identically across light and dark themes and require no external CSS or fonts.
+
+<p align="center">
+  <a href="https://laserir.github.io/MCLite/tools/web-flasher/"><img src="docs/images/btn-flash.svg" alt="Flash MCLite now" height="48"></a>
+  &nbsp;
+  <a href="https://laserir.github.io/MCLite/tools/config-tool/mclite_config_tool.html"><img src="docs/images/btn-config.svg" alt="Open Config Tool" height="48"></a>
+  &nbsp;
+  <a href="https://github.com/laserir/MCLite"><img src="docs/images/btn-github.svg" alt="View MCLite on GitHub" height="48"></a>
+</p>
+
+```html
+<!-- Flash button -->
+<a href="https://laserir.github.io/MCLite/tools/web-flasher/">
+  <img src="https://raw.githubusercontent.com/laserir/MCLite/main/docs/images/btn-flash.svg" alt="Flash MCLite now" height="48">
+</a>
+
+<!-- Config tool button -->
+<a href="https://laserir.github.io/MCLite/tools/config-tool/mclite_config_tool.html">
+  <img src="https://raw.githubusercontent.com/laserir/MCLite/main/docs/images/btn-config.svg" alt="Open Config Tool" height="48">
+</a>
+
+<!-- GitHub button -->
+<a href="https://github.com/laserir/MCLite">
+  <img src="https://raw.githubusercontent.com/laserir/MCLite/main/docs/images/btn-github.svg" alt="View MCLite on GitHub" height="48">
+</a>
+```

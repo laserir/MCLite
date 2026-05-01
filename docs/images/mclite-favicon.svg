@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="MCLite">
+  <title>MCLite</title>
+  <g fill="#ffb547" stroke="#ffb547" stroke-linecap="round">
+    <line x1="3.88" y1="26.77" x2="3.88" y2="5.23" stroke-width="3.0"/>
+    <line x1="3.88" y1="5.23" x2="16" y2="17.35" stroke-width="3.0"/>
+    <line x1="16" y1="17.35" x2="28.12" y2="5.23" stroke-width="3.0"/>
+    <line x1="28.12" y1="5.23" x2="28.12" y2="26.77" stroke-width="3.0"/>
+    <circle cx="3.88" cy="26.77" r="2.6"/>
+    <circle cx="3.88" cy="5.23" r="2.6"/>
+    <circle cx="16" cy="17.35" r="2.6"/>
+    <circle cx="28.12" cy="5.23" r="2.6"/>
+    <circle cx="28.12" cy="26.77" r="2.6"/>
+  </g>
+</svg>
