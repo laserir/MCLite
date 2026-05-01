@@ -34,9 +34,9 @@
   --rail-w: 240px;
   --topbar-h: 52px;
 
-  /* Typography */
-  --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace;
-  --sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* Typography — matches config tool stacks for visual consistency */
+  --mono: 'SF Mono', 'Fira Code', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -70,6 +70,9 @@ body {
   z-index: 100;
 }
 .topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 600;
@@ -77,7 +80,14 @@ body {
   text-transform: uppercase;
   color: var(--shell-text);
 }
-.topbar-brand .accent { color: var(--shell-amber); }
+.topbar-brand .brand-tag { color: var(--shell-text-dim); font-weight: 400; }
+.brand-mark {
+  height: 22px;
+  width: auto;
+  color: var(--shell-amber);
+  flex-shrink: 0;
+  display: block;
+}
 .topbar-spacer { flex: 1; }
 .topbar-status {
   display: flex;
@@ -983,7 +993,23 @@ esp-web-install-button button[slot="activate"]:disabled {
 
 <!-- ---------- Top bar ---------- -->
 <header class="topbar">
-  <span class="topbar-brand">MCLite <span class="accent">// FLASHER</span></span>
+  <div class="topbar-brand">
+    <svg class="brand-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" role="img" aria-label="MCLite mark">
+      <title>MCLite</title>
+      <g transform="translate(120,110)" fill="currentColor" stroke="currentColor" stroke-linecap="round">
+        <line x1="-90" y1="80" x2="-90" y2="-80" stroke-width="12"/>
+        <line x1="-90" y1="-80" x2="0" y2="10" stroke-width="12"/>
+        <line x1="0" y1="10" x2="90" y2="-80" stroke-width="12"/>
+        <line x1="90" y1="-80" x2="90" y2="80" stroke-width="12"/>
+        <circle cx="-90" cy="80" r="14"/>
+        <circle cx="-90" cy="-80" r="14"/>
+        <circle cx="0" cy="10" r="14"/>
+        <circle cx="90" cy="-80" r="14"/>
+        <circle cx="90" cy="80" r="14"/>
+      </g>
+    </svg>
+    <span>MCLite <span class="brand-tag">/ flasher</span></span>
+  </div>
 
   <!-- Target picker -->
   <div class="target-picker" id="target-picker">

@@ -583,25 +583,11 @@ body.v4 > .container { display: none; }
   text-transform: uppercase;
 }
 .v4-brand-mark {
-  width: 22px; height: 22px;
-  border: 1.5px solid var(--shell-amber);
-  border-radius: 3px;
-  display: grid;
-  place-items: center;
-  position: relative;
-}
-.v4-brand-mark::before {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  background:
-    radial-gradient(circle at center, var(--shell-amber) 0 1.5px, transparent 2px),
-    repeating-radial-gradient(circle at center,
-      transparent 0 3px,
-      var(--shell-amber-dim) 3px 3.5px,
-      transparent 3.5px 6px);
-  opacity: 0.85;
-  border-radius: 1px;
+  height: 22px;
+  width: auto;
+  color: var(--shell-amber);
+  flex-shrink: 0;
+  display: block;
 }
 .v4-brand-name {
   color: var(--shell-text);
@@ -2086,7 +2072,20 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
 
 <div class="v4-topbar">
   <div class="v4-brand">
-    <div class="v4-brand-mark"></div>
+    <svg class="v4-brand-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" role="img" aria-label="MCLite mark">
+      <title>MCLite</title>
+      <g transform="translate(120,110)" fill="currentColor" stroke="currentColor" stroke-linecap="round">
+        <line x1="-90" y1="80" x2="-90" y2="-80" stroke-width="12"/>
+        <line x1="-90" y1="-80" x2="0" y2="10" stroke-width="12"/>
+        <line x1="0" y1="10" x2="90" y2="-80" stroke-width="12"/>
+        <line x1="90" y1="-80" x2="90" y2="80" stroke-width="12"/>
+        <circle cx="-90" cy="80" r="14"/>
+        <circle cx="-90" cy="-80" r="14"/>
+        <circle cx="0" cy="10" r="14"/>
+        <circle cx="90" cy="-80" r="14"/>
+        <circle cx="90" cy="80" r="14"/>
+      </g>
+    </svg>
     <span class="v4-brand-name">MCLITE</span>
     <span class="v4-brand-tag">/ config</span>
   </div>
