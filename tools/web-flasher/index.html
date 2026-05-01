@@ -4,232 +4,1606 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MCLite Web Flasher</title>
-<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
+<script type="module" src="vendor/esp-web-tools/install-button.js"></script>
 <style>
 :root {
-  --bg: #0f0f1a;
-  --bg2: #1a1a2e;
-  --bg3: #22223a;
-  --accent: #007aff;
-  --accent-hover: #0060cc;
-  --text: #e8e8f0;
-  --text2: #8888aa;
-  --text3: #666688;
-  --green: #00cc66;
-  --red: #ff4444;
-  --amber: #ffaa00;
-  --border: #333355;
-  --radius: 8px;
+  /* Background layers */
+  --shell-bg: #0a0c10;
+  --shell-panel: #11141b;
+  --shell-panel-2: #161a23;
+
+  /* Borders */
+  --shell-line: #1f2530;
+  --shell-line-2: #2a3242;
+
+  /* Text */
+  --shell-text: #e6e9ef;
+  --shell-text-dim: #7a8294;
+  --shell-text-faint: #4a5060;
+
+  /* Status colors */
+  --shell-amber: #ffb547;
+  --shell-amber-dim: #8a5f1f;
+  --shell-scope: #4ade80;
+  --shell-scope-dim: #1f5a35;
+  --shell-red: #ff5c5c;
+  --shell-red-dim: #6b2020;
+  --shell-blue: #5b9eff;
+
+  /* Layout */
+  --rail-w: 240px;
+  --topbar-h: 52px;
+
+  /* Typography */
+  --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace;
+  --sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--shell-bg);
+  color: var(--shell-text);
+  font-family: var(--sans);
+  font-size: 14px;
   line-height: 1.5;
   min-height: 100vh;
+  background-image:
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.012) 0,
+      rgba(255,255,255,0.012) 1px,
+      transparent 1px,
+      transparent 3px);
 }
-.container {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 20px;
+
+/* ---------- Top bar ---------- */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  background: var(--shell-panel);
+  border-bottom: 1px solid var(--shell-line);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  z-index: 100;
 }
-h1 {
-  font-size: 1.5rem;
-  margin-bottom: 4px;
+.topbar-brand {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-text);
 }
-.subtitle {
-  color: var(--text2);
-  font-size: 0.85rem;
+.topbar-brand .accent { color: var(--shell-amber); }
+.topbar-spacer { flex: 1; }
+.topbar-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-text-dim);
+}
+
+/* ---------- Rail ---------- */
+.rail {
+  position: fixed;
+  top: var(--topbar-h);
+  left: 0;
+  bottom: 0;
+  width: var(--rail-w);
+  background: var(--shell-panel);
+  border-right: 1px solid var(--shell-line);
+  overflow-y: auto;
+  padding: 16px 0;
+}
+.rail-section {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+  padding: 8px 16px 6px;
+}
+.rail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--shell-text-dim);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  text-decoration: none;
+}
+.rail-item:hover {
+  background: var(--shell-panel-2);
+  color: var(--shell-text);
+}
+.rail-item.active {
+  background: var(--shell-panel-2);
+  color: var(--shell-amber);
+  border-left-color: var(--shell-amber);
+}
+.rail-item .num {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--shell-text-faint);
+  letter-spacing: 0.08em;
+}
+.rail-item.active .num { color: var(--shell-amber); }
+
+/* ---------- Workspace ---------- */
+.workspace {
+  margin-top: var(--topbar-h);
+  margin-left: var(--rail-w);
+  padding: 24px 32px;
+  min-height: calc(100vh - var(--topbar-h));
+  max-width: 880px;
+}
+.workspace-header {
   margin-bottom: 24px;
 }
-.section {
-  background: var(--bg2);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 16px;
-}
-.section-title {
-  font-size: 0.95rem;
+.workspace-title {
+  font-size: 18px;
   font-weight: 600;
-  margin-bottom: 12px;
-}
-label {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--text2);
+  letter-spacing: 0.01em;
   margin-bottom: 4px;
 }
+.workspace-subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+}
+
+/* ---------- Section header ---------- */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0 12px;
+}
+.section-head .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+}
+.section-head .rule {
+  flex: 1;
+  height: 1px;
+  background: var(--shell-line);
+}
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line);
+  border-radius: 4px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.card[data-status="ok"] { border-left: 3px solid var(--shell-scope); }
+.card[data-status="warn"] { border-left: 3px solid var(--shell-amber); }
+.card[data-status="err"] { border-left: 3px solid var(--shell-red); }
+.card[data-status="idle"] { border-left: 3px solid var(--shell-text-faint); }
+
+/* ---------- LEDs ---------- */
+.led {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  border: 1px solid currentColor;
+}
+.led-ok { color: var(--shell-scope); background: var(--shell-scope); box-shadow: 0 0 4px rgba(74,222,128,0.5); }
+.led-warn { color: var(--shell-amber); background: var(--shell-amber); box-shadow: 0 0 4px rgba(255,181,71,0.5); }
+.led-err { color: var(--shell-red); background: var(--shell-red); box-shadow: 0 0 4px rgba(255,92,92,0.5); }
+.led-idle { color: var(--shell-text-faint); background: transparent; }
+@keyframes led-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ---------- Badges ---------- */
+.badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  background: var(--shell-line);
+  color: var(--shell-text-dim);
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+.badge.amber { background: rgba(255,181,71,0.12); color: var(--shell-amber); }
+.badge.green { background: rgba(74,222,128,0.12); color: var(--shell-scope); }
+.badge.red { background: rgba(255,92,92,0.12); color: var(--shell-red); }
+
+/* ---------- Inputs ---------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  flex: 1;
+}
+.field label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+input[type="text"],
 select {
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line-2);
+  color: var(--shell-text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.2;
+  padding: 0 11px;
+  height: 36px;
+  border-radius: 4px;
+  transition: border-color 0.15s, background 0.15s;
+  box-sizing: border-box;
   width: 100%;
-  appearance: none;
-  background: var(--bg3) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238888aa' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 8px 12px;
-  padding-right: 32px;
-  font-size: 0.9rem;
-  font-family: inherit;
 }
-select:focus {
+input:focus, select:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--shell-amber);
 }
-select { cursor: pointer; }
-.flash-area {
-  text-align: center;
-  padding: 24px 16px;
+
+/* Mono read-only field */
+.input-mono {
+  background-color: var(--shell-panel-2);
+  border: 1px solid var(--shell-line-2);
+  color: var(--shell-text);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  padding: 0 11px;
+  height: 36px;
+  border-radius: 4px;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
 }
+
+select {
+  appearance: none;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a8294' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Buttons ---------- */
+.btn-primary {
+  background: var(--shell-amber);
+  border: 1px solid var(--shell-amber);
+  color: #1a1208;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.15s;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: none;
+}
+/* Inline button used inside a check-item detail row (e.g. "I pressed RST").
+   Smaller and less prominent than btn-primary — a secondary affordance that
+   sits naturally next to the explanatory text. */
+.btn-inline {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid var(--shell-amber);
+  color: var(--shell-amber);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  vertical-align: baseline;
+}
+.btn-inline:hover:not(:disabled) {
+  background: var(--shell-amber);
+  color: #1a1208;
+}
+.btn-inline:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--shell-line-2);
+  color: var(--shell-line-2);
+}
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--shell-line-2);
+  color: var(--shell-text);
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  height: 36px;
+}
+.btn-outline:hover {
+  border-color: var(--shell-text-faint);
+}
+.btn-utility {
+  background: transparent;
+  border: 1px solid var(--shell-line-2);
+  color: var(--shell-text-dim);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-utility:hover {
+  color: var(--shell-text);
+  border-color: var(--shell-text-faint);
+}
+
+/* ---------- ESP Web Install button override ---------- */
 esp-web-install-button {
   display: inline-block;
 }
-esp-web-install-button button {
-  background: var(--green);
-  color: #000;
-  border: none;
-  padding: 12px 32px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-size: 1rem;
+esp-web-install-button button[slot="activate"] {
+  background: var(--shell-amber);
+  border: 1px solid var(--shell-amber);
+  color: #1a1208;
+  font-family: var(--sans);
+  font-size: 13px;
   font-weight: 600;
-  font-family: inherit;
-  transition: background 0.15s;
+  padding: 0 22px;
+  height: 36px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.15s;
+  letter-spacing: 0.01em;
 }
-esp-web-install-button button:hover { background: #00aa55; }
-esp-web-install-button button:disabled { opacity: 0.4; cursor: not-allowed; }
-.status {
-  font-size: 0.85rem;
-  color: var(--text2);
+esp-web-install-button button[slot="activate"]:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+esp-web-install-button button[slot="activate"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: none;
+}
+
+/* ---------- Status text ---------- */
+.status-line {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--shell-text-dim);
   margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
 }
-.status.error { color: var(--red); }
-.status.ok { color: var(--green); }
-.warning-box {
-  background: rgba(255, 170, 0, 0.1);
-  border: 1px solid var(--amber);
-  border-radius: var(--radius);
-  padding: 12px;
-  font-size: 0.85rem;
-  color: var(--amber);
+.status-line.ok { color: var(--shell-scope); }
+.status-line.error { color: var(--shell-red); }
+
+/* ---------- Issues banner ---------- */
+.issues-banner {
+  background: rgba(255,92,92,0.06);
+  border: 1px solid var(--shell-red-dim);
+  border-radius: 4px;
+  padding: 10px 14px;
   margin-bottom: 16px;
 }
-.info-box {
-  background: rgba(0, 122, 255, 0.08);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px;
-  font-size: 0.82rem;
-  color: var(--text2);
-  line-height: 1.6;
+.issues-banner-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-red);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.info-box strong { color: var(--text); }
-.hidden { display: none; }
+.issues-banner-body {
+  font-size: 12.5px;
+  color: var(--shell-text-dim);
+  line-height: 1.55;
+}
+
+.note-line {
+  font-size: 12px;
+  color: var(--shell-text-faint);
+  margin-top: 6px;
+  font-family: var(--sans);
+}
+
+/* ---------- Step indicator (compact strip above phase explainer) ---------- */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px 14px;
+  font-family: var(--mono);
+}
+.step-dot {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.step-dot-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--shell-line-2);
+  background: var(--shell-bg);
+  color: var(--shell-text-faint);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: all 0.2s;
+}
+.step-dot-label {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+  transition: color 0.2s;
+}
+.step-dot-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--shell-line);
+  margin: 0 2px;
+  margin-bottom: 14px;
+}
+.step-dot.past .step-dot-num {
+  background: rgba(74,222,128,0.12);
+  border-color: var(--shell-scope-dim);
+  color: var(--shell-scope);
+}
+.step-dot.past .step-dot-label {
+  color: var(--shell-scope);
+}
+.step-dot.current .step-dot-num {
+  background: rgba(255,181,71,0.15);
+  border-color: var(--shell-amber);
+  color: var(--shell-amber);
+  box-shadow: 0 0 0 1px var(--shell-amber);
+}
+.step-dot.current .step-dot-label {
+  color: var(--shell-amber);
+}
+
+/* ---------- Phase explainer (current step) ---------- */
+.phase-explainer {
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line-2);
+  border-left: 3px solid var(--shell-amber);
+  border-radius: 4px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  min-height: 76px;
+  transition: border-color 0.2s;
+}
+.phase-explainer.complete {
+  border-left-color: var(--shell-scope);
+}
+.phase-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.phase-num {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--shell-amber);
+  line-height: 1;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+.phase-explainer.complete .phase-num { color: var(--shell-scope); }
+.phase-text { flex: 1; }
+.phase-action {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--shell-text);
+  margin-bottom: 4px;
+}
+.phase-detail {
+  font-size: 12.5px;
+  color: var(--shell-text-dim);
+  line-height: 1.5;
+}
+.phase-detail strong { color: var(--shell-text); }
+
+/* ---------- DFU controls ---------- */
+.dfu-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+/* ---------- DFU fallback hint (shown at last step) ---------- */
+.dfu-fallback-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--shell-panel-2);
+  border: 1px solid var(--shell-line);
+  border-left: 3px solid var(--shell-blue);
+  border-radius: 4px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--shell-text-dim);
+  line-height: 1.5;
+}
+.dfu-fallback-hint .led {
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.dfu-fallback-hint strong:first-child {
+  color: var(--shell-text);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ---------- Live detect line ---------- */
+.dfu-detect-line {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--shell-text-faint);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--shell-panel-2);
+  border: 1px solid var(--shell-line);
+  border-radius: 4px;
+}
+.dfu-detect-line.detected {
+  color: var(--shell-scope);
+  border-color: var(--shell-scope-dim);
+  background: rgba(74,222,128,0.04);
+}
+
+/* ---------- Check items (with expand support) ---------- */
+.check-item {
+  display: block; /* override flex; row container handles flex now */
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-line);
+  border-radius: 4px;
+  transition: border-color 0.2s, background 0.2s;
+  overflow: hidden;
+}
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 12px;
+}
+.check-item .check-led {
+  margin-top: 4px;
+}
+.check-item.active {
+  border-color: var(--shell-amber-dim);
+  background: rgba(255,181,71,0.03);
+}
+.check-item.active .check-led {
+  color: var(--shell-amber);
+  background: var(--shell-amber);
+  box-shadow: 0 0 4px rgba(255,181,71,0.5);
+  animation: led-pulse 1.4s infinite;
+}
+.check-item.done .check-led {
+  color: var(--shell-scope);
+  background: var(--shell-scope);
+  box-shadow: 0 0 4px rgba(74,222,128,0.5);
+  animation: none;
+}
+.check-item.done .check-mark { color: var(--shell-scope); }
+.check-item.done .check-title { color: var(--shell-text-dim); }
+.check-item.done .check-row { opacity: 0.85; }
+
+/* Expandable check items (DFU, Flash) */
+.check-expand {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.25s ease,
+              padding 0.3s ease;
+  padding: 0 12px;
+}
+.check-item.expanded .check-expand {
+  max-height: 800px;
+  opacity: 1;
+  padding: 4px 12px 14px;
+  border-top: 1px dashed var(--shell-line);
+  margin-top: 0;
+}
+
+/* When DFU is active (in progress), give the item amber-warn border-left like a card status */
+.check-item[data-step="dfu"].active {
+  border-left: 3px solid var(--shell-amber);
+}
+.check-item[data-step="dfu"].done {
+  border-left: 3px solid var(--shell-scope);
+}
+.check-item[data-step="flash"].active {
+  border-left: 3px solid var(--shell-amber);
+}
+.check-item[data-step="flash"].done {
+  border-left: 3px solid var(--shell-scope);
+}
+.check-item[data-step="reboot"].active {
+  border-left: 3px solid var(--shell-amber);
+}
+.check-item[data-step="reboot"].done {
+  border-left: 3px solid var(--shell-scope);
+}
+
+.check-body { flex: 1; min-width: 0; }
+.check-title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--shell-text);
+  margin-bottom: 2px;
+}
+.check-item.done .check-title { text-decoration: line-through; text-decoration-color: var(--shell-text-faint); }
+.check-detail {
+  font-size: 12px;
+  color: var(--shell-text-dim);
+  line-height: 1.5;
+}
+.check-mark {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--shell-text-faint);
+  flex-shrink: 0;
+  align-self: center;
+  transition: color 0.2s;
+}
+.check-item.active .check-mark { color: var(--shell-amber); }
+
+/* Toggle button for expandable items */
+.check-row .btn-utility {
+  flex-shrink: 0;
+  align-self: center;
+}
+.check-row .btn-utility:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---------- Version picker (collapsed / expanded states) ---------- */
+.version-display {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--shell-text);
+  letter-spacing: 0.02em;
+}
+.version-display.placeholder {
+  color: var(--shell-text-faint);
+}
+.version-display .meta {
+  color: var(--shell-text-faint);
+  margin-left: 6px;
+}
+.version-select {
+  margin-top: 6px;
+  width: 100%;
+  max-width: 320px;
+}
+.check-item button.btn-utility {
+  flex-shrink: 0;
+  align-self: center;
+}
+.check-item button.btn-utility:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---------- Action bar (flash button area, inside expanded check-item) ---------- */
+.action-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--shell-panel-2);
+  border: 1px solid var(--shell-line-2);
+  border-radius: 4px;
+}
+
+/* ---------- Disclosure (in-card variant) ---------- */
+.disclosure.in-card {
+  background: transparent;
+  border: none;
+  border-top: 1px dashed var(--shell-line);
+  border-radius: 0;
+  margin-top: 16px;
+}
+.disclosure.in-card > summary {
+  padding: 10px 0 6px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-text-faint);
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.disclosure.in-card > summary::-webkit-details-marker { display: none; }
+.disclosure.in-card > summary::before {
+  content: '▸';
+  display: inline-block;
+  transition: transform 0.15s;
+  color: var(--shell-text-faint);
+}
+.disclosure.in-card[open] > summary::before { transform: rotate(90deg); }
+.disclosure.in-card .disclosure-content {
+  padding: 4px 0 8px;
+}
+
+.hidden { display: none !important; }
+
+/* ---------- Two-column layout for connect block ---------- */
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+.row > .field { margin-bottom: 0; }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--shell-panel);
+  border: 1px solid var(--shell-line-2);
+  border-left: 3px solid var(--shell-amber);
+  color: var(--shell-text);
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toast-in 0.2s, toast-out 0.2s 4s forwards;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.toast.toast-ok { border-left-color: var(--shell-scope); }
+.toast.toast-warn { border-left-color: var(--shell-amber); }
+.toast.toast-err { border-left-color: var(--shell-red); }
+.toast .toast-meta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--shell-text-faint);
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateX(-50%) translateY(10px); }
+}
+
+/* ---------- Checklist container ---------- */
+.checklist {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ---------- Target picker (top bar) ---------- */
+.target-picker {
+  position: relative;
+  margin-left: 16px;
+}
+.target-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--shell-panel-2);
+  border: 1px solid var(--shell-line-2);
+  color: var(--shell-text);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.target-picker-btn:hover { border-color: var(--shell-text-faint); }
+.target-picker-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.target-picker-prefix {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--shell-text-faint);
+  text-transform: uppercase;
+}
+.target-picker-label {
+  font-weight: 500;
+}
+.target-picker-chevron {
+  font-size: 9px;
+  color: var(--shell-text-dim);
+  transition: transform 0.15s;
+}
+.target-picker.open .target-picker-chevron { transform: rotate(180deg); }
+
+.target-picker-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  background: var(--shell-panel);
+  border: 1px solid var(--shell-line-2);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  overflow: hidden;
+}
+.target-picker.open .target-picker-menu { display: block; }
+.target-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.target-option:hover { background: var(--shell-panel-2); }
+.target-option.active {
+  background: var(--shell-panel-2);
+  border-left-color: var(--shell-amber);
+}
+.target-option-name {
+  font-size: 13px;
+  color: var(--shell-text);
+  font-weight: 500;
+}
+.target-option.active .target-option-name { color: var(--shell-amber); }
+.target-option-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--shell-text-faint);
+}
+.target-option.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.target-option.disabled:hover {
+  background: var(--shell-panel-2);
+}
+.target-option.disabled .target-option-name {
+  color: var(--shell-text-dim);
+}
+.target-option-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  background: rgba(255,181,71,0.12);
+  color: var(--shell-amber);
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 2px;
+  text-transform: uppercase;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 720px) {
+  :root { --rail-w: 0px; }
+  .rail { display: none; }
+  .workspace {
+    margin-left: 0;
+    padding: 16px;
+  }
+  .topbar { padding: 0 12px; gap: 8px; }
+  .target-picker { margin-left: 8px; }
+  .target-picker-prefix { display: none; } /* save space; full label still visible */
+  .target-picker-btn { padding: 6px 10px; font-size: 12px; }
+  .topbar-brand { font-size: 11px; }
+}
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>MCLite Web Flasher</h1>
-  <p class="subtitle">Flash MCLite firmware to your T-Deck Plus directly from the browser</p>
 
-  <div id="browser-warning" class="warning-box hidden">
-    Your browser does not support Web Serial. Please use Chrome, Edge, or another Chromium-based browser.
+<!-- ---------- Top bar ---------- -->
+<header class="topbar">
+  <span class="topbar-brand">MCLite <span class="accent">// FLASHER</span></span>
+
+  <!-- Target picker -->
+  <div class="target-picker" id="target-picker">
+    <button class="target-picker-btn" id="target-picker-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+      <span class="target-picker-prefix">TARGET</span>
+      <span class="target-picker-label" id="target-picker-label">—</span>
+      <span class="target-picker-chevron">▾</span>
+    </button>
+    <div class="target-picker-menu" id="target-picker-menu" role="listbox"><!-- populated by JS --></div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Version</div>
-    <div>
-      <label for="version">Select firmware version</label>
-      <select id="version" onchange="onVersionChange()" disabled>
-        <option value="">-- Load releases first --</option>
-      </select>
+  <span class="topbar-spacer"></span>
+  <span class="topbar-status">
+    <span id="serial-led" class="led led-idle"></span>
+    <span id="serial-status">Web Serial</span>
+  </span>
+</header>
+
+<!-- ---------- Rail ---------- -->
+<aside class="rail">
+  <div class="rail-section">Tools</div>
+  <a class="rail-item active" href="#" onclick="event.preventDefault();">
+    <span class="num">01</span>
+    <span>Web Flasher</span>
+  </a>
+  <a class="rail-item" href="../config-tool/mclite_config_tool.html">
+    <span class="num">02</span>
+    <span>Config Tool</span>
+  </a>
+
+  <div class="rail-section" style="margin-top: 24px;">Target</div>
+  <div class="rail-item" style="cursor: default;">
+    <span id="rail-target-led" class="led led-idle"></span>
+    <span id="rail-target-name">—</span>
+  </div>
+  <div class="rail-item" style="cursor: default; font-family: var(--mono); font-size: 11px; color: var(--shell-text-faint);">
+    <span class="num">MCU</span>
+    <span id="rail-target-chip">—</span>
+  </div>
+</aside>
+
+<!-- ---------- Workspace ---------- -->
+<main class="workspace">
+
+  <div class="workspace-header">
+    <h1 class="workspace-title">Web Flasher</h1>
+    <div class="workspace-subtitle" id="workspace-subtitle">Install MCLite from your browser</div>
+  </div>
+
+  <!-- Browser / context warning -->
+  <div id="browser-warning" class="issues-banner hidden">
+    <div class="issues-banner-title">
+      <span class="led led-err"></span>
+      <span id="browser-warning-title">Browser not supported</span>
+    </div>
+    <div class="issues-banner-body" id="browser-warning-body">
+      This browser does not implement the Web Serial API. Use a Chromium-based browser (Chrome, Edge, Brave, Arc) on desktop.
     </div>
   </div>
 
-  <div class="section flash-area">
-    <esp-web-install-button id="flash-btn">
-      <button slot="activate" disabled>Install MCLite</button>
-      <span slot="unsupported">
-        <span class="status error">Web Serial not supported in this browser.</span>
-      </span>
-      <span slot="not-allowed">
-        <span class="status error">Web Serial access denied. Ensure the page is served over HTTPS.</span>
-      </span>
-    </esp-web-install-button>
-    <div id="status" class="status"></div>
-    <div id="next-step" class="hidden" style="margin-top: 16px; font-size: 0.85rem; color: var(--text2);">
-      After flashing, use the <a href="../config-tool/mclite_config_tool.html" style="color: var(--accent);">Config Tool</a> to set up your SD card.
+  <!-- Single procedure section -->
+  <div class="section-head">
+    <span class="label">Procedure</span>
+    <span class="rule"></span>
+  </div>
+
+  <div class="card" id="checklist-card" data-status="idle">
+    <ul class="checklist">
+
+      <!-- Step 1: Firmware version (collapsible) -->
+      <li class="check-item" data-step="version">
+        <div class="check-row">
+          <span class="check-led led led-idle"></span>
+          <div class="check-body">
+            <div class="check-title">Firmware version</div>
+            <div class="check-detail">
+              <span id="version-display" class="version-display placeholder">Loading releases…</span>
+              <select id="version" onchange="onVersionChange()" class="version-select hidden" disabled>
+                <option value="">— Loading —</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn-utility" id="version-toggle" onclick="toggleVersionPicker()" disabled>Change</button>
+        </div>
+      </li>
+
+      <!-- Step 2: DFU mode (collapsible, holds timeline + explainer) -->
+      <li class="check-item" data-step="dfu" id="dfu-item">
+        <div class="check-row">
+          <span class="check-led led led-idle"></span>
+          <div class="check-body">
+            <div class="check-title">Enter DFU mode</div>
+            <div class="check-detail" id="dfu-summary-text">Loading sequence…</div>
+          </div>
+          <button class="btn-utility" id="dfu-toggle-btn" onclick="toggleDfuExpand()">Show</button>
+        </div>
+
+        <div class="check-expand">
+          <div class="step-indicator" id="step-indicator-container"><!-- rendered by renderStepIndicator() --></div>
+
+          <div class="phase-explainer" id="phase-explainer">
+            <div class="phase-step">
+              <span class="phase-num">…</span>
+              <div class="phase-text">
+                <div class="phase-action">Loading…</div>
+                <div class="phase-detail">Initialising DFU sequence.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dfu-controls">
+            <button class="btn-outline" id="prev-phase-btn" onclick="advancePhase(-1)" disabled>← Previous</button>
+            <button class="btn-primary" id="next-phase-btn" onclick="advancePhase(1)">Next Step →</button>
+          </div>
+
+          <div class="dfu-fallback-hint hidden" id="dfu-fallback-hint">
+            <span class="led led-idle"></span>
+            <span><strong>Tip:</strong> the actual readiness check happens when you click <strong style="color:var(--shell-text);">Install MCLite</strong> below — your browser will ask which device to use, then ESP Web Tools verifies the chip is in DFU mode.</span>
+          </div>
+
+          <div class="dfu-detect-line" id="dfu-detect-line">
+            <span class="led led-idle"></span>
+            <span>If your browser supports it, DFU mode may be auto-detected when the device appears on the port</span>
+          </div>
+        </div>
+      </li>
+
+      <!-- Step 3: Run installer (auto-expanded when 1+2 done) -->
+      <li class="check-item" data-step="flash">
+        <div class="check-row">
+          <span class="check-led led led-idle"></span>
+          <div class="check-body">
+            <div class="check-title">Run installer</div>
+            <div class="check-detail" id="flash-summary-text">Complete the steps above to enable.</div>
+          </div>
+          <span class="check-mark">→</span>
+        </div>
+
+        <div class="check-expand">
+          <div class="action-bar">
+            <esp-web-install-button id="flash-btn">
+              <button slot="activate" disabled>Install MCLite</button>
+              <span slot="unsupported">
+                <span class="status-line error">
+                  <span class="led led-err"></span>
+                  Web Serial not supported in this browser
+                </span>
+              </span>
+              <span slot="not-allowed">
+                <span class="status-line error">
+                  <span class="led led-err"></span>
+                  Web Serial access denied — page must be served over HTTPS
+                </span>
+              </span>
+            </esp-web-install-button>
+          </div>
+        </div>
+      </li>
+
+      <!-- Step 4: Reboot device (post-flash, populated from target.postFlash) -->
+      <li class="check-item" data-step="reboot">
+        <div class="check-row">
+          <span class="check-led led led-idle"></span>
+          <div class="check-body">
+            <div class="check-title" id="reboot-title">Reboot device</div>
+            <div class="check-detail" id="reboot-detail">
+              <span id="reboot-detail-text">Press the device's reset button to boot into the new firmware.</span>
+              <button class="btn-inline" id="reboot-done-btn" type="button" disabled>I pressed RST</button>
+            </div>
+          </div>
+          <span class="check-mark">→</span>
+        </div>
+      </li>
+
+      <!-- Step 5: Configure SD card -->
+      <li class="check-item" data-step="config">
+        <div class="check-row">
+          <span class="check-led led led-idle"></span>
+          <div class="check-body">
+            <div class="check-title">Configure SD card</div>
+            <div class="check-detail">Open the <a href="../config-tool/mclite_config_tool.html" id="config-tool-link" style="color:var(--shell-amber);">Config Tool</a> to write <code style="font-family:var(--mono);font-size:11px;">config.json</code>.</div>
+          </div>
+          <span class="check-mark">→</span>
+        </div>
+      </li>
+    </ul>
+
+    <details class="disclosure in-card">
+      <summary>Source &amp; Diagnostics</summary>
+      <div class="disclosure-content">
+        <div class="row" style="margin-top: 8px;">
+          <div class="field">
+            <label>Source</label>
+            <div class="input-mono" id="source-display">—</div>
+          </div>
+          <div class="field" style="flex: 0 0 140px;">
+            <label>Binary Size</label>
+            <div class="input-mono" id="bin-size">—</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top: 4px;">
+          <button class="btn-utility" onclick="diagnosticRescan()">Rescan Releases</button>
+          <button class="btn-utility" onclick="diagnosticResetDfu()">Restart DFU Sequence</button>
+        </div>
+        <div style="margin-top: 14px; font-size: 11px; color: var(--shell-text-faint); line-height: 1.6;">
+          Flashing engine: <a href="https://github.com/esphome/esp-web-tools" style="color: var(--shell-text-dim);">esp-web-tools</a> v10.2.1 (Apache-2.0) — vendored locally, see <a href="vendor/esp-web-tools/LICENSE" style="color: var(--shell-text-dim);">LICENSE</a>.
+        </div>
+      </div>
+    </details>
+
+    <div class="note-line" style="margin-top:16px;">
+      <span class="badge amber">First-time flash</span>
+      &nbsp;You will be prompted to erase the device. This is expected.
+    </div>
+    <div class="note-line">
+      <span class="badge green">Safe</span>
+      &nbsp;Your <code style="font-family:var(--mono); font-size:11px;">config.json</code> and SD card contents are preserved across flashes.
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Instructions</div>
-    <div class="info-box">
-      <strong>1.</strong> Switch off the T-Deck Plus<br>
-      <strong>2.</strong> Press and hold the trackball button<br>
-      <strong>3.</strong> Switch the device on while holding the trackball<br>
-      <strong>4.</strong> Release the trackball — the device is now in DFU mode<br>
-      <strong>5.</strong> Connect via USB and select a firmware version above<br>
-      <strong>6.</strong> Click "Install MCLite" and select the serial port<br>
-      <strong>7.</strong> Wait for the flash to complete (~30 seconds)<br>
-      <strong>8.</strong> Open the <a href="../config-tool/mclite_config_tool.html" style="color:var(--accent);">Config Tool</a> to set up your SD card<br><br>
-      <strong>First-time flash?</strong> You will be prompted to erase the device. This is normal.<br>
-      <strong>Note:</strong> Your config.json and SD card contents are not affected by flashing.
-    </div>
-  </div>
-</div>
+</main>
 
 <script>
-let releases = [];
+// Cross-origin "Script error." comes from the esp-web-tools module loaded from
+// unpkg.com. The browser hides details for security. We catch it here so it
+// doesn't pollute the console with cryptic generic errors. Real errors from
+// our own code still surface with full details.
+window.addEventListener('error', (event) => {
+  // Cross-origin errors arrive with empty message+filename+lineno
+  if (!event.filename && event.message === 'Script error.') {
+    event.preventDefault();
+    console.debug('[silenced] Cross-origin script error (likely from esp-web-tools)');
+  }
+});
+
+// Also catch unhandled promise rejections (esp-web-tools uses async heavily)
+window.addEventListener('unhandledrejection', (event) => {
+  // Don't silence these — they're useful, but log them clearly
+  console.debug('[unhandled rejection]', event.reason);
+});
+
 let currentManifestUrl = null;
 
-const REPO = 'laserir/MCLite';
-const FW_BASE = new URL('firmware/', window.location.href).href;
+// HTML-escape user-controlled strings before injecting via innerHTML.
+// Repository file names that match our binaryPattern (.+) capture group
+// could in theory contain HTML chars — quote them.
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-async function fetchReleases() {
+// ---------- Targets (hardware variants) ----------
+// Each target is a self-contained hardware definition. Adding a new variant
+// means adding an entry here — no other code needs to change.
+const TARGETS = {
+  'tdeck-plus': {
+    id: 'tdeck-plus',
+    displayName: 'T-Deck Plus',
+    chipFamily: 'ESP32-S3',
+    repo: 'laserir/MCLite',
+    firmwarePath: 'tools/web-flasher/firmware',
+    binaryPattern: /^mclite-v(.+)\.bin$/i,
+    flashOffset: 0,
+    eraseOnFirstFlash: true,
+    dfuSequence: [
+      { num: '01', shortLabel: 'USB',
+        action: 'Connect the T-Deck Plus to your computer',
+        detail: 'Use a <strong>USB-C cable</strong> to connect the device to a USB port on your computer. Avoid USB hubs if possible.' },
+      { num: '02', shortLabel: 'Slide off',
+        action: 'Slide the power switch to OFF',
+        detail: 'The T-Deck Plus uses a <strong>slide switch on the right side</strong> of the device. Slide it to the OFF position. The device may stay powered through USB — that is fine.' },
+      { num: '03', shortLabel: 'Hold trackball',
+        action: 'Hold the trackball button down',
+        detail: 'The <strong>trackball is the round clickable button</strong> in the centre of the keyboard. Press it down and keep holding — do not release until the last step.' },
+      { num: '04', shortLabel: 'Slide on',
+        action: 'Slide the power switch to ON (still holding trackball)',
+        detail: 'Slide the power switch to the ON position to power the device up. <strong>Keep holding the trackball</strong> through this step.' },
+      { num: '05', shortLabel: 'Release',
+        action: 'Release the trackball',
+        detail: 'The device is now in DFU mode and ready to be flashed.' }
+    ],
+    postFlash: {
+      action: 'Press the RST button to reboot',
+      detail: 'The <strong>RST button is on the left side</strong> of the device. Press it once to exit download mode and boot into the new firmware.'
+    }
+  },
+  'twatch-ultra': {
+    id: 'twatch-ultra',
+    displayName: 'T-Watch Ultra',
+    disabled: true,
+    disabledReason: 'Device type not available yet',
+    chipFamily: 'ESP32-S3',
+    repo: 'laserir/MCLite-twatch-ultra',
+    firmwarePath: 'tools/web-flasher/firmware',
+    binaryPattern: /^mclite-watch-v(.+)\.bin$/i,
+    flashOffset: 0,
+    eraseOnFirstFlash: true,
+    dfuSequence: [
+      { num: '01', shortLabel: 'USB',
+        action: 'Connect the T-Watch Ultra via USB-C',
+        detail: 'Use a <strong>USB-C cable</strong> to connect the watch to a USB port on your computer. Avoid USB hubs if possible.' },
+      { num: '02', shortLabel: 'BOOT + RST',
+        action: 'Hold BOOT, then briefly press RST',
+        detail: 'Press and hold the <strong>BOOT button</strong>. While still holding BOOT, briefly press the <strong>RST button</strong>. Keep BOOT held down.' },
+      { num: '03', shortLabel: 'Release RST',
+        action: 'Release the RST button',
+        detail: 'Let go of RST. Continue holding BOOT.' },
+      { num: '04', shortLabel: 'Release BOOT',
+        action: 'Release the BOOT button',
+        detail: 'The watch is now in DFU mode and ready to be flashed.' }
+    ],
+    postFlash: {
+      action: 'Press the RST button to exit download mode',
+      detail: 'Press the <strong>RST button</strong> once to reboot the watch into the new firmware.'
+    }
+  }
+};
+
+// Resolve initial target: URL param ?target=… → localStorage → default
+function resolveInitialTarget() {
+  const isUsable = (id) => id && TARGETS[id] && !TARGETS[id].disabled;
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl = params.get('target');
+  if (isUsable(fromUrl)) return fromUrl;
+  try {
+    const stored = localStorage.getItem('mclite_target');
+    if (isUsable(stored)) return stored;
+  } catch (e) { /* localStorage unavailable */ }
+  // Default: first non-disabled target (tdeck-plus today)
+  for (const id of Object.keys(TARGETS)) {
+    if (!TARGETS[id].disabled) return id;
+  }
+  // Should never happen unless all targets are disabled
+  return Object.keys(TARGETS)[0];
+}
+
+let currentTargetId = resolveInitialTarget();
+function getTarget() { return TARGETS[currentTargetId]; }
+
+// Switch to a different hardware target. Refuses if a flash is in progress.
+let flashInProgress = false;
+
+// Reboot-step auto-detect state. See setupRebootButton for full explanation.
+// Declared early so listeners in setupSerialDetect can reference them.
+let rebootWatching = false;
+let rebootSawDisconnect = false;
+async function setTarget(targetId) {
+  if (!TARGETS[targetId]) return;
+  if (targetId === currentTargetId) return;
+
+  // Disabled targets cannot be selected — show informative toast and bail.
+  // The picker stays on the previously selected (working) target.
+  if (TARGETS[targetId].disabled) {
+    const t = TARGETS[targetId];
+    showToast(t.disabledReason || `${t.displayName} not available yet`, 'warn');
+    return;
+  }
+
+  if (flashInProgress) {
+    showToast('Cannot switch hardware during flash', 'err');
+    return;
+  }
+
+  currentTargetId = targetId;
+
+  // Persist user choice
+  try { localStorage.setItem('mclite_target', targetId); } catch (e) {}
+  // Update URL without reloading
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('target', targetId);
+    window.history.replaceState({}, '', url);
+  } catch (e) {}
+
+  // Reset reboot/config step state — they may have been activated by a
+  // previous target's flash flow, but the new target hasn't been flashed yet.
+  const rebootBtn = document.getElementById('reboot-done-btn');
+  if (rebootBtn) rebootBtn.disabled = true;
+  rebootWatching = false;
+  rebootSawDisconnect = false;
+
+  // Reset DFU state — sequence may differ between targets
+  dfuDetected = false;
+  currentPhase = 0;
+
+  // Reset DFU item visual state — clear all state classes that any code path
+  // ('done' from markDfuComplete, 'expanded' from expandDfuItem) might have set.
+  const dfuItem = document.getElementById('dfu-item');
+  if (dfuItem) dfuItem.classList.remove('done', 'expanded');
+
+  // Reset DFU detect line — renderPhase below does NOT touch this, so we must.
+  const detectLine = document.getElementById('dfu-detect-line');
+  if (detectLine) {
+    detectLine.classList.remove('detected');
+    detectLine.innerHTML = DFU_DETECT_LINE_DEFAULT;
+  }
+
+  // Reset flash item — remove ALL state classes including 'active' which can
+  // linger after a non-failed_initialize ERROR (the error handler doesn't run
+  // syncChecklist in that branch). Also clear the transient justFinished flag
+  // for safety in case it was left set by an interrupted FINISHED handler.
+  const flashItem = document.querySelector('[data-step="flash"]');
+  flashItem.classList.remove('done', 'active', 'expanded');
+  delete flashItem.dataset.justFinished;
+  const flashSummary = document.getElementById('flash-summary-text');
+  if (flashSummary) flashSummary.textContent = 'Complete the steps above to enable.';
+
+  // Reset reboot step — content reflects the NEW target's postFlash data.
+  // We only swap the text span (not the parent div), so the manual "I pressed
+  // RST" button inside the same div remains intact.
+  const rebootItem = document.querySelector('[data-step="reboot"]');
+  if (rebootItem) {
+    rebootItem.classList.remove('active', 'done');
+    const newTarget = getTarget(); // already the new target since currentTargetId was updated
+    const rebootDetailText = document.getElementById('reboot-detail-text');
+    if (rebootDetailText) rebootDetailText.innerHTML = newTarget.postFlash.detail;
+    const rebootTitle = document.getElementById('reboot-title');
+    if (rebootTitle) rebootTitle.textContent = newTarget.postFlash.action;
+  }
+
+  // Reset config step (only 'active' is ever set on it; 'done' is never set
+  // by the engine, but clearing both is defensive).
+  document.querySelector('[data-step="config"]').classList.remove('active', 'done');
+
+  // Reset version-display + bin-size to neutral state. Otherwise the user sees
+  // the previous target's version and binary size for a moment until fetchReleases
+  // populates the new values.
+  const versionDisplay = document.getElementById('version-display');
+  if (versionDisplay) {
+    versionDisplay.textContent = 'Loading versions for ' + getTarget().displayName + '…';
+    versionDisplay.classList.add('placeholder');
+  }
+  const binSize = document.getElementById('bin-size');
+  if (binSize) binSize.textContent = '—';
+
+  // Re-render target-dependent UI
+  updateBranding();
+  renderStepIndicator();
+  renderPhase();
+
+  // Reset version picker (manifest needs rebuild from new target)
   const sel = document.getElementById('version');
-  setStatus('Scanning firmware...', '');
+  sel.value = '';
+  sel.classList.add('hidden'); // collapse if it was open from previous target
+  if (currentManifestUrl) {
+    URL.revokeObjectURL(currentManifestUrl);
+    currentManifestUrl = null;
+  }
+  const flashBtn = document.getElementById('flash-btn');
+  flashBtn.removeAttribute('manifest');
+  const activateBtn = flashBtn.querySelector('[slot="activate"]');
+  if (activateBtn) activateBtn.disabled = true;
+
+  // Fetch (or restore from cache) for the new target
+  await fetchReleases(false);
+
+  // syncChecklist runs at the end of fetchReleases → onVersionChange chain
+}
+
+// Update target-specific labels in branding chrome (top-bar, rail).
+function updateBranding() {
+  const target = getTarget();
+  // Rail target LED — green when target is operational, idle otherwise
+  const railLed = document.getElementById('rail-target-led');
+  if (railLed) {
+    railLed.className = target.disabled ? 'led led-idle' : 'led led-ok';
+  }
+  // Rail target name
+  const railTargetName = document.getElementById('rail-target-name');
+  if (railTargetName) railTargetName.textContent = target.displayName;
+  // Rail chip
+  const railChip = document.getElementById('rail-target-chip');
+  if (railChip) railChip.textContent = target.chipFamily;
+  // Top-bar picker label
+  const pickerLabel = document.getElementById('target-picker-label');
+  if (pickerLabel) pickerLabel.textContent = target.displayName;
+  // Update document title
+  document.title = `MCLite Web Flasher · ${target.displayName}`;
+  // Workspace subtitle
+  const subtitle = document.getElementById('workspace-subtitle');
+  if (subtitle) subtitle.textContent = `Install MCLite on a ${target.displayName} from your browser`;
+  // Source / repo display in diagnostics
+  const srcDisplay = document.getElementById('source-display');
+  if (srcDisplay) srcDisplay.textContent = `github.com/${target.repo}`;
+  // Active item in picker dropdown
+  document.querySelectorAll('.target-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.targetId === target.id);
+  });
+}
+
+// Per-target releases cache to avoid re-fetching when switching back and forth.
+const releasesCache = {}; // { 'tdeck-plus': [...], 'twatch-ultra': [...] }
+let releases = []; // current target's releases (mirrors cache for compatibility)
+
+async function fetchReleases(forceRescan) {
+  const sel = document.getElementById('version');
+  const display = document.getElementById('version-display');
+  const toggleBtn = document.getElementById('version-toggle');
+  const target = getTarget();
+  // Capture which target this fetch was started for. If the user switches
+  // targets while we're awaiting the network, we must NOT clobber the new
+  // target's UI with our stale results.
+  const fetchForTarget = target.id;
+
+  // Use cached if available and not a forced rescan.
+  // Cache lookup is synchronous, no race possible — populate immediately.
+  // We slice() to make `releases` a separate reference; otherwise any mutation
+  // of `releases` would silently mutate the cache.
+  if (!forceRescan && releasesCache[target.id]) {
+    releases = releasesCache[target.id].slice();
+    populateVersionSelect();
+    return;
+  }
+
+  display.textContent = 'Scanning firmware index…';
+  display.classList.add('placeholder');
+  toggleBtn.disabled = true;
+  toggleBtn.textContent = 'Change';
+  toggleBtn.onclick = toggleVersionPicker;
 
   try {
-    // List firmware binaries via GitHub Contents API
-    const resp = await fetch(`https://api.github.com/repos/${REPO}/contents/tools/web-flasher/firmware`);
-    if (!resp.ok) throw new Error(`GitHub API error (${resp.status})`);
+    const resp = await fetch(`https://api.github.com/repos/${target.repo}/contents/${target.firmwarePath}`);
+    if (!resp.ok) {
+      // Differentiate common cases for clearer user messaging
+      if (resp.status === 404) {
+        throw new Error(`Firmware folder not found in ${target.repo}/${target.firmwarePath}`);
+      } else if (resp.status === 403) {
+        throw new Error('GitHub rate limit reached — try again in an hour, or sign in to github.com to lift the limit');
+      } else if (resp.status >= 500) {
+        throw new Error(`GitHub is having issues (HTTP ${resp.status}) — try again shortly`);
+      } else {
+        throw new Error(`GitHub API returned HTTP ${resp.status}`);
+      }
+    }
     const files = await resp.json();
 
-    releases = [];
+    // Stale-fetch guard: if the user switched targets while we were waiting,
+    // the new target has its own fetch in flight (or already populated). Bail
+    // without touching UI — but still cache our result for this target so a
+    // future switch back can use the cache.
+    const parsed = [];
     for (const f of files) {
-      const m = f.name.match(/^mclite-v(.+)\.bin$/i);
+      const m = f.name.match(target.binaryPattern);
       if (m) {
-        releases.push({
+        // Prefer GitHub's download_url — it picks the correct branch automatically
+        // (works for repos using main, master, or anything else as default branch).
+        // Fall back to a constructed URL only if download_url is missing for some reason.
+        const url = f.download_url ||
+                    `https://raw.githubusercontent.com/${target.repo}/HEAD/${target.firmwarePath}/${encodeURIComponent(f.name)}`;
+        parsed.push({
           version: m[1],
           binName: f.name,
-          binSize: f.size
+          binSize: f.size,
+          binUrl: url
         });
       }
     }
-    // Sort by version descending (newest first)
-    releases.sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }));
+    parsed.sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }));
+    releasesCache[fetchForTarget] = parsed;
 
-    sel.innerHTML = '';
-    if (releases.length === 0) {
-      sel.innerHTML = '<option value="">No firmware binaries found</option>';
-      sel.disabled = true;
-      setStatus('No firmware found.', 'error');
-    } else {
-      sel.innerHTML = '<option value="">-- Select version --</option>';
-      for (let i = 0; i < releases.length; i++) {
-        const r = releases[i];
-        const sizeMB = (r.binSize / (1024 * 1024)).toFixed(1);
-        sel.innerHTML += `<option value="${i}">v${r.version} (${sizeMB} MB)</option>`;
-      }
-      sel.disabled = false;
-      setStatus(`Found ${releases.length} version${releases.length > 1 ? 's' : ''}`, 'ok');
-    }
+    if (fetchForTarget !== currentTargetId) return; // stale result, don't paint
+
+    // slice() to detach `releases` from cache so future mutations don't bleed.
+    releases = parsed.slice();
+    populateVersionSelect();
   } catch (e) {
-    sel.innerHTML = '<option value="">-- Error loading versions --</option>';
+    // Same stale-check: if the user already moved on, don't paint an old error.
+    if (fetchForTarget !== currentTargetId) return;
+    // TypeError from fetch typically means network-level failure (offline, DNS, CORS).
+    // Distinguish from HTTP errors which we threw with descriptive messages above.
+    let userMessage;
+    if (e instanceof TypeError) {
+      userMessage = 'Network error — check your internet connection';
+    } else {
+      userMessage = e.message;
+    }
+    sel.innerHTML = '<option value="">— Error loading versions —</option>';
     sel.disabled = true;
-    setStatus(e.message, 'error');
+    display.textContent = userMessage;
+    display.classList.add('placeholder');
+    // Repurpose the toggle button as a retry trigger
+    toggleBtn.disabled = false;
+    toggleBtn.textContent = 'Retry';
+    toggleBtn.onclick = () => fetchReleases(true);
   }
+}
+
+// Fills the <select> options from `releases` and auto-selects the latest.
+// Extracted so we can also call it when restoring from cache after a target switch.
+function populateVersionSelect() {
+  const sel = document.getElementById('version');
+  const display = document.getElementById('version-display');
+  const toggleBtn = document.getElementById('version-toggle');
+
+  sel.innerHTML = '';
+  if (releases.length === 0) {
+    sel.innerHTML = '<option value="">No firmware binaries found</option>';
+    sel.disabled = true;
+    display.textContent = 'No firmware binaries found';
+    display.classList.add('placeholder');
+    toggleBtn.disabled = true;
+    return;
+  }
+  for (let i = 0; i < releases.length; i++) {
+    const r = releases[i];
+    const sizeMB = (r.binSize / (1024 * 1024)).toFixed(1);
+    sel.innerHTML += `<option value="${i}">v${escapeHtml(r.version)} · ${sizeMB} MB</option>`;
+  }
+  sel.disabled = false;
+  toggleBtn.disabled = false;
+  toggleBtn.textContent = 'Change';
+  toggleBtn.onclick = toggleVersionPicker;
+
+  // Auto-select the latest
+  sel.value = '0';
+  onVersionChange();
 }
 
 function onVersionChange() {
@@ -237,6 +1611,8 @@ function onVersionChange() {
   const flashBtn = document.getElementById('flash-btn');
   const activateBtn = flashBtn.querySelector('[slot="activate"]');
   const idx = sel.value;
+  const sizeEl = document.getElementById('bin-size');
+  const display = document.getElementById('version-display');
 
   if (currentManifestUrl) {
     URL.revokeObjectURL(currentManifestUrl);
@@ -246,22 +1622,42 @@ function onVersionChange() {
   if (idx === '' || !releases[idx]) {
     flashBtn.removeAttribute('manifest');
     activateBtn.disabled = true;
+    sizeEl.textContent = '—';
+    display.textContent = '— No version selected —';
+    display.classList.add('placeholder');
+    syncChecklist();
     return;
   }
 
   const rel = releases[idx];
+  const sizeMB = (rel.binSize / (1024 * 1024)).toFixed(1);
+  sizeEl.textContent = sizeMB + ' MB';
 
-  // Generate manifest pointing to same-origin binary (no CORS issues)
+  // Update the collapsed display
+  const isLatest = idx === '0';
+  display.classList.remove('placeholder');
+  display.innerHTML = `v${escapeHtml(rel.version)}<span class="meta">· ${sizeMB} MB${isLatest ? ' · latest' : ''}</span>`;
+
+  // Collapse the picker if it was open
+  sel.classList.add('hidden');
+  document.getElementById('version-toggle').textContent = 'Change';
+
+  const target = getTarget();
   const manifest = {
-    name: 'MCLite',
+    name: `MCLite (${target.displayName})`,
     version: rel.version,
-    new_install_prompt_erase: true,
+    new_install_prompt_erase: target.eraseOnFirstFlash,
+    // Skip Improv WiFi detection after install. MCLite doesn't speak Improv,
+    // so the default 10-second probe is just a delay before the user sees the
+    // post-flash dashboard. Setting this to 0 has ESP-Web-Tools transition
+    // straight from FINISHED → DASHBOARD without waiting.
+    new_install_improv_wait_time: 0,
     builds: [{
-      chipFamily: 'ESP32-S3',
+      chipFamily: target.chipFamily,
       improv: false,
       parts: [{
-        path: FW_BASE + rel.binName,
-        offset: 0
+        path: rel.binUrl,
+        offset: target.flashOffset
       }]
     }]
   };
@@ -270,25 +1666,757 @@ function onVersionChange() {
     new Blob([JSON.stringify(manifest)], { type: 'application/json' })
   );
   flashBtn.setAttribute('manifest', currentManifestUrl);
-  activateBtn.disabled = false;
-  document.getElementById('next-step').classList.remove('hidden');
+  // Don't set activateBtn.disabled here — syncChecklist below will set it
+  // correctly based on both prerequisites (version selected AND DFU done).
 
-  const sizeMB = (rel.binSize / (1024 * 1024)).toFixed(1);
-  setStatus(`Ready: ${rel.binName} (${sizeMB} MB)`, 'ok');
+  syncChecklist();
 }
 
-function setStatus(msg, type) {
-  const el = document.getElementById('status');
-  el.textContent = msg;
-  el.className = 'status' + (type ? ' ' + type : '');
+function toggleVersionPicker() {
+  const sel = document.getElementById('version');
+  const btn = document.getElementById('version-toggle');
+  const wasHidden = sel.classList.contains('hidden');
+
+  sel.classList.toggle('hidden');
+
+  if (wasHidden) {
+    btn.textContent = 'Done';
+    sel.focus();
+  } else {
+    btn.textContent = 'Change';
+  }
 }
 
-// Check Web Serial support
-if (!('serial' in navigator)) {
-  document.getElementById('browser-warning').classList.remove('hidden');
+// Web Serial + Secure Context check
+(function checkSerialEnv() {
+  const hasSerial = 'serial' in navigator;
+  const isSecure = window.isSecureContext;
+  const warning = document.getElementById('browser-warning');
+  const title = document.getElementById('browser-warning-title');
+  const body = document.getElementById('browser-warning-body');
+  const serialLed = document.getElementById('serial-led');
+  const serialStatus = document.getElementById('serial-status');
+
+  if (!hasSerial) {
+    warning.classList.remove('hidden');
+    title.textContent = 'Browser not supported';
+    body.textContent = 'This browser does not implement the Web Serial API. Use a Chromium-based browser (Chrome, Edge, Brave, Arc) on desktop.';
+    serialLed.className = 'led led-err';
+    serialStatus.textContent = 'Web Serial unavailable';
+  } else if (!isSecure) {
+    warning.classList.remove('hidden');
+    title.textContent = 'Insecure context';
+    body.innerHTML = 'Web Serial requires a secure context. This page must be served over <strong style="color:var(--shell-text);font-family:var(--mono);">https://</strong> or <strong style="color:var(--shell-text);font-family:var(--mono);">localhost</strong> — opening the file directly via <strong style="color:var(--shell-text);font-family:var(--mono);">file://</strong> will not work.';
+    serialLed.className = 'led led-err';
+    serialStatus.textContent = 'Insecure context';
+  } else {
+    serialLed.className = 'led led-ok';
+    serialStatus.textContent = 'Web Serial ready';
+  }
+})();
+
+// ---------- DFU sequence state machine ----------
+
+// Generates a one-line summary of the DFU sequence for the current target,
+// shown when the DFU step is collapsed (e.g. "Connect USB, slide off, hold trackball, slide on, release.")
+function buildDfuSummary() {
+  const labels = getTarget().dfuSequence.map(p => p.shortLabel.toLowerCase());
+  // Capitalise the first label
+  if (labels.length > 0) labels[0] = labels[0].charAt(0).toUpperCase() + labels[0].slice(1);
+  return labels.join(', ') + '.';
 }
 
-// Auto-load releases on page load
+const DFU_DETECT_LINE_DEFAULT = `
+  <span class="led led-idle"></span>
+  <span>If your browser supports it, DFU mode may be auto-detected when the device appears on the port</span>
+`;
+
+// PHASES is now derived from the current target's dfuSequence.
+// Backwards-compatible accessor used by the engine.
+function getPhases() { return getTarget().dfuSequence; }
+
+let currentPhase = 0;
+let dfuDetected = false;
+
+function renderStepIndicator() {
+  const phases = getPhases();
+  const container = document.getElementById('step-indicator-container');
+  if (!container) return;
+  const parts = [];
+  phases.forEach((p, i) => {
+    if (i > 0) parts.push('<span class="step-dot-rule"></span>');
+    parts.push(
+      `<span class="step-dot" data-step="${i}">` +
+        `<span class="step-dot-num">${p.num}</span>` +
+        `<span class="step-dot-label">${p.shortLabel}</span>` +
+      `</span>`
+    );
+  });
+  container.innerHTML = parts.join('');
+}
+
+function renderPhase() {
+  const phases = getPhases();
+  const phase = phases[currentPhase];
+
+  // Update step indicator dots
+  document.querySelectorAll('.step-dot').forEach((dot, i) => {
+    dot.classList.remove('past', 'current');
+    if (i < currentPhase) dot.classList.add('past');
+    else if (i === currentPhase) dot.classList.add('current');
+  });
+
+  // Update phase explainer
+  const explainer = document.getElementById('phase-explainer');
+  explainer.innerHTML = `
+    <div class="phase-step">
+      <span class="phase-num">${phase.num}</span>
+      <div class="phase-text">
+        <div class="phase-action">${phase.action}</div>
+        <div class="phase-detail">${phase.detail}</div>
+      </div>
+    </div>
+  `;
+  explainer.classList.remove('complete');
+
+  // Update prev/next buttons
+  document.getElementById('prev-phase-btn').disabled = currentPhase === 0;
+  const nextBtn = document.getElementById('next-phase-btn');
+  if (currentPhase === phases.length - 1) {
+    nextBtn.disabled = false;
+    nextBtn.textContent = 'Mark as ready ✓';
+  } else {
+    nextBtn.disabled = false;
+    nextBtn.textContent = 'Next Step →';
+  }
+
+  // Show auto-detect bonus hint at last step
+  const fallbackHint = document.getElementById('dfu-fallback-hint');
+  if (fallbackHint) {
+    fallbackHint.classList.toggle('hidden', currentPhase !== phases.length - 1);
+  }
+
+  // Update summary text shown when DFU item is collapsed
+  const summary = document.getElementById('dfu-summary-text');
+  if (summary && !dfuDetected) {
+    const total = String(phases.length).padStart(2, '0');
+    summary.textContent = `Step ${phase.num} of ${total} · ${phase.action}`;
+  }
+}
+
+function advancePhase(delta) {
+  const phases = getPhases();
+  const newPhase = currentPhase + delta;
+  if (newPhase < 0) return;
+  if (newPhase >= phases.length) {
+    // User clicked "Mark as ready" on the last step
+    markDfuComplete();
+    return;
+  }
+  currentPhase = newPhase;
+  renderPhase();
+}
+
+function resetDfuSequence() {
+  currentPhase = 0;
+  dfuDetected = false;
+
+  const dfuItem = document.getElementById('dfu-item');
+  dfuItem.classList.remove('done');
+
+  // Update the summary text back to default
+  document.getElementById('dfu-summary-text').textContent = buildDfuSummary();
+
+  // Reset detect line
+  const detectLine = document.getElementById('dfu-detect-line');
+  detectLine.classList.remove('detected');
+  detectLine.innerHTML = DFU_DETECT_LINE_DEFAULT;
+
+  renderPhase();
+  syncChecklist();
+
+  // Re-expand DFU item so user can run through it again
+  expandDfuItem(true);
+}
+
+let dfuCollapseTimer = null;
+
+function expandDfuItem(open) {
+  const item = document.getElementById('dfu-item');
+  const btn = document.getElementById('dfu-toggle-btn');
+  // Cancel any pending auto-collapse if the user (or any code path) is
+  // actively changing the expanded state.
+  if (dfuCollapseTimer !== null) {
+    clearTimeout(dfuCollapseTimer);
+    dfuCollapseTimer = null;
+  }
+  if (open) {
+    item.classList.add('expanded');
+    btn.textContent = 'Hide';
+  } else {
+    item.classList.remove('expanded');
+    btn.textContent = 'Show';
+  }
+}
+
+function toggleDfuExpand() {
+  const item = document.getElementById('dfu-item');
+  expandDfuItem(!item.classList.contains('expanded'));
+}
+
+function markDfuComplete() {
+  // If a previous flash had marked Step 3 as done, clear it now: the user is
+  // entering DFU again, which signals intent to re-flash.
+  const flashItem = document.querySelector('[data-step="flash"]');
+  if (flashItem.classList.contains('done')) {
+    flashItem.classList.remove('done');
+    const flashSummary = document.getElementById('flash-summary-text');
+    if (flashSummary) flashSummary.textContent = 'Complete the steps above to enable.';
+    // Also clear post-flash steps (reboot + config) — they were specific to the
+    // previous flash and don't apply until a new flash completes.
+    const rebootItem = document.querySelector('[data-step="reboot"]');
+    if (rebootItem) rebootItem.classList.remove('active', 'done');
+    document.querySelector('[data-step="config"]').classList.remove('active');
+  }
+
+  dfuDetected = true;
+
+  // Update summary text shown in the collapsed row
+  document.getElementById('dfu-summary-text').innerHTML =
+    `Device ready · <span style="color:var(--shell-scope);font-family:var(--mono);font-size:11px;letter-spacing:0.04em;">CONFIRMED</span>`;
+
+  const explainer = document.getElementById('phase-explainer');
+  explainer.classList.add('complete');
+  explainer.innerHTML = `
+    <div class="phase-step">
+      <span class="phase-num">✓</span>
+      <div class="phase-text">
+        <div class="phase-action" style="color: var(--shell-scope);">Device ready for flashing</div>
+        <div class="phase-detail">Proceed to <strong>Run installer</strong> below.</div>
+      </div>
+    </div>
+  `;
+
+  const detectLine = document.getElementById('dfu-detect-line');
+  detectLine.classList.add('detected');
+  detectLine.innerHTML = `
+    <span class="led led-ok"></span>
+    <span>DFU mode confirmed</span>
+  `;
+
+  document.getElementById('next-phase-btn').disabled = true;
+  document.getElementById('prev-phase-btn').disabled = true;
+
+  syncChecklist();
+
+  // Collapse the DFU item after a brief moment so user sees the success state first.
+  // Store the timer ID so expandDfuItem can cancel it if the user manually opens
+  // the panel back up before it fires.
+  dfuCollapseTimer = setTimeout(() => {
+    dfuCollapseTimer = null;
+    expandDfuItem(false);
+  }, 700);
+}
+
+// ---------- Live serial detect (informational only) ----------
+async function setupSerialDetect() {
+  if (!('serial' in navigator)) return;
+
+  // On 'connect': port appears. We can't actually verify the device is in DFU
+  // mode without communicating with it, so we just hint that something appeared.
+  // Skip during flash: ESP-Web-Tools manages the port itself, we'd just clobber
+  // the live progress UI with a misleading "click Mark as ready" message.
+  // Skip during reboot watch: that's a separate flow, the appearing port is
+  // the device finishing its post-flash boot, not a fresh DFU session.
+  navigator.serial.addEventListener('connect', () => {
+    if (dfuDetected || flashInProgress || rebootWatching) return;
+    const detectLine = document.getElementById('dfu-detect-line');
+    if (detectLine) {
+      detectLine.classList.add('detected');
+      detectLine.innerHTML = `
+        <span class="led led-ok"></span>
+        <span>Serial port detected · if you've completed the DFU sequence, click <strong>Mark as ready ✓</strong></span>
+      `;
+    }
+  });
+
+  navigator.serial.addEventListener('disconnect', () => {
+    if (dfuDetected || flashInProgress || rebootWatching) return;
+    const detectLine = document.getElementById('dfu-detect-line');
+    if (detectLine) {
+      detectLine.classList.remove('detected');
+      detectLine.innerHTML = DFU_DETECT_LINE_DEFAULT;
+    }
+  });
+
+  // Returning user: previously paired port exists
+  try {
+    const ports = await navigator.serial.getPorts();
+    if (ports.length > 0 && !dfuDetected) {
+      const detectLine = document.getElementById('dfu-detect-line');
+      if (detectLine) {
+        detectLine.innerHTML = `
+          <span class="led led-warn"></span>
+          <span>Previously paired serial port found · run DFU sequence to confirm</span>
+        `;
+      }
+    }
+  } catch (e) { /* getPorts unavailable */ }
+}
+
+// ---------- Checklist sync ----------
+function syncChecklist() {
+  const versionDone = document.getElementById('version').value !== '';
+  const dfuDone = dfuDetected;
+
+  const items = {
+    version: document.querySelector('[data-step="version"]'),
+    dfu: document.querySelector('[data-step="dfu"]'),
+    flash: document.querySelector('[data-step="flash"]'),
+    reboot: document.querySelector('[data-step="reboot"]'),
+    config: document.querySelector('[data-step="config"]')
+  };
+
+  // Reset active state; preserve done state for already-completed steps unless
+  // a prerequisite was undone (then the dependent step's done-state is stale).
+  Object.values(items).forEach(el => el && el.classList.remove('active'));
+  if (!versionDone) items.version.classList.remove('done');
+  if (!dfuDone) {
+    items.dfu.classList.remove('done');
+    // Flash done-state depends on DFU being done. If DFU got reset (e.g. after
+    // a successful flash, the device left DFU mode), Flash is no longer "done"
+    // in the sense that it can't be re-run from this state.
+    // Exception: a flash JUST finished — preserve its done state for the
+    // immediate post-flash UI (the user will see the success state).
+    if (!items.flash.dataset.justFinished) {
+      items.flash.classList.remove('done');
+      // Reboot is post-flash, so it depends on flash being done too.
+      if (items.reboot) items.reboot.classList.remove('active', 'done');
+      items.config.classList.remove('active');
+    }
+  }
+
+  // Mark done states
+  if (versionDone) items.version.classList.add('done');
+  if (dfuDone) items.dfu.classList.add('done');
+
+  // Mark current active step (the first non-done one).
+  // Reboot is excluded here — it gets activated explicitly by activateRebootStep()
+  // after a successful flash, not by checklist progression.
+  // Also: if a flash JUST finished, we are in post-flash state. The reboot
+  // step owns the user's attention; we must NOT auto-activate dfu even though
+  // it was reset. Otherwise the user sees flash=done + dfu=active +
+  // reboot=active simultaneously, which is confusing.
+  const flashJustFinished = items.flash.dataset.justFinished === '1';
+  if (!flashJustFinished) {
+    const order = ['version', 'dfu', 'flash', 'config'];
+    for (const key of order) {
+      if (!items[key].classList.contains('done')) {
+        items[key].classList.add('active');
+        break;
+      }
+    }
+  }
+
+  // DFU summary text when not done: shown by renderPhase. When done: handled by markDfuComplete.
+
+  // Auto-expand DFU when it becomes the active step (and not yet detected).
+  // Skip during justFinished window — user is in post-flash state.
+  if (!flashJustFinished &&
+      items.dfu.classList.contains('active') &&
+      !dfuDone &&
+      !items.dfu.classList.contains('expanded')) {
+    expandDfuItem(true);
+  }
+
+  // Flash step: auto-expand when it becomes active (i.e. version + DFU both done)
+  const flashReady = versionDone && dfuDone;
+  const flashSummary = document.getElementById('flash-summary-text');
+
+  if (flashJustFinished) {
+    // Keep expanded and keep the success message visible
+    items.flash.classList.add('expanded');
+    // summary text already set by FINISHED handler — leave it alone
+  } else if (flashReady) {
+    items.flash.classList.add('expanded');
+    if (flashSummary && !items.flash.classList.contains('done')) {
+      flashSummary.innerHTML = 'Click <strong style="color:var(--shell-text);">Install MCLite</strong> — your browser will show a port picker. Select the device labeled <code style="font-family:var(--mono);font-size:11px;background:var(--shell-panel-2);padding:1px 4px;border-radius:2px;">USB JTAG/serial debug unit</code> or similar.';
+    }
+  } else {
+    items.flash.classList.remove('expanded');
+    if (flashSummary && !items.flash.classList.contains('done')) {
+      flashSummary.textContent = 'Complete the steps above to enable.';
+    }
+  }
+
+  // Update card status
+  const card = document.getElementById('checklist-card');
+  card.setAttribute('data-status', flashReady ? 'warn' : 'idle');
+
+  // Install button enabled state must reflect both prerequisites:
+  // version selected AND DFU done. Without this, after a successful re-flash
+  // the button stays clickable while DFU is no longer ready.
+  const flashBtn = document.getElementById('flash-btn');
+  if (flashBtn) {
+    const activateBtn = flashBtn.querySelector('[slot="activate"]');
+    if (activateBtn) {
+      activateBtn.disabled = !flashReady;
+    }
+  }
+}
+
+// ---------- Toast ----------
+function showToast(message, type, meta) {
+  // Remove any existing toast first
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (type ? ' toast-' + type : '');
+
+  const ledClass = type === 'ok' ? 'led-ok' : type === 'err' ? 'led-err' : 'led-warn';
+  const led = document.createElement('span');
+  led.className = 'led ' + ledClass;
+  toast.appendChild(led);
+
+  const msg = document.createElement('span');
+  msg.textContent = message;
+  toast.appendChild(msg);
+
+  if (meta) {
+    const m = document.createElement('span');
+    m.className = 'toast-meta';
+    m.textContent = '· ' + meta;
+    toast.appendChild(m);
+  }
+
+  document.body.appendChild(toast);
+
+  // Auto-remove after animation completes (animation is 0.2s in + 4s wait + 0.2s out = 4.4s)
+  setTimeout(() => {
+    if (toast.parentNode) toast.remove();
+  }, 4500);
+}
+
+// ============================================================================
+// ESP-Web-Tools integration via DOM observation (no state-changed events)
+// ============================================================================
+// In ESP-Web-Tools v10.2.x, the documented `state-changed` event on
+// <esp-web-install-button> is not actually fired in practice — the dialog
+// keeps all state internal. We therefore detect flash lifecycle entirely via
+// DOM observation:
+//
+//   - When <ewt-install-dialog> is APPENDED to document.body → flash session
+//     started. We mark flash step active, lock the target picker.
+//
+//   - When <ewt-install-dialog> is REMOVED from document.body → user closed
+//     the ESP-WT dialog. This means either the flash succeeded or was
+//     cancelled. To keep things simple, we assume "removed" means "done" and
+//     activate the reboot step — if the user cancelled mid-flash, they can
+//     re-enter DFU and re-flash, which resets the reboot step anyway.
+//
+// The dialog itself (in v10.2.x) handles the "wrapping up" / "Installation
+// complete!" / "Next" / "Dashboard" UI internally. We don't track those
+// sub-states — we just wait for the dialog to disappear.
+//
+// References (esp-web-tools 10.2.x source):
+//   src/connect.ts:
+//     const el = document.createElement("ewt-install-dialog");
+//     document.body.appendChild(el);
+//   src/install-dialog.ts _handleClose():
+//     this.parentNode!.removeChild(this);
+// ============================================================================
+
+(function setupEspWtIntegration() {
+  const flashItem = document.querySelector('[data-step="flash"]');
+  const summary = document.getElementById('flash-summary-text');
+
+  // -------- Helpers ----------
+  const markInProgress = () => {
+    flashInProgress = true;
+    const picker = document.getElementById('target-picker-btn');
+    if (picker) picker.disabled = true;
+    flashItem.classList.add('active');
+    flashItem.classList.remove('done');
+    if (summary) summary.innerHTML = '<span style="color:var(--shell-amber);">Flashing in progress · keep this page visible</span>';
+    console.log('[MCLite] flash session started (ewt-install-dialog opened)');
+  };
+
+  const markFinishedAndActivateReboot = () => {
+    flashInProgress = false;
+    const picker = document.getElementById('target-picker-btn');
+    if (picker) picker.disabled = false;
+    flashItem.classList.add('done');
+    flashItem.classList.remove('active');
+    if (summary) summary.innerHTML = '<span style="color:var(--shell-scope);">Firmware installed successfully.</span>';
+
+    // Reset DFU state so a re-flash requires the sequence again.
+    dfuDetected = false;
+    document.getElementById('dfu-summary-text').textContent = buildDfuSummary();
+    currentPhase = 0;
+    const detectLine = document.getElementById('dfu-detect-line');
+    if (detectLine) {
+      detectLine.classList.remove('detected');
+      detectLine.innerHTML = DFU_DETECT_LINE_DEFAULT;
+    }
+    renderPhase();
+
+    // Re-derive UI state with justFinished flag to preserve flash 'done'.
+    flashItem.dataset.justFinished = '1';
+    syncChecklist();
+    delete flashItem.dataset.justFinished;
+
+    // Activate the reboot step AFTER syncChecklist (otherwise reboot.active
+    // gets wiped by the forEach in syncChecklist).
+    activateRebootStep();
+    console.log('[MCLite] flash session ended (ewt-install-dialog closed) → reboot step activated');
+  };
+
+  // -------- DOM observer ----------
+  // Watch document.body for the dialog being added/removed. ESP-WT appends
+  // the dialog directly as a top-level child of body, so subtree:false suffices.
+  let dialogIsOpen = false;
+  const observer = new MutationObserver((mutations) => {
+    for (const mut of mutations) {
+      for (const node of mut.addedNodes) {
+        if (node.nodeType === 1 && node.tagName === 'EWT-INSTALL-DIALOG') {
+          if (!dialogIsOpen) {
+            dialogIsOpen = true;
+            markInProgress();
+          }
+        }
+      }
+      for (const node of mut.removedNodes) {
+        if (node.nodeType === 1 && node.tagName === 'EWT-INSTALL-DIALOG') {
+          if (dialogIsOpen) {
+            dialogIsOpen = false;
+            markFinishedAndActivateReboot();
+          }
+        }
+      }
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: false });
+  console.log('[MCLite] DOM observer watching document.body for <ewt-install-dialog>');
+})();
+// ---------- Target picker UI ----------
+function renderTargetPicker() {
+  const menu = document.getElementById('target-picker-menu');
+  if (!menu) return;
+  const parts = [];
+  for (const id of Object.keys(TARGETS)) {
+    const t = TARGETS[id];
+    const disabledClass = t.disabled ? ' disabled' : '';
+    const metaText = t.disabled
+      ? `${t.chipFamily} · <span class="target-option-tag">SOON</span>`
+      : `${t.chipFamily} · ${t.repo}`;
+    parts.push(
+      `<div class="target-option${disabledClass}" data-target-id="${id}" role="option" aria-disabled="${!!t.disabled}">` +
+        `<span class="target-option-name">${t.displayName}</span>` +
+        `<span class="target-option-meta">${metaText}</span>` +
+      `</div>`
+    );
+  }
+  menu.innerHTML = parts.join('');
+
+  // Click handlers on options (disabled ones still fire — setTarget surfaces a toast)
+  menu.querySelectorAll('.target-option').forEach(el => {
+    el.addEventListener('click', () => {
+      const targetId = el.dataset.targetId;
+      closeTargetPicker();
+      setTarget(targetId);
+    });
+  });
+}
+
+function openTargetPicker() {
+  document.getElementById('target-picker').classList.add('open');
+  document.getElementById('target-picker-btn').setAttribute('aria-expanded', 'true');
+}
+function closeTargetPicker() {
+  document.getElementById('target-picker').classList.remove('open');
+  document.getElementById('target-picker-btn').setAttribute('aria-expanded', 'false');
+}
+function toggleTargetPicker() {
+  const picker = document.getElementById('target-picker');
+  if (picker.classList.contains('open')) closeTargetPicker();
+  else openTargetPicker();
+}
+
+// Wire up picker button & outside-click close
+(function setupTargetPicker() {
+  const btn = document.getElementById('target-picker-btn');
+  if (!btn) return;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (btn.disabled) return;
+    toggleTargetPicker();
+  });
+  document.addEventListener('click', (e) => {
+    const picker = document.getElementById('target-picker');
+    if (picker && !picker.contains(e.target)) closeTargetPicker();
+  });
+})();
+
+// ---------- Reboot step ----------
+// Activated automatically after flash completes. The user presses the device's
+// RST button physically. We detect this two ways:
+//   1. Auto-detect via Web Serial: when active, we listen for a disconnect→
+//      connect sequence on navigator.serial. Pressing RST causes the ESP32
+//      to drop USB and re-enumerate, which fires both events. Both must
+//      happen in order — bare 'connect' alone could just be the user plugging
+//      in a fresh device.
+//   2. Manual: user clicks the "I pressed RST" button. Always available as
+//      a fallback for cases where auto-detect can't fire (device not on USB,
+//      using a battery, etc.).
+//
+// Why a sequence and not just 'connect'?
+//   ESP-Web-Tools issues a "Hard reset via RTS pin" at the end of the flash,
+//   and that may or may not cause a disconnect/connect cycle on its own
+//   depending on the device. By requiring disconnect FIRST, we ensure we're
+//   reacting to a true reboot cycle initiated by the user pressing RST,
+//   not to lingering events from the flash itself.
+
+// State for the auto-detect mechanism. Only used while the reboot step is
+// active; reset on each activation so a stale disconnect from a previous
+// session can't trigger. Declared at module top alongside flashInProgress.
+
+function activateRebootStep() {
+  const target = getTarget();
+  const detailText = document.getElementById('reboot-detail-text');
+  if (detailText) {
+    // Use postFlash.detail from target config — has device-specific guidance
+    // like which side of the case the RST button is on.
+    detailText.innerHTML = target.postFlash.detail;
+  }
+  const rebootItem = document.querySelector('[data-step="reboot"]');
+  if (rebootItem) {
+    rebootItem.classList.remove('done');
+    rebootItem.classList.add('active');
+  }
+  const btn = document.getElementById('reboot-done-btn');
+  if (btn) btn.disabled = false;
+
+  // Begin auto-detect. Reset the disconnect flag — any future disconnect
+  // belongs to this session.
+  rebootWatching = true;
+  rebootSawDisconnect = false;
+}
+
+function markRebootDone() {
+  const rebootItem = document.querySelector('[data-step="reboot"]');
+  if (rebootItem) {
+    rebootItem.classList.remove('active');
+    rebootItem.classList.add('done');
+  }
+  const btn = document.getElementById('reboot-done-btn');
+  if (btn) btn.disabled = true;
+
+  // Stop watching so subsequent disconnect/connect events (e.g. user pulling
+  // the cable) don't re-trigger anything.
+  rebootWatching = false;
+  rebootSawDisconnect = false;
+
+  // Activate config step
+  const configItem = document.querySelector('[data-step="config"]');
+  if (configItem) configItem.classList.add('active');
+}
+
+(function setupRebootButton() {
+  const btn = document.getElementById('reboot-done-btn');
+  if (btn) btn.addEventListener('click', markRebootDone);
+
+  // Auto-detect: watch navigator.serial for the disconnect→connect cycle that
+  // happens when the device reboots. We reuse the existing connect/disconnect
+  // listeners in setupSerialDetect for DFU detection — this is a separate set
+  // of listeners that only acts when rebootWatching is true.
+  if ('serial' in navigator) {
+    navigator.serial.addEventListener('disconnect', () => {
+      if (!rebootWatching) return;
+      rebootSawDisconnect = true;
+      console.log('[MCLite] reboot watcher: disconnect observed');
+    });
+
+    navigator.serial.addEventListener('connect', () => {
+      if (!rebootWatching) return;
+      if (!rebootSawDisconnect) {
+        // Saw connect without a prior disconnect — could be a stray event
+        // from the flash itself or a different device. Ignore.
+        console.log('[MCLite] reboot watcher: connect without prior disconnect, ignoring');
+        return;
+      }
+      console.log('[MCLite] reboot watcher: disconnect→connect sequence detected → auto-marking reboot done');
+      markRebootDone();
+    });
+  }
+
+  // Clicking the Config Tool link is the user's signal that they're moving
+  // to the final step. Mark config as done (green LED). The link still
+  // navigates normally — we don't preventDefault.
+  const configLink = document.getElementById('config-tool-link');
+  if (configLink) {
+    configLink.addEventListener('click', () => {
+      const configItem = document.querySelector('[data-step="config"]');
+      if (configItem) {
+        configItem.classList.remove('active');
+        configItem.classList.add('done');
+      }
+    });
+  }
+})();
+
+// ---------- Diagnostic actions (Source & Diagnostics buttons) ----------
+// Wrapped so we refuse them while a flash is in progress — running them
+// mid-flash would mutate UI state ESP-Web-Tools is showing or invalidate the
+// manifest blob URL it's still using.
+function diagnosticRescan() {
+  if (flashInProgress) {
+    showToast('Cannot rescan during flash', 'warn');
+    return;
+  }
+  fetchReleases(true);
+}
+function diagnosticResetDfu() {
+  if (flashInProgress) {
+    showToast('Cannot reset DFU during flash', 'warn');
+    return;
+  }
+  resetDfuSequence();
+}
+
+// Init
+renderTargetPicker();
+updateBranding();
+renderStepIndicator();
+renderPhase();
+// Initialise reboot step content from current target
+(function initRebootStepContent() {
+  const target = getTarget();
+  const rebootTitle = document.getElementById('reboot-title');
+  const rebootDetailText = document.getElementById('reboot-detail-text');
+  if (rebootTitle) rebootTitle.textContent = target.postFlash.action;
+  if (rebootDetailText) rebootDetailText.innerHTML = target.postFlash.detail;
+})();
+// If the URL param pointed to a disabled or unknown target, resolveInitialTarget
+// fell back to a working target. Sync the URL and localStorage so the user sees
+// what's actually loaded — otherwise sharing the URL keeps reproducing the
+// confusing fallback dance.
+(function syncUrlAndStorageToResolved() {
+  try {
+    const url = new URL(window.location.href);
+    const fromUrl = url.searchParams.get('target');
+    if (fromUrl !== currentTargetId) {
+      url.searchParams.set('target', currentTargetId);
+      window.history.replaceState({}, '', url);
+    }
+  } catch (e) {}
+  try { localStorage.setItem('mclite_target', currentTargetId); } catch (e) {}
+})();
+syncChecklist();
+setupSerialDetect();
+
+// Auto-load releases
 fetchReleases();
 </script>
 </body>
