@@ -2097,6 +2097,7 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
       <button class="v4-menu-btn" onclick="v4ToggleMenu(event)" title="More" aria-label="More actions">⋯</button>
       <div class="v4-menu-dropdown" id="v4_menu" onclick="event.stopPropagation()">
         <button onclick="v4ImportFromMenu()"><span>Import config…</span><span class="v4-kbd" data-kbd="I"></span></button>
+        <button onclick="openSharePresetModal(); v4CloseMenu();"><span>Share preset link…</span></button>
         <div class="v4-menu-divider"></div>
         <button onclick="openWizard(); v4CloseMenu();"><span>Setup wizard</span></button>
         <button onclick="resetAll(); v4CloseMenu();"><span>New config</span></button>
@@ -2752,6 +2753,48 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
 </div>
 
 <!-- Post-Export Modal -->
+<div class="wizard-overlay hidden" id="sharePresetModal">
+  <div class="wizard-box" style="max-width:600px;">
+    <h2 style="margin-bottom:8px;">Share preset link</h2>
+    <div style="font-size:0.88rem; color:var(--text2); line-height:1.6; margin-bottom:14px;">
+      Pick which sidebar sections to share. Anyone opening the link in the MCLite Config Tool gets these settings pre-filled. The <strong>Device</strong> section (name, identity keys) and <strong>Security</strong> section (PIN, lock mode) are never included — those are per-device.
+    </div>
+
+    <div style="font-size:0.78rem; color:var(--shell-text-dim); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em; display:flex; justify-content:space-between; align-items:center;">
+      <span>Include in preset</span>
+      <span style="text-transform:none; letter-spacing:0;">
+        <button type="button" onclick="sharePresetToggleAll(true)" style="background:transparent; border:none; color:var(--shell-amber); cursor:pointer; font-size:0.78rem; padding:0 4px;">All</button>
+        ·
+        <button type="button" onclick="sharePresetToggleAll(false)" style="background:transparent; border:none; color:var(--shell-amber); cursor:pointer; font-size:0.78rem; padding:0 4px;">None</button>
+      </span>
+    </div>
+    <div id="sharePresetSections" style="display:grid; grid-template-columns:1fr 1fr; gap:6px 18px; margin-bottom:16px; padding:10px 12px; background:var(--shell-bg); border:1px solid var(--shell-line); border-radius:4px;"></div>
+
+    <label style="font-size:0.78rem; color:var(--shell-text-dim); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Link</label>
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <input id="sharePresetUrl" readonly type="text" onclick="this.select()"
+             style="flex:1; min-width:0; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.78rem; padding:8px 10px; background:var(--shell-bg); border:1px solid var(--shell-line); color:var(--text); border-radius:4px;">
+      <button class="btn btn-green" id="sharePresetCopyBtn" onclick="copySharePresetUrl()" style="padding:8px 14px; font-size:0.85rem; white-space:nowrap;">Copy</button>
+    </div>
+
+    <div style="font-size:0.78rem; color:var(--shell-text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Included in this preset</div>
+    <ul id="sharePresetIncluded" style="font-size:0.85rem; color:var(--text2); line-height:1.7; margin:0 0 16px 18px; padding:0; max-height:200px; overflow:auto;"></ul>
+
+    <button class="btn" onclick="document.getElementById('sharePresetModal').classList.add('hidden');" style="width:100%; padding:10px; font-size:0.9rem;">Close</button>
+  </div>
+</div>
+
+<div class="wizard-overlay hidden" id="presetAppliedBanner">
+  <div class="wizard-box" style="max-width:520px;">
+    <h2 style="margin-bottom:8px;">Preset applied</h2>
+    <div style="font-size:0.88rem; color:var(--text2); line-height:1.6; margin-bottom:12px;">
+      The shared link pre-filled the settings below. Review them, then add your identity (or use the auto-generated keypair) before exporting.
+    </div>
+    <ul id="presetAppliedList" style="font-size:0.85rem; color:var(--text2); line-height:1.7; margin:0 0 16px 18px; padding:0; max-height:240px; overflow:auto;"></ul>
+    <button class="btn btn-green" onclick="document.getElementById('presetAppliedBanner').classList.add('hidden');" style="width:100%; padding:10px; font-size:0.9rem;">Got it</button>
+  </div>
+</div>
+
 <div class="wizard-overlay hidden" id="exportModal">
   <div class="wizard-box" style="max-width:480px;">
     <h2 style="margin-bottom:12px;">Next: set up your SD card</h2>
@@ -3046,11 +3089,7 @@ function addContact(alias = '', pubkey = '') {
   if (contacts.length >= maxContacts) { toast('Maximum ' + maxContacts + ' contacts' + (fleetMode ? ' (fleet uses ' + (fleetDevices.length - 1) + ' slots)' : '') + ' — firmware limit'); return; }
   contacts.push({ alias: alias, public_key: pubkey, allow_telemetry: true, allow_location: false, allow_environment: false, always_sound: false, allow_sos: true, send_sos: true });
   renderContacts();
-  // Focus the new alias field
-  setTimeout(() => {
-    const inputs = document.querySelectorAll('#contactList input[type=text]');
-    if (inputs.length >= 2) inputs[inputs.length - 2].focus();
-  }, 50);
+  focusFirstEditableInLastCard('contactList');
 }
 
 function removeContact(i) {
@@ -3201,6 +3240,22 @@ function renderChannels() {
   }).join('');
 }
 
+// Focus the first editable text input of the last card in a list. Scoping
+// to the last card and skipping readonly inputs lets us land on the field
+// the user actually wants to type into (channel name / room alias) instead
+// of the auto-derived PSK or the public-key column.
+function focusFirstEditableInLastCard(listId) {
+  setTimeout(() => {
+    const list = document.getElementById(listId);
+    if (!list) return;
+    const cards = list.querySelectorAll('.contact-card');
+    const last = cards[cards.length - 1];
+    if (!last) return;
+    const input = last.querySelector('input[type="text"]:not([readonly])');
+    if (input) input.focus();
+  }, 50);
+}
+
 async function addChannel(type) {
   if (channels.length >= 16) { toast('Maximum 16 channels reached (firmware limit)'); return; }
   // Default send_sos: true only for private channels (trusted small group);
@@ -3209,10 +3264,7 @@ async function addChannel(type) {
   const ch = { name: '', type: type, psk: '', index: channels.length, allow_sos: true, send_sos: defaultSendSos, read_only: false, scope: '' };
   channels.push(ch);
   renderChannels();
-  setTimeout(() => {
-    const inputs = document.querySelectorAll('#channelList input[type=text]');
-    if (inputs.length) inputs[inputs.length - 2].focus();
-  }, 50);
+  focusFirstEditableInLastCard('channelList');
 }
 
 function addPublicChannel() {
@@ -3328,11 +3380,7 @@ function addRoom() {
   rooms.push({ name: '', public_key: '', password: '', allow_sos: true,
                send_sos: false, read_only: false, scope: '' });
   renderRooms();
-  // Focus the new name input
-  setTimeout(() => {
-    const inputs = document.querySelectorAll('#roomList input[type=text]');
-    if (inputs.length >= 3) inputs[inputs.length - 3].focus();
-  }, 50);
+  focusFirstEditableInLastCard('roomList');
 }
 
 function removeRoom(i) {
@@ -3485,15 +3533,20 @@ function autoDetectPosixTz() {
 }
 
 // ===== Validation =====
+// Issues are collected into a single list so the user sees the first
+// concrete problem in the toast — the previous code called toast() inside
+// each check, and every callsite then overwrote it with a generic message,
+// so the specific error never made it to the screen.
 function validate() {
-  let valid = true;
+  const issues = [];
+  let invalidNumericFields = 0;
   function check(id, min, max) {
     const el = document.getElementById(id);
     const v = parseFloat(el.value);
     const field = el.closest('.field');
     if (isNaN(v) || v < min || v > max) {
       field.classList.add('invalid');
-      valid = false;
+      invalidNumericFields++;
     } else {
       field.classList.remove('invalid');
     }
@@ -3513,15 +3566,17 @@ function validate() {
   check('batteryThreshold', 5, 50);
   check('gpsLastKnownMaxAge', 60, 7200);
   check('gpsClockOffset', -12, 14);
+  if (invalidNumericFields > 0) {
+    issues.push(invalidNumericFields + ' numeric field' +
+                (invalidNumericFields > 1 ? 's' : '') + ' out of range (highlighted)');
+  }
 
   // Identity key validation (single mode only — fleet checks in exportFleet)
   if (!fleetMode) {
     if (!identity.publicKey || !identity.privateKey) {
-      toast('Generate a keypair first');
-      valid = false;
+      issues.push('Generate a keypair first');
     } else if (!/^[0-9a-fA-F]{64}$/.test(identity.publicKey) || !/^[0-9a-fA-F]{128}$/.test(identity.privateKey)) {
-      toast('Invalid identity keys — regenerate keypair');
-      valid = false;
+      issues.push('Invalid identity keys — regenerate keypair');
     }
   }
 
@@ -3532,7 +3587,7 @@ function validate() {
   if (lockMode === 'pin') {
     if (!/^[a-zA-Z0-9]{4,8}$/.test(pinCode)) {
       pinField.classList.add('invalid');
-      valid = false;
+      issues.push('PIN must be 4–8 alphanumeric characters');
     } else {
       pinField.classList.remove('invalid');
     }
@@ -3543,73 +3598,82 @@ function validate() {
   // Contact/channel count limits (must match firmware MAX_CONTACTS/MAX_GROUP_CHANNELS)
   if (fleetMode) {
     const perDevice = fleetDevices.length - 1 + contacts.length;
-    if (perDevice > 32) {
-      valid = false;
-      toast('Too many contacts per device: ' + perDevice + ' (max 32)');
-    }
+    if (perDevice > 32) issues.push('Too many contacts per device: ' + perDevice + ' (max 32)');
   } else if (contacts.length > 32) {
-    valid = false;
-    toast('Too many contacts: ' + contacts.length + ' (max 32)');
+    issues.push('Too many contacts: ' + contacts.length + ' (max 32)');
   }
   if (channels.length > 16) {
-    valid = false;
-    toast('Too many channels: ' + channels.length + ' (max 16)');
+    issues.push('Too many channels: ' + channels.length + ' (max 16)');
   }
 
-  // Contact public key validation (must be 64 hex chars = 32 bytes)
+  // Contact rows: empty row, alias-only, or invalid public key
   contacts.forEach((c, i) => {
-    if (c.public_key && !/^[0-9a-fA-F]{64}$/.test(c.public_key.trim())) {
-      valid = false;
-      toast('Contact ' + (i + 1) + ': public key must be 64 hex characters');
+    const alias = (c.alias || '').trim();
+    const key   = (c.public_key || '').trim();
+    if (!alias && !key) {
+      issues.push('Contact ' + (i + 1) + ' is empty — fill it in or remove it');
+    } else if (!key) {
+      issues.push('Contact ' + (i + 1) + ' (' + alias + '): public key required');
+    } else if (!/^[0-9a-fA-F]{64}$/.test(key)) {
+      issues.push('Contact ' + (i + 1) + ': public key must be 64 hex characters');
     }
   });
 
-  // Private channel PSK validation (must be 32 hex chars = 16 bytes)
+  // Channel rows: empty name (silently dropped at export) or bad private PSK
   channels.forEach((ch, i) => {
-    if (ch.type === 'private' && ch.name) {
+    const name = (ch.name || '').trim();
+    if (ch.type !== 'public' && !name) {
+      issues.push('Channel ' + (i + 1) + ': name is required (or remove the empty row)');
+      return;
+    }
+    if (ch.type === 'private') {
       const psk = (ch.psk || '').trim();
       if (!psk || !/^[0-9a-fA-F]{32}$/.test(psk)) {
-        valid = false;
-        toast('Channel ' + (i + 1) + ' (' + ch.name + '): PSK must be 32 hex characters');
+        issues.push('Channel ' + (i + 1) + ' (' + name + '): PSK must be 32 hex characters');
       }
     }
   });
 
-  // Duplicate channel name validation (firmware uses name as identifier)
+  // Duplicate channel name (firmware uses name as identifier)
   const channelNames = new Set();
   channels.forEach((ch, i) => {
     if (ch.name) {
       if (channelNames.has(ch.name)) {
-        valid = false;
-        toast('Duplicate channel name: ' + ch.name + ' (channel ' + (i + 1) + ')');
+        issues.push('Duplicate channel name: ' + ch.name + ' (channel ' + (i + 1) + ')');
       }
       channelNames.add(ch.name);
     }
   });
 
-  // Room server validation: 64-hex pubkey, password ≤15, no pubkey duplicates.
-  // Empty rows are skipped so users can still leave a half-filled draft.
+  // Room rows: missing pubkey, invalid pubkey, duplicate pubkey, password length
   const roomKeys = new Set();
   rooms.forEach((r, i) => {
-    if (!r.public_key) return;  // empty row, skip silently
-    const key = r.public_key.trim().toLowerCase();
+    const rawKey = (r.public_key || '').trim();
+    if (!rawKey) {
+      issues.push('Room ' + (i + 1) + ': public key required (or remove the empty row)');
+      return;
+    }
+    const key = rawKey.toLowerCase();
     if (!/^[0-9a-fA-F]{64}$/.test(key)) {
-      valid = false;
-      toast('Room ' + (i + 1) + ': public key must be 64 hex characters');
+      issues.push('Room ' + (i + 1) + ': public key must be 64 hex characters');
       return;
     }
     if (roomKeys.has(key)) {
-      valid = false;
-      toast('Duplicate room public key (room ' + (i + 1) + ')');
+      issues.push('Duplicate room public key (room ' + (i + 1) + ')');
     }
     roomKeys.add(key);
     if ((r.password || '').length > 15) {
-      valid = false;
-      toast('Room ' + (i + 1) + ': password must be ≤15 characters');
+      issues.push('Room ' + (i + 1) + ': password must be ≤15 characters');
     }
   });
 
-  return valid;
+  if (issues.length > 0) {
+    toast(issues.length === 1
+      ? issues[0]
+      : issues[0] + ' (+' + (issues.length - 1) + ' more)');
+    return false;
+  }
+  return true;
 }
 
 // ===== Export =====
@@ -3709,7 +3773,7 @@ function buildConfig() {
 }
 
 async function exportConfig() {
-  if (!validate()) { toast('Fix validation errors first'); return; }
+  if (!validate()) return;
   await ensureHashtagPSKs();
   const cfg = buildConfig();
   const json = JSON.stringify(cfg, null, 2);
@@ -3724,6 +3788,335 @@ async function exportConfig() {
   toast('mclite-config.zip exported');
   document.getElementById('exportModal').classList.remove('hidden');
 }
+
+// ===== Share preset =====
+// A "preset" is a partial config.json that local groups can publish as a
+// URL link. Opening the link in this tool fills in radio/channels/contacts/
+// boot text/etc. so users don't have to type them by hand. We strip
+// identity (keys, device name) and security (PIN, lock mode) — those
+// are per-device.
+
+function buildPresetConfig() {
+  const cfg = buildConfig();
+  delete cfg.identity;
+  delete cfg.security;
+  if (cfg.device) {
+    delete cfg.device.name;
+    if (Object.keys(cfg.device).length === 0) delete cfg.device;
+  }
+  return cfg;
+}
+
+function encodePreset(cfg) {
+  const bytes = new TextEncoder().encode(JSON.stringify(cfg));
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function decodePreset(b64) {
+  const std = b64.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = std + '==='.slice((std.length + 3) % 4);
+  const bin = atob(padded);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+// Canonical hosted URL for the config tool. Preset links always use this
+// base so they work for anyone, even when the operator generated them
+// from a local file:// copy of the page.
+const SHARE_PRESET_BASE_URL = 'https://laserir.github.io/MCLite/tools/config-tool/mclite_config_tool.html';
+
+// Sections the user can opt in/out of when generating a preset. Labels
+// match the sidebar nav exactly so the operator can see at a glance
+// where each setting lives in the tool. `cfgKeys` lists the top-level
+// cfg keys this checkbox controls (default is just [key]):
+//   - Radio bundles `offgrid` (it's a radio-mode toggle)
+//   - Display bundles `language` (the language input lives in the
+//     Display pane in the UI)
+// `available(cfg)` hides checkboxes for empty list-shaped sections.
+// Device and Security are intentionally absent — both contain per-device
+// data (identity, name, PIN, lock mode) that we never share.
+const SHARE_PRESET_SECTIONS = [
+  { key: 'radio',        label: 'Radio',         available: () => true, cfgKeys: ['radio', 'offgrid'] },
+  { key: 'contacts',     label: 'Contacts',      available: cfg => Array.isArray(cfg.contacts)     && cfg.contacts.length > 0 },
+  { key: 'channels',     label: 'Channels',      available: cfg => Array.isArray(cfg.channels)     && cfg.channels.length > 0 },
+  { key: 'room_servers', label: 'Room servers',  available: cfg => Array.isArray(cfg.room_servers) && cfg.room_servers.length > 0 },
+  { key: 'display',      label: 'Display',       available: () => true, cfgKeys: ['display', 'language'] },
+  { key: 'messaging',    label: 'Messaging',     available: () => true },
+  { key: 'sound',        label: 'Sound & SOS',   available: () => true },
+  { key: 'gps',          label: 'GPS & time',    available: () => true },
+  { key: 'battery',      label: 'Battery',       available: () => true }
+];
+
+// Cached full preset (all sections) — checkbox state filters down from this.
+let _sharePresetFullCfg = null;
+
+async function openSharePresetModal() {
+  if (!validate()) return;
+  await ensureHashtagPSKs();
+  _sharePresetFullCfg = buildPresetConfig();
+
+  const container = document.getElementById('sharePresetSections');
+  container.innerHTML = SHARE_PRESET_SECTIONS
+    .filter(s => s.available(_sharePresetFullCfg))
+    .map(s => `
+      <label style="display:flex; align-items:center; gap:8px; font-size:0.88rem; color:var(--text); cursor:pointer; user-select:none;">
+        <input type="checkbox" data-section="${s.key}" checked onchange="regenerateSharePreset()" style="accent-color:var(--shell-amber); cursor:pointer;">
+        <span>${esc(s.label)}</span>
+      </label>
+    `).join('');
+
+  regenerateSharePreset();
+  document.getElementById('sharePresetModal').classList.remove('hidden');
+}
+
+function sharePresetToggleAll(on) {
+  document.querySelectorAll('#sharePresetSections input[type="checkbox"]').forEach(cb => { cb.checked = on; });
+  regenerateSharePreset();
+}
+
+function regenerateSharePreset() {
+  if (!_sharePresetFullCfg) return;
+  const cfg = JSON.parse(JSON.stringify(_sharePresetFullCfg));
+  document.querySelectorAll('#sharePresetSections input[type="checkbox"]').forEach(cb => {
+    if (cb.checked) return;
+    const section = SHARE_PRESET_SECTIONS.find(s => s.key === cb.dataset.section);
+    const cfgKeys = (section && section.cfgKeys) || [cb.dataset.section];
+    cfgKeys.forEach(k => delete cfg[k]);
+  });
+  const b64 = encodePreset(cfg);
+  document.getElementById('sharePresetUrl').value = SHARE_PRESET_BASE_URL + '#preset=' + b64;
+  renderSharePresetIncluded(cfg);
+}
+
+function renderSharePresetIncluded(cfg) {
+  const items = [];
+  if (cfg.radio) {
+    let r = 'Radio: ' + cfg.radio.frequency + ' MHz, SF' + cfg.radio.spreading_factor +
+            ', BW ' + cfg.radio.bandwidth + ', CR' + cfg.radio.coding_rate +
+            ', ' + cfg.radio.tx_power + ' dBm';
+    if (cfg.radio.scope) r += ', scope <code>' + esc(cfg.radio.scope) + '</code>';
+    if (cfg.radio.path_hash_mode) r += ', path-hash mode ' + cfg.radio.path_hash_mode;
+    if (cfg.offgrid) r += ', offgrid ' + (cfg.offgrid.enabled ? 'on' : 'off');
+    items.push(r);
+  }
+  if (cfg.contacts && cfg.contacts.length) {
+    items.push('Contacts (' + cfg.contacts.length + '): ' +
+               cfg.contacts.map(c => esc(c.alias || c.public_key.slice(0, 8))).join(', '));
+  }
+  if (cfg.channels && cfg.channels.length) {
+    items.push('Channels (' + cfg.channels.length + '): ' +
+               cfg.channels.map(c => esc(c.name)).join(', '));
+  }
+  if (cfg.room_servers && cfg.room_servers.length) {
+    items.push('Room servers (' + cfg.room_servers.length + '): ' +
+               cfg.room_servers.map(r => esc(r.name || r.public_key.slice(0, 8))).join(', '));
+  }
+  if (cfg.display) {
+    if (cfg.display.boot_text) items.push('Boot text: <em>"' + esc(cfg.display.boot_text) + '"</em>');
+    let d = 'Display: brightness ' + cfg.display.brightness +
+            ', dim ' + cfg.display.dim_brightness +
+            ', auto-dim ' + cfg.display.auto_dim_seconds + 's' +
+            ', keyboard backlight ' + (cfg.display.kbd_backlight ? cfg.display.kbd_brightness : 'off');
+    if (cfg.language !== undefined) d += ', language <code>' + esc(cfg.language || 'en') + '</code>';
+    items.push(d);
+  }
+  if (cfg.messaging) {
+    items.push('Messaging: history ' + (cfg.messaging.save_history ? 'on (max ' + cfg.messaging.max_history_per_chat + '/chat)' : 'off') +
+               ', retries ' + cfg.messaging.max_retries +
+               ', location <code>' + esc(cfg.messaging.location_format) + '</code>' +
+               ', canned ' + (cfg.messaging.canned_messages ? 'on' : 'off') +
+               ', request telemetry ' + (cfg.messaging.request_telemetry ? 'on' : 'off') +
+               ', show telemetry <code>' + esc(cfg.messaging.show_telemetry) + '</code>');
+  }
+  if (cfg.sound) {
+    items.push('Sound: ' + (cfg.sound.enabled ? 'on' : 'off') +
+               ', SOS keyword <code>' + esc(cfg.sound.sos_keyword) + '</code>, repeat ' + cfg.sound.sos_repeat);
+  }
+  if (cfg.gps) {
+    let g = 'GPS: ' + (cfg.gps.enabled ? 'on' : 'off');
+    if (cfg.gps.timezone) g += ', timezone <code>' + esc(cfg.gps.timezone) + '</code>';
+    if (cfg.gps.clock_offset) g += ', clock offset ' + cfg.gps.clock_offset + 'h';
+    g += ', last-known max age ' + cfg.gps.last_known_max_age + 's';
+    items.push(g);
+  }
+  if (cfg.battery) {
+    items.push('Battery alert: ' + (cfg.battery.low_alert_enabled
+               ? 'on at ' + cfg.battery.low_alert_threshold + '%'
+               : 'off'));
+  }
+  document.getElementById('sharePresetIncluded').innerHTML = items.length
+    ? items.map(s => '<li>' + s + '</li>').join('')
+    : '<li style="color:var(--shell-text-dim); list-style:none; margin-left:-18px;"><em>Nothing selected — the link will only generate a fresh keypair.</em></li>';
+}
+
+function copySharePresetUrl() {
+  const inp = document.getElementById('sharePresetUrl');
+  inp.select();
+  const btn = document.getElementById('sharePresetCopyBtn');
+  const restore = () => { btn.textContent = 'Copy'; };
+  const ok = () => { btn.textContent = 'Copied!'; setTimeout(restore, 1500); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(inp.value).then(ok, () => {
+      try { document.execCommand('copy'); ok(); }
+      catch(e) { toast('Copy failed — select and copy manually'); }
+    });
+  } else {
+    try { document.execCommand('copy'); ok(); }
+    catch(e) { toast('Copy failed — select and copy manually'); }
+  }
+}
+
+async function applyPresetFromUrl(b64) {
+  let cfg;
+  try { cfg = decodePreset(b64); }
+  catch(e) { toast('Invalid preset link'); return; }
+  if (!cfg || typeof cfg !== 'object') { toast('Invalid preset link'); return; }
+
+  // Fresh defaults + keypair, then layer the preset on top. The user
+  // landing on a preset link is treated as a new-config flow — they'll
+  // get auto-generated identity unless they import their own.
+  await applyDefaultsAndGenerate();
+
+  if (cfg.language !== undefined) {
+    document.getElementById('language').value = cfg.language || '';
+  }
+  if (cfg.radio) {
+    if (cfg.radio.frequency !== undefined) document.getElementById('radioFreq').value = cfg.radio.frequency;
+    if (cfg.radio.spreading_factor !== undefined) document.getElementById('radioSF').value = cfg.radio.spreading_factor;
+    if (cfg.radio.bandwidth !== undefined) document.getElementById('radioBW').value = cfg.radio.bandwidth;
+    if (cfg.radio.tx_power !== undefined) document.getElementById('radioTX').value = cfg.radio.tx_power;
+    if (cfg.radio.coding_rate !== undefined) document.getElementById('radioCR').value = cfg.radio.coding_rate;
+    document.getElementById('radioScope').value = cfg.radio.scope ?? '*';
+    document.getElementById('radioPathHashMode').value = cfg.radio.path_hash_mode ?? 0;
+    detectPreset();
+  }
+  if (Array.isArray(cfg.contacts)) {
+    contacts = cfg.contacts.map(c => ({
+      alias: c.alias || c.name || '',
+      public_key: c.public_key || '',
+      allow_telemetry: c.allow_telemetry !== false,
+      allow_location: c.allow_location === true,
+      allow_environment: c.allow_environment === true,
+      always_sound: c.always_sound === true,
+      allow_sos: c.allow_sos !== false,
+      send_sos: c.send_sos !== false
+    }));
+    renderContacts();
+  }
+  if (Array.isArray(cfg.channels)) {
+    channels = cfg.channels.map((ch, i) => ({
+      name: ch.name || '',
+      type: ch.type || 'hashtag',
+      psk: ch.psk || '',
+      index: ch.index ?? i,
+      allow_sos: ch.allow_sos !== false,
+      send_sos: ch.send_sos !== false,
+      read_only: ch.read_only === true,
+      scope: ch.scope || ''
+    }));
+    renderChannels();
+  }
+  if (Array.isArray(cfg.room_servers)) {
+    rooms = cfg.room_servers.map(r => ({
+      name: r.name || '',
+      public_key: (r.public_key || '').toLowerCase(),
+      password: r.password || '',
+      allow_sos: r.allow_sos !== false,
+      send_sos: r.send_sos === true,
+      read_only: r.read_only === true,
+      scope: r.scope || ''
+    }));
+    renderRooms();
+  }
+  if (cfg.display) {
+    if (cfg.display.brightness !== undefined) document.getElementById('dispBrightness').value = cfg.display.brightness;
+    if (cfg.display.auto_dim_seconds !== undefined) document.getElementById('dispAutoDim').value = cfg.display.auto_dim_seconds;
+    if (cfg.display.dim_brightness !== undefined) document.getElementById('dispDimBrightness').value = cfg.display.dim_brightness;
+    if (cfg.display.boot_text !== undefined) document.getElementById('dispBootText').value = cfg.display.boot_text;
+    if (cfg.display.kbd_backlight !== undefined) document.getElementById('kbdBacklight').value = cfg.display.kbd_backlight ? 'true' : 'false';
+    if (cfg.display.kbd_brightness !== undefined) document.getElementById('kbdBrightness').value = cfg.display.kbd_brightness;
+    document.getElementById('kbdBrightness').disabled = document.getElementById('kbdBacklight').value !== 'true';
+  }
+  if (cfg.messaging) {
+    if (cfg.messaging.save_history !== undefined) document.getElementById('msgHistory').value = String(cfg.messaging.save_history);
+    if (cfg.messaging.max_history_per_chat !== undefined) document.getElementById('msgMax').value = cfg.messaging.max_history_per_chat;
+    if (cfg.messaging.max_retries !== undefined) document.getElementById('msgRetries').value = cfg.messaging.max_retries;
+    if (cfg.messaging.request_telemetry !== undefined) document.getElementById('msgTelemetry').value = String(cfg.messaging.request_telemetry);
+    if (cfg.messaging.show_telemetry !== undefined) document.getElementById('msgShowTelemetry').value = cfg.messaging.show_telemetry;
+    if (cfg.messaging.canned_messages !== undefined) {
+      const cm = cfg.messaging.canned_messages;
+      document.getElementById('cannedMessages').value = String(cm === true || Array.isArray(cm) ? true : cm);
+    }
+    if (cfg.messaging.location_format !== undefined) document.getElementById('gpsCoordFormat').value = cfg.messaging.location_format;
+  }
+  if (cfg.sound) {
+    if (cfg.sound.enabled !== undefined) document.getElementById('soundEnabled').value = String(cfg.sound.enabled);
+    if (cfg.sound.sos_keyword !== undefined) document.getElementById('sosKeyword').value = cfg.sound.sos_keyword;
+    if (cfg.sound.sos_repeat !== undefined) document.getElementById('sosRepeat').value = cfg.sound.sos_repeat;
+  }
+  if (cfg.gps) {
+    if (cfg.gps.enabled !== undefined) document.getElementById('gpsEnabled').value = String(cfg.gps.enabled);
+    if (cfg.gps.timezone !== undefined) setTimezoneDropdown(cfg.gps.timezone);
+    if (cfg.gps.clock_offset !== undefined) document.getElementById('gpsClockOffset').value = cfg.gps.clock_offset;
+    if (cfg.gps.last_known_max_age !== undefined) document.getElementById('gpsLastKnownMaxAge').value = cfg.gps.last_known_max_age;
+  }
+  if (cfg.battery) {
+    if (cfg.battery.low_alert_enabled !== undefined) document.getElementById('batteryAlertEnabled').value = String(cfg.battery.low_alert_enabled);
+    if (cfg.battery.low_alert_threshold !== undefined) document.getElementById('batteryThreshold').value = cfg.battery.low_alert_threshold;
+  }
+  if (cfg.offgrid) {
+    if (cfg.offgrid.enabled !== undefined) document.getElementById('offgridEnabled').value = cfg.offgrid.enabled ? 'true' : 'false';
+    updateOffgridDerivedFreq();
+  }
+
+  // Build the applied-list labels in sidebar order. Labels match the
+  // sidebar nav exactly so the user sees where each section lives.
+  // Radio absorbs offgrid; Display absorbs language and boot text.
+  const applied = [];
+  if (cfg.radio || cfg.offgrid) {
+    let label = 'Radio';
+    if (cfg.offgrid) label += ' (offgrid ' + (cfg.offgrid.enabled ? 'on' : 'off') + ')';
+    applied.push(label);
+  }
+  if (Array.isArray(cfg.contacts))     applied.push('Contacts (' + contacts.length + ')');
+  if (Array.isArray(cfg.channels))     applied.push('Channels (' + channels.length + ')');
+  if (Array.isArray(cfg.room_servers)) applied.push('Room servers (' + rooms.length + ')');
+  if (cfg.display || cfg.language !== undefined) {
+    let label = 'Display';
+    const extras = [];
+    if (cfg.display && cfg.display.boot_text) extras.push('boot text');
+    if (cfg.language !== undefined) extras.push('language: ' + (cfg.language || 'English'));
+    if (extras.length) label += ' (incl. ' + extras.join(', ') + ')';
+    applied.push(label);
+  }
+  if (cfg.messaging) applied.push('Messaging');
+  if (cfg.sound)     applied.push('Sound & SOS');
+  if (cfg.gps)       applied.push('GPS & time');
+  if (cfg.battery)   applied.push('Battery');
+
+  document.getElementById('presetAppliedList').innerHTML =
+    applied.map(s => '<li>' + esc(s) + '</li>').join('');
+  document.getElementById('presetAppliedBanner').classList.remove('hidden');
+}
+
+(function checkPresetHash() {
+  const hash = location.hash || '';
+  if (!hash.startsWith('#preset=')) return;
+  const b64 = hash.slice('#preset='.length);
+  // Tell maybeShowWizard() not to fire — the preset apply (deferred via
+  // setTimeout) will populate identity/channels itself, but the wizard's
+  // first-load check runs synchronously before that and would otherwise
+  // pop the welcome modal on top of the incoming preset.
+  window._mcLitePresetPending = true;
+  // Strip the hash so a refresh doesn't re-apply on top of edits.
+  history.replaceState(null, '', location.pathname + location.search);
+  const run = () => setTimeout(() => applyPresetFromUrl(b64), 50);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+})();
 
 // ===== Import =====
 function importConfig(event) {
@@ -4239,7 +4632,7 @@ function crc32(data) {
 }
 
 async function exportFleet() {
-  if (!validate()) { toast('Fix validation errors first'); return; }
+  if (!validate()) return;
   await ensureHashtagPSKs();
   // Check all devices have keys
   const missing = fleetDevices.filter(d => !d.publicKey);
@@ -4746,8 +5139,11 @@ function renderWizSummary(box) {
     </div>`;
 }
 
-// Show wizard automatically on fresh page load (no identity, no channels)
+// Show wizard automatically on fresh page load (no identity, no channels).
+// Stand down when a preset link is being applied — that flow generates
+// its own identity + channels and the wizard would just stomp on it.
 function maybeShowWizard() {
+  if (window._mcLitePresetPending) return;
   if (!identity.publicKey && channels.length === 0 && contacts.length === 0) {
     wizState = { page: 1, deviceCount: 1, region: 'eu_narrow', publicChannel: true, hashtags: ['#mclite'], fleetPrivateChannel: true, gpsEnabled: true, shareLocation: true };
     document.getElementById('wizardOverlay').classList.remove('hidden');
