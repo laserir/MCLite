@@ -4,7 +4,7 @@ MCLite uses the following open-source libraries. Their license terms apply to th
 
 | Library | Version | License | Copyright |
 |---------|---------|---------|-----------|
-| [MeshCore](https://github.com/ripplebiz/MeshCore) | 1.10.0 | MIT | (c) 2025 Scott Powell / rippleradios.com |
+| [MeshCore](https://github.com/meshcore-dev/MeshCore) | companion-v1.15.0 | MIT | (c) 2025 Scott Powell / rippleradios.com |
 | [LVGL](https://github.com/lvgl/lvgl) | 8.4.0 | MIT | (c) 2021 LVGL Kft |
 | [LovyanGFX](https://github.com/lovyan03/LovyanGFX) | 1.2.19 | MIT + BSD-2-Clause | (c) lovyan03 |
 | [ArduinoJson](https://github.com/bblanchon/ArduinoJson) | 7.4.3 | MIT | (c) 2014-2026 Benoit Blanchon |
