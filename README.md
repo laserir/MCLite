@@ -321,6 +321,8 @@ Help spread MCLite by linking to it from your own page. Drop one of these snippe
   &nbsp;
   <a href="https://laserir.github.io/MCLite/tools/config-tool/mclite_config_tool.html"><img src="docs/images/btn-config.svg" alt="Open Config Tool" height="48"></a>
   &nbsp;
+  <a href="https://laserir.github.io/MCLite/tools/config-tool/mclite_config_tool.html#preset="><img src="docs/images/btn-group-preset.svg" alt="Open MCLite Group Preset" height="48"></a>
+  &nbsp;
   <a href="https://github.com/laserir/MCLite"><img src="docs/images/btn-github.svg" alt="View MCLite on GitHub" height="48"></a>
 </p>
 
@@ -340,3 +342,21 @@ Help spread MCLite by linking to it from your own page. Drop one of these snippe
   <img src="https://raw.githubusercontent.com/laserir/MCLite/main/docs/images/btn-github.svg" alt="View MCLite on GitHub" height="48">
 </a>
 ```
+
+### Pre-filled preset links for local groups
+
+Running a regional MCLite group? You can publish a **preset link** that opens the config tool with your channels, radio settings, contacts, boot text, and more already filled in — visitors only need to add their own identity before exporting.
+
+1. Open the [Config Tool](https://laserir.github.io/MCLite/tools/config-tool/mclite_config_tool.html) and configure the settings you want to share.
+2. Choose **Share preset link…** from the ⋯ menu (top-right).
+3. Tick the sidebar sections to include — `Device` (name, identity keys) and `Security` (PIN, lock mode) are always excluded.
+4. Copy the generated URL and embed it on your site, just like the Config Tool button:
+
+```html
+<!-- Pre-filled config link (replace the # fragment with your generated preset) -->
+<a href="https://laserir.github.io/MCLite/tools/config-tool/mclite_config_tool.html#preset=YOUR_BASE64_PAYLOAD">
+  <img src="https://raw.githubusercontent.com/laserir/MCLite/main/docs/images/btn-group-preset.svg" alt="Open MCLite Group Preset" height="48">
+</a>
+```
+
+The preset is encoded entirely in the URL fragment (`#preset=…`), so it's never sent to a server. Opening the link generates a fresh keypair and overlays your shared settings on top — the visitor reviews them in the **Preset applied** banner before exporting.
