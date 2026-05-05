@@ -53,7 +53,7 @@ struct DisplayConfig {
     uint16_t autoDimSeconds = 30;
     String   theme          = "dark";
     String   bootText       = "";   // Optional text shown on boot screen below version
-    uint8_t  dimBrightness  = 20;    // Brightness when dimmed (0 = screen off)
+    uint8_t  dimBrightness  = 0;     // Brightness when dimmed (0 = screen off)
     bool     kbdBacklight   = true;  // Keyboard backlight follows auto-dim (on/off)
     uint8_t  kbdBrightness  = 127;   // Keyboard backlight level (1-255)
 };
