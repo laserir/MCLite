@@ -106,5 +106,23 @@
     "offgrid_confirm_on_body": "Passa a %d MHz e inoltra pacchetti per altri nodi offgrid. Il dispositivo si riavvia.",
     "offgrid_confirm_off_title": "Disattivare modalita offgrid?",
     "offgrid_confirm_off_body": "Ritorno alla frequenza normale (%.3f MHz). Il dispositivo si riavvia.",
-    "reboot_now": "Riavvia ora"
+    "reboot_now": "Riavvia ora",
+
+    "heard_adverts_title": "Adverts ricevuti",
+    "heard_adverts_empty": "Nessun advert ricevuto",
+    "heard_type_chat": "Chat",
+    "heard_type_repeater": "Ripetitore",
+    "heard_type_room": "Stanza",
+    "heard_type_sensor": "Sensore",
+    "heard_alias_label": "Alias: ",
+    "heard_name_label": "Nome: ",
+    "heard_hops_label": "Salti: ",
+    "heard_path_label": "Percorso: ",
+    "heard_heard_label": "Ricevuto: ",
+    "heard_key_label": "Chiave:",
+    "heard_gps_fmt": "GPS: %.5f, %.5f\n",
+    "heard_direct": "diretto",
+    "heard_one_hop": "1 salto",
+    "heard_hops_fmt": "%d salti",
+    "heard_aka_fmt": "(ricevuto: %s)"
 }

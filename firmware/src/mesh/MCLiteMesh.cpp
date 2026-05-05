@@ -4,6 +4,7 @@
 #include "../config/ConfigManager.h"
 #include "../hal/Battery.h"
 #include "../hal/GPS.h"
+#include "../storage/HeardAdvertCache.h"
 #include "../storage/MessageStore.h"
 #include "../util/hex.h"
 #include "../util/offgrid.h"
@@ -544,7 +545,15 @@ void MCLiteMesh::retryOrFail(AckEntry& entry) {
 void MCLiteMesh::onDiscoveredContact(ContactInfo& contact, bool is_new,
                                       uint8_t path_len, const uint8_t* path) {
     Serial.printf("[MCLiteMesh] Discovered contact: %s (%s, hops=%d)\n",
-                  contact.name, is_new ? "new" : "update", path_len);
+                  contact.name, is_new ? "new" : "update", path_len & 0x3F);
+
+    HeardAdvertCache::instance().store(contact.id.pub_key,
+                                       contact.name,
+                                       contact.type,
+                                       path_len,
+                                       path,
+                                       contact.gps_lat,
+                                       contact.gps_lon);
 
     if (_onAdvert) _onAdvert(contact, is_new);
 }

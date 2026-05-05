@@ -5,6 +5,7 @@
 #include "ConvoListScreen.h"
 #include "ChatScreen.h"
 #include "AdminScreen.h"
+#include "HeardAdvertsScreen.h"
 #include "MapScreen.h"
 #include "../storage/MessageStore.h"
 
@@ -13,7 +14,8 @@ namespace mclite {
 enum class Screen {
     CONVO_LIST,
     CHAT,
-    ADMIN
+    ADMIN,
+    HEARD_ADVERTS
 };
 
 class UIManager {
@@ -101,10 +103,11 @@ private:
     UIManager() = default;
     Screen _currentScreen = Screen::CONVO_LIST;
 
-    StatusBar       _statusBar;
-    ConvoListScreen _convoList;
-    ChatScreen      _chatScreen;
-    AdminScreen     _adminScreen;
+    StatusBar           _statusBar;
+    ConvoListScreen     _convoList;
+    ChatScreen          _chatScreen;
+    AdminScreen         _adminScreen;
+    HeardAdvertsScreen  _heardAdvertsScreen;
 
     lv_obj_t*  _mainScreen = nullptr;
     lv_group_t* _inputGroup = nullptr;

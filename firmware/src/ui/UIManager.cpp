@@ -47,6 +47,7 @@ bool UIManager::init() {
     _convoList.create(_mainScreen);
     _chatScreen.create(_mainScreen);
     _adminScreen.create(_mainScreen);
+    _heardAdvertsScreen.create(_mainScreen);
 
     // Wire up callbacks
     _convoList.onSelect([this](const ConvoId& id) {
@@ -140,6 +141,11 @@ void UIManager::update() {
         _lastConvoRefresh = now;
     }
 
+    // Live updates for heard-adverts list and admin's heard-count row.
+    // Both no-op cheaply when not visible / version unchanged.
+    _heardAdvertsScreen.tick();
+    _adminScreen.tick();
+
     // Room login tick (boot path with backoff). No-op for already-logged-in rooms.
     roomLoginTick();
 
@@ -212,6 +218,7 @@ void UIManager::showScreen(Screen screen) {
     _convoList.hide();
     _chatScreen.hide();
     _adminScreen.hide();
+    _heardAdvertsScreen.hide();
 
     switch (screen) {
         case Screen::CONVO_LIST:
@@ -223,6 +230,9 @@ void UIManager::showScreen(Screen screen) {
             break;
         case Screen::ADMIN:
             _adminScreen.show();
+            break;
+        case Screen::HEARD_ADVERTS:
+            _heardAdvertsScreen.show();
             break;
     }
     _currentScreen = screen;
@@ -768,6 +778,7 @@ void UIManager::showSetupScreen(SetupReason reason) {
     _convoList.hide();
     _chatScreen.hide();
     _adminScreen.hide();
+    _heardAdvertsScreen.hide();
 
     // Full-screen overlay on top of everything
     lv_obj_t* overlay = lv_obj_create(lv_layer_top());

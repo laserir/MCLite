@@ -106,5 +106,23 @@
     "offgrid_confirm_on_body": "Auf %d MHz wechseln und Pakete fuer andere Offgrid-Knoten weiterleiten. Geraet startet neu.",
     "offgrid_confirm_off_title": "Offgrid deaktivieren?",
     "offgrid_confirm_off_body": "Zurueck zur normalen Frequenz (%.3f MHz). Geraet startet neu.",
-    "reboot_now": "Jetzt neu starten"
+    "reboot_now": "Jetzt neu starten",
+
+    "heard_adverts_title": "Empfangene Adverts",
+    "heard_adverts_empty": "Noch keine Adverts empfangen",
+    "heard_type_chat": "Chat",
+    "heard_type_repeater": "Repeater",
+    "heard_type_room": "Raum",
+    "heard_type_sensor": "Sensor",
+    "heard_alias_label": "Alias: ",
+    "heard_name_label": "Name: ",
+    "heard_hops_label": "Hops: ",
+    "heard_path_label": "Pfad: ",
+    "heard_heard_label": "Empfangen: ",
+    "heard_key_label": "Schluessel:",
+    "heard_gps_fmt": "GPS: %.5f, %.5f\n",
+    "heard_direct": "direkt",
+    "heard_one_hop": "1 Hop",
+    "heard_hops_fmt": "%d Hops",
+    "heard_aka_fmt": "(empfangen: %s)"
 }

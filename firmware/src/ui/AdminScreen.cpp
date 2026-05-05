@@ -7,6 +7,7 @@
 #include "../mesh/ContactStore.h"
 #include "../mesh/ChannelStore.h"
 #include "../mesh/MeshManager.h"
+#include "../storage/HeardAdvertCache.h"
 #include "../storage/MessageStore.h"
 #include "../hal/Battery.h"
 #include "../hal/GPS.h"
@@ -144,6 +145,42 @@ void AdminScreen::show() {
         }
 
         lv_obj_add_event_cb(row, offgridToggleCb, LV_EVENT_CLICKED, nullptr);
+    }
+
+    // Heard adverts shortcut — mirrors info-row styling but clickable, with chevron.
+    {
+        lv_obj_t* row = lv_obj_create(_screen);
+        lv_obj_set_size(row, 300, LV_SIZE_CONTENT);
+        lv_obj_set_style_bg_color(row, theme::BG_SECONDARY, 0);
+        lv_obj_set_style_bg_opa(row, LV_OPA_COVER, 0);
+        lv_obj_set_style_border_width(row, 0, 0);
+        lv_obj_set_style_radius(row, 4, 0);
+        lv_obj_set_style_pad_all(row, theme::PAD_SMALL, 0);
+        lv_obj_clear_flag(row, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(row, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_set_style_bg_color(row, theme::ACCENT, LV_STATE_FOCUSED);
+        lv_obj_set_style_bg_opa(row, LV_OPA_40, LV_STATE_FOCUSED);
+        lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
+
+        _heardCountLabel = lv_label_create(row);
+        lv_obj_set_style_text_font(_heardCountLabel, FONT_SMALL, 0);
+        lv_obj_set_style_text_color(_heardCountLabel, theme::TEXT_PRIMARY, 0);
+        char rowBuf[40];
+        snprintf(rowBuf, sizeof(rowBuf), "%s (%d)",
+                 t("heard_adverts_title"),
+                 HeardAdvertCache::instance().count());
+        lv_label_set_text(_heardCountLabel, rowBuf);
+        _heardCacheVersion = HeardAdvertCache::instance().version();
+
+        lv_obj_t* chev = lv_label_create(row);
+        lv_obj_set_style_text_font(chev, FONT_SMALL, 0);
+        lv_obj_set_style_text_color(chev, theme::TEXT_SECONDARY, 0);
+        lv_label_set_text(chev, LV_SYMBOL_RIGHT);
+
+        lv_obj_add_event_cb(row, [](lv_event_t* e) {
+            UIManager::instance().showScreen(Screen::HEARD_ADVERTS);
+        }, LV_EVENT_CLICKED, nullptr);
     }
 
     // --- Device ---
@@ -512,8 +549,27 @@ void AdminScreen::hide() {
             lv_group_set_editing(grp, false);
             lv_group_remove_obj(_screen);
         }
+        // _heardCountLabel lives inside the row that show() recreates each visit,
+        // so the pointer is dead until next show(). Drop it now to avoid a
+        // dangling deref from tick() if something else paints over it.
+        _heardCountLabel = nullptr;
         lv_obj_add_flag(_screen, LV_OBJ_FLAG_HIDDEN);
     }
+}
+
+void AdminScreen::tick() {
+    if (!_screen || lv_obj_has_flag(_screen, LV_OBJ_FLAG_HIDDEN)) return;
+    if (!_heardCountLabel) return;
+
+    uint32_t v = HeardAdvertCache::instance().version();
+    if (v == _heardCacheVersion) return;
+    _heardCacheVersion = v;
+
+    char rowBuf[40];
+    snprintf(rowBuf, sizeof(rowBuf), "%s (%d)",
+             t("heard_adverts_title"),
+             HeardAdvertCache::instance().count());
+    lv_label_set_text(_heardCountLabel, rowBuf);
 }
 
 }  // namespace mclite

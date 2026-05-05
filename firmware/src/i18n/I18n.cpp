@@ -125,6 +125,25 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"btn_close",           "Close"},
     {"btn_map",             "Map"},
 
+    // Heard adverts
+    {"heard_adverts_title", "Heard adverts"},
+    {"heard_adverts_empty", "No adverts heard yet"},
+    {"heard_type_chat",     "Chat"},
+    {"heard_type_repeater", "Repeater"},
+    {"heard_type_room",     "Room"},
+    {"heard_type_sensor",   "Sensor"},
+    {"heard_alias_label",   "Alias: "},
+    {"heard_name_label",    "Name: "},
+    {"heard_hops_label",    "Hops: "},
+    {"heard_path_label",    "Path: "},
+    {"heard_heard_label",   "Heard: "},
+    {"heard_key_label",     "Key:"},
+    {"heard_gps_fmt",       "GPS: %.5f, %.5f\n"},
+    {"heard_direct",        "direct"},
+    {"heard_one_hop",       "1 hop"},
+    {"heard_hops_fmt",      "%d hops"},
+    {"heard_aka_fmt",       "(heard: %s)"},
+
     {nullptr, nullptr}  // sentinel
 };
 

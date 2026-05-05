@@ -106,5 +106,23 @@
     "offgrid_confirm_on_body": "Basculer sur %d MHz et relayer les paquets des autres noeuds hors-grille. L'appareil va redemarrer.",
     "offgrid_confirm_off_title": "Desactiver le mode hors-grille?",
     "offgrid_confirm_off_body": "Retour a la frequence normale (%.3f MHz). L'appareil va redemarrer.",
-    "reboot_now": "Redemarrer maintenant"
+    "reboot_now": "Redemarrer maintenant",
+
+    "heard_adverts_title": "Adverts recus",
+    "heard_adverts_empty": "Aucun advert recu",
+    "heard_type_chat": "Chat",
+    "heard_type_repeater": "Repeteur",
+    "heard_type_room": "Salon",
+    "heard_type_sensor": "Capteur",
+    "heard_alias_label": "Alias: ",
+    "heard_name_label": "Nom: ",
+    "heard_hops_label": "Sauts: ",
+    "heard_path_label": "Chemin: ",
+    "heard_heard_label": "Recu: ",
+    "heard_key_label": "Cle:",
+    "heard_gps_fmt": "GPS: %.5f, %.5f\n",
+    "heard_direct": "direct",
+    "heard_one_hop": "1 saut",
+    "heard_hops_fmt": "%d sauts",
+    "heard_aka_fmt": "(recu: %s)"
 }

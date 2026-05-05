@@ -293,6 +293,25 @@ void ConvoListScreen::rowClickCb(lv_event_t* e) {
 void ConvoListScreen::show() {
     if (_screen) lv_obj_clear_flag(_screen, LV_OBJ_FLAG_HIDDEN);
     refresh();
+
+    // refresh() only restores focus if a convo was previously focused. When
+    // we land here from another screen (admin, heard adverts), nothing was —
+    // so the trackball would have nowhere to start. Default to the first row.
+    lv_group_t* grp = lv_group_get_default();
+    if (grp && _list && lv_obj_get_child_cnt(_list) > 0) {
+        lv_obj_t* focused = lv_group_get_focused(grp);
+        bool focusInList = false;
+        uint32_t cnt = lv_obj_get_child_cnt(_list);
+        for (uint32_t i = 0; i < cnt; i++) {
+            if (lv_obj_get_child(_list, i) == focused) {
+                focusInList = true;
+                break;
+            }
+        }
+        if (!focusInList) {
+            lv_group_focus_obj(lv_obj_get_child(_list, 0));
+        }
+    }
 }
 
 void ConvoListScreen::hide() {
