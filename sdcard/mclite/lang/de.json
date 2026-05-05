@@ -124,5 +124,11 @@
     "heard_direct": "direkt",
     "heard_one_hop": "1 Hop",
     "heard_hops_fmt": "%d Hops",
-    "heard_aka_fmt": "(empfangen: %s)"
+    "heard_aka_fmt": "(empfangen: %s)",
+    "heard_btn_save": "Speichern",
+    "heard_btn_reboot": "Jetzt neu starten",
+    "heard_saved_msg": "Gespeichert. Aktiv nach Neustart.",
+    "heard_save_failed": "Speichern fehlgeschlagen",
+    "heard_buffer_full": "Kontaktliste voll (32/32)",
+    "heard_status_queued": "Wartet -- aktiv nach Neustart"
 }

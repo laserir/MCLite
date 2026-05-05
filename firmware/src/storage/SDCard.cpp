@@ -70,6 +70,58 @@ bool SDCard::writeFile(const char* path, const String& content) {
     return written == content.length();
 }
 
+bool SDCard::writeAtomic(const char* path, const String& content) {
+    if (!_mounted) return false;
+
+    String tmp = String(path) + ".tmp";
+    String bak = String(path) + ".bak";
+
+    // Stage to tmp. Truncates if a stale tmp from a prior failed write exists.
+    File f = SD.open(tmp.c_str(), FILE_WRITE);
+    if (!f) {
+        Serial.printf("[SD] writeAtomic: cannot open %s\n", tmp.c_str());
+        return false;
+    }
+    size_t written = f.print(content);
+    f.close();
+    if (written != content.length()) {
+        Serial.printf("[SD] writeAtomic: short write %u/%u\n",
+                      (unsigned)written, (unsigned)content.length());
+        SD.remove(tmp.c_str());
+        return false;
+    }
+
+    // If a previous file exists, rotate it to .bak (replacing any older bak).
+    if (SD.exists(path)) {
+        if (SD.exists(bak.c_str())) SD.remove(bak.c_str());
+        if (!SD.rename(path, bak.c_str())) {
+            Serial.printf("[SD] writeAtomic: rename %s -> %s failed\n",
+                          path, bak.c_str());
+            SD.remove(tmp.c_str());
+            return false;
+        }
+    }
+
+    // Promote tmp to the live name.
+    if (!SD.rename(tmp.c_str(), path)) {
+        Serial.printf("[SD] writeAtomic: rename %s -> %s failed\n",
+                      tmp.c_str(), path);
+        // bak still exists from the previous step (or never existed) — leave
+        // the world recoverable. boot fallback in ConfigManager will pick up
+        // the bak.
+        SD.remove(tmp.c_str());
+        return false;
+    }
+
+    // Drop the now-redundant .bak. It was a transactional artifact: kept
+    // only long enough to survive a power loss between the two renames
+    // above. Steady state is just <path> with no shadow file. If this
+    // remove fails (rare), the stale .bak is harmless — the next save's
+    // step 2 will clean it before rotating again.
+    SD.remove(bak.c_str());
+    return true;
+}
+
 bool SDCard::appendFile(const char* path, const String& content) {
     if (!_mounted) return false;
     File f = SD.open(path, FILE_APPEND);

@@ -124,5 +124,11 @@
     "heard_direct": "direct",
     "heard_one_hop": "1 saut",
     "heard_hops_fmt": "%d sauts",
-    "heard_aka_fmt": "(recu: %s)"
+    "heard_aka_fmt": "(recu: %s)",
+    "heard_btn_save": "Enregistrer",
+    "heard_btn_reboot": "Redemarrer",
+    "heard_saved_msg": "Enregistre. Actif au prochain demarrage.",
+    "heard_save_failed": "Echec de l'enregistrement",
+    "heard_buffer_full": "Liste de contacts pleine (32/32)",
+    "heard_status_queued": "En attente -- actif au prochain demarrage"
 }

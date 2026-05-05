@@ -14,6 +14,13 @@ public:
     bool dirExists(const char* path);
     String readFile(const char* path, size_t maxSize = 32768);
     bool writeFile(const char* path, const String& content);
+
+    // Crash-safe write: stages to <path>.tmp, retains the previous file as
+    // <path>.bak, then renames tmp into place. Use for files whose corruption
+    // would brick the device (config.json holds identity keys). Returns true
+    // only on full success; on any failure, leaves the prior <path> intact.
+    bool writeAtomic(const char* path, const String& content);
+
     bool appendFile(const char* path, const String& content);
     bool mkdir(const char* path);
     bool remove(const char* path);

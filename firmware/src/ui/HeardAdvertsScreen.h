@@ -24,6 +24,9 @@ private:
     // Detail modal state — only one open at a time
     lv_obj_t* _detailMsgbox = nullptr;
     String    _detailText;
+    int       _detailSlot   = -1;
+    enum DetailMode { DETAIL_INFO, DETAIL_SAVABLE, DETAIL_SAVED };
+    DetailMode _detailMode  = DETAIL_INFO;
 
     // Live-update bookkeeping
     uint32_t _lastVersion   = 0;
@@ -32,6 +35,9 @@ private:
     void rebuild();
     void openDetail(int slotIdx);
     void closeDetail();
+    void handleSave();
+    void showSavedConfirmation();
+    void showSimpleInfoModal(const char* msg);  // single-OK confirmation for save failures
 
     static void closeBtnCb(lv_event_t* e);
     static void clearBtnCb(lv_event_t* e);

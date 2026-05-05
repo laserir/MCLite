@@ -34,7 +34,14 @@ namespace mclite {
         sdFiles()[path] = content.c_str();
         return true;
     }
+    bool SDCard::writeAtomic(const char* path, const String& content) {
+        sdFiles()[path] = content.c_str();
+        return true;
+    }
     bool SDCard::mkdir(const char*) { return true; }
+    bool SDCard::remove(const char* path) {
+        return sdFiles().erase(path) > 0;
+    }
 }
 
 #include <unity.h>

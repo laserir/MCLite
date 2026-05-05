@@ -15,6 +15,7 @@ struct ContactConfig {
     bool   alwaysSound    = false;  // Play notification even when muted
     bool   allowSos       = true;   // Allow SOS alerts from this contact
     bool   sendSos        = true;   // Include in outgoing SOS broadcast
+    bool   fromDiscovery  = false;  // Auto-added from heard adverts; review me
 };
 
 struct ChannelConfig {
@@ -115,11 +116,27 @@ public:
     bool save();         // Save current config to SD card
     bool generate();     // Generate default config with new identity
 
+    // Append a new contact (typically discovered via heard adverts) and save
+    // immediately via writeAtomic. Returns false if pubkey already in
+    // _config.contacts, or if the chat-contact cap is reached, or if the SD
+    // write fails. Caller decides what to surface to the user (queued vs
+    // duplicate vs full vs IO error). The new contact only becomes routable
+    // after reboot, when ContactStore::loadFromConfig() picks it up and
+    // MCLiteMesh::start() registers it with MeshCore.
+    bool appendDiscoveredContact(const ContactConfig& cc);
+
     AppConfig& config() { return _config; }
     const AppConfig& config() const { return _config; }
 
     bool hasIdentity() const;
     bool hasContacts() const;
+
+    // Case-insensitive hex match against ContactConfig::publicKey. Used by
+    // the heard-adverts UI to detect "already queued in this session" when
+    // the cache entry's savePending flag has been lost to LRU eviction.
+    // Doesn't match contacts whose publicKey is stored in base64 — those
+    // are caught at boot-time by ContactStore::findByPublicKey instead.
+    bool hasContactByPubkeyHex(const String& hexKey) const;
 
     static ConfigManager& instance();
 

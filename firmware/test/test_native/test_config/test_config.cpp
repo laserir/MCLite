@@ -1,8 +1,11 @@
 #include <Arduino.h>
+#include <map>
+#include <string>
 
-// Make parseJson accessible
+// Make parseJson + SDCard::_mounted accessible
 #define private public
 #include "config/ConfigManager.h"
+#include "storage/SDCard.h"
 #undef private
 
 #include "config/defaults.h"
@@ -10,12 +13,54 @@
 // Pull in ConfigManager implementation
 #include "config/ConfigManager.cpp"
 
-// Stub SDCard methods (load/save/generate call these, but we only test parseJson)
+// In-memory filesystem stub. Tests set entries via setStubFile().
+namespace {
+    std::map<std::string, std::string> g_stub_files;
+    std::string g_last_atomic_path;
+    std::string g_last_atomic_content;
+
+    void setStubFile(const char* path, const String& content) {
+        g_stub_files[std::string(path)] = std::string(content.c_str());
+    }
+    void clearStubFiles() {
+        g_stub_files.clear();
+        g_last_atomic_path.clear();
+        g_last_atomic_content.clear();
+    }
+    String getStubFile(const char* path) {
+        auto it = g_stub_files.find(std::string(path));
+        return it == g_stub_files.end() ? String() : String(it->second.c_str());
+    }
+}
+
+// Stub SDCard methods backed by g_stub_files.
 namespace mclite {
     SDCard& SDCard::instance() { static SDCard inst; return inst; }
-    bool SDCard::fileExists(const char*) { return false; }
-    String SDCard::readFile(const char*, size_t) { return ""; }
-    bool SDCard::writeFile(const char*, const String&) { return false; }
+
+    bool SDCard::fileExists(const char* path) {
+        return g_stub_files.count(std::string(path)) > 0;
+    }
+    String SDCard::readFile(const char* path, size_t) {
+        auto it = g_stub_files.find(std::string(path));
+        return it == g_stub_files.end() ? String() : String(it->second.c_str());
+    }
+    bool SDCard::writeFile(const char* path, const String& content) {
+        g_stub_files[std::string(path)] = std::string(content.c_str());
+        return true;
+    }
+    bool SDCard::remove(const char* path) {
+        return g_stub_files.erase(std::string(path)) > 0;
+    }
+
+    // Tests don't exercise the actual rename dance; they just verify that
+    // ConfigManager::save() funnels content through writeAtomic and lands at
+    // the requested path.
+    bool SDCard::writeAtomic(const char* path, const String& content) {
+        g_last_atomic_path    = path;
+        g_last_atomic_content = content.c_str();
+        g_stub_files[std::string(path)] = std::string(content.c_str());
+        return true;
+    }
 }
 
 #include <unity.h>
@@ -28,6 +73,8 @@ void setUp() {
     cfg = &ConfigManager::instance();
     // Reset to defaults before each test
     cfg->config() = AppConfig{};
+    clearStubFiles();
+    SDCard::instance()._mounted = true;
 }
 
 void tearDown() {}
@@ -389,6 +436,142 @@ void test_auto_lock_invalid_falls_back() {
     TEST_ASSERT_EQUAL_STRING("none", cfg->config().security.autoLock.c_str());
 }
 
+// ═══ from_discovery flag ═══
+
+void test_from_discovery_round_trip_true() {
+    parse("{\"contacts\":[{\"alias\":\"d\",\"public_key\":\"abcd\",\"from_discovery\":true}]}");
+    TEST_ASSERT_EQUAL_INT(1, cfg->config().contacts.size());
+    TEST_ASSERT_TRUE(cfg->config().contacts[0].fromDiscovery);
+
+    String json = cfg->toJson();
+    cfg->config() = AppConfig{};
+    parse(json.c_str());
+    TEST_ASSERT_EQUAL_INT(1, cfg->config().contacts.size());
+    TEST_ASSERT_TRUE(cfg->config().contacts[0].fromDiscovery);
+}
+
+void test_from_discovery_default_false() {
+    parse("{\"contacts\":[{\"alias\":\"a\",\"public_key\":\"abcd\"}]}");
+    TEST_ASSERT_EQUAL_INT(1, cfg->config().contacts.size());
+    TEST_ASSERT_FALSE(cfg->config().contacts[0].fromDiscovery);
+}
+
+// ═══ ConfigManager::load() bak fallback ═══
+
+void test_load_uses_main_when_valid() {
+    setStubFile(defaults::CONFIG_PATH, "{\"device\":{\"name\":\"Main\"}}");
+    setStubFile((String(defaults::CONFIG_PATH) + ".bak").c_str(),
+                "{\"device\":{\"name\":\"Bak\"}}");
+    ConfigManager::LoadResult r = cfg->load();
+    TEST_ASSERT_EQUAL_INT(ConfigManager::LOAD_OK, r);
+    TEST_ASSERT_EQUAL_STRING("Main", cfg->config().deviceName.c_str());
+}
+
+void test_load_falls_back_to_bak_on_corrupt_main() {
+    setStubFile(defaults::CONFIG_PATH, "{broken json!!!");
+    String bakPath = String(defaults::CONFIG_PATH) + ".bak";
+    setStubFile(bakPath.c_str(), "{\"device\":{\"name\":\"Bak\"}}");
+    ConfigManager::LoadResult r = cfg->load();
+    TEST_ASSERT_EQUAL_INT(ConfigManager::LOAD_OK, r);
+    TEST_ASSERT_EQUAL_STRING("Bak", cfg->config().deviceName.c_str());
+    // Recovery should promote bak content to main and remove bak so the
+    // next save's writeAtomic doesn't rotate the corrupt main back into
+    // .bak (destroying the recovery copy).
+    TEST_ASSERT_TRUE(getStubFile(defaults::CONFIG_PATH).indexOf("Bak") >= 0);
+    TEST_ASSERT_TRUE(getStubFile(bakPath.c_str()).length() == 0);
+}
+
+void test_load_falls_back_to_bak_on_empty_main() {
+    setStubFile(defaults::CONFIG_PATH, "");
+    setStubFile((String(defaults::CONFIG_PATH) + ".bak").c_str(),
+                "{\"device\":{\"name\":\"Bak\"}}");
+    ConfigManager::LoadResult r = cfg->load();
+    TEST_ASSERT_EQUAL_INT(ConfigManager::LOAD_OK, r);
+    TEST_ASSERT_EQUAL_STRING("Bak", cfg->config().deviceName.c_str());
+}
+
+void test_load_returns_error_when_both_corrupt() {
+    setStubFile(defaults::CONFIG_PATH, "{broken");
+    setStubFile((String(defaults::CONFIG_PATH) + ".bak").c_str(), "also broken");
+    ConfigManager::LoadResult r = cfg->load();
+    TEST_ASSERT_EQUAL_INT(ConfigManager::LOAD_ERROR, r);
+}
+
+void test_load_no_file_when_neither_exists() {
+    ConfigManager::LoadResult r = cfg->load();
+    TEST_ASSERT_EQUAL_INT(ConfigManager::LOAD_NO_FILE, r);
+}
+
+void test_load_recovers_from_bak_when_main_missing() {
+    // Mid-save power-loss leaves us with no main file but a valid bak.
+    // Old behaviour was LOAD_NO_FILE → first-boot regen → identity loss.
+    // New behaviour recovers the prior state from .bak and promotes it
+    // back to main, dropping the now-redundant .bak.
+    String bakPath = String(defaults::CONFIG_PATH) + ".bak";
+    setStubFile(bakPath.c_str(), "{\"device\":{\"name\":\"Recovered\"}}");
+    ConfigManager::LoadResult r = cfg->load();
+    TEST_ASSERT_EQUAL_INT(ConfigManager::LOAD_OK, r);
+    TEST_ASSERT_EQUAL_STRING("Recovered", cfg->config().deviceName.c_str());
+    TEST_ASSERT_TRUE(getStubFile(defaults::CONFIG_PATH).indexOf("Recovered") >= 0);
+    TEST_ASSERT_TRUE(getStubFile(bakPath.c_str()).length() == 0);
+}
+
+void test_load_error_when_main_missing_and_bak_corrupt() {
+    setStubFile((String(defaults::CONFIG_PATH) + ".bak").c_str(), "{garbage");
+    ConfigManager::LoadResult r = cfg->load();
+    TEST_ASSERT_EQUAL_INT(ConfigManager::LOAD_ERROR, r);
+}
+
+// ═══ Save path sanity ═══
+
+void test_save_calls_writeatomic() {
+    cfg->config().deviceName = "savetest";
+    bool ok = cfg->save();
+    TEST_ASSERT_TRUE(ok);
+    TEST_ASSERT_EQUAL_STRING(defaults::CONFIG_PATH, g_last_atomic_path.c_str());
+    TEST_ASSERT_TRUE(g_last_atomic_content.find("savetest") != std::string::npos);
+}
+
+// ═══ appendDiscoveredContact ═══
+
+void test_append_discovered_contact_succeeds() {
+    ContactConfig cc;
+    cc.alias         = "node_01";
+    cc.publicKey     = "deadbeef";
+    cc.fromDiscovery = true;
+    TEST_ASSERT_TRUE(cfg->appendDiscoveredContact(cc));
+    TEST_ASSERT_EQUAL_INT(1, cfg->config().contacts.size());
+    // Saved through writeAtomic; emitted JSON contains the new contact.
+    TEST_ASSERT_TRUE(g_last_atomic_content.find("deadbeef") != std::string::npos);
+    TEST_ASSERT_TRUE(g_last_atomic_content.find("\"from_discovery\": true") != std::string::npos);
+}
+
+void test_append_discovered_contact_refuses_duplicate() {
+    ContactConfig cc;
+    cc.alias = "first"; cc.publicKey = "aabb";
+    cfg->config().contacts.push_back(cc);
+
+    ContactConfig dup;
+    dup.alias = "second"; dup.publicKey = "aabb"; dup.fromDiscovery = true;
+    TEST_ASSERT_FALSE(cfg->appendDiscoveredContact(dup));
+    TEST_ASSERT_EQUAL_INT(1, cfg->config().contacts.size());
+}
+
+void test_append_discovered_contact_refuses_at_cap() {
+    for (int i = 0; i < defaults::MAX_CHAT_CONTACTS; i++) {
+        ContactConfig cc;
+        cc.alias     = String("filler_") + String(i);
+        cc.publicKey = String("k") + String(i);
+        cfg->config().contacts.push_back(cc);
+    }
+    TEST_ASSERT_EQUAL_INT(defaults::MAX_CHAT_CONTACTS, (int)cfg->config().contacts.size());
+
+    ContactConfig overflow;
+    overflow.alias = "overflow"; overflow.publicKey = "newkey";
+    TEST_ASSERT_FALSE(cfg->appendDiscoveredContact(overflow));
+    TEST_ASSERT_EQUAL_INT(defaults::MAX_CHAT_CONTACTS, (int)cfg->config().contacts.size());
+}
+
 int main() {
     UNITY_BEGIN();
 
@@ -468,6 +651,27 @@ int main() {
     RUN_TEST(test_lock_backwards_compat_missing_auto);
     RUN_TEST(test_auto_lock_values);
     RUN_TEST(test_auto_lock_invalid_falls_back);
+
+    // from_discovery
+    RUN_TEST(test_from_discovery_round_trip_true);
+    RUN_TEST(test_from_discovery_default_false);
+
+    // load() bak fallback
+    RUN_TEST(test_load_uses_main_when_valid);
+    RUN_TEST(test_load_falls_back_to_bak_on_corrupt_main);
+    RUN_TEST(test_load_falls_back_to_bak_on_empty_main);
+    RUN_TEST(test_load_returns_error_when_both_corrupt);
+    RUN_TEST(test_load_no_file_when_neither_exists);
+    RUN_TEST(test_load_recovers_from_bak_when_main_missing);
+    RUN_TEST(test_load_error_when_main_missing_and_bak_corrupt);
+
+    // Save path sanity
+    RUN_TEST(test_save_calls_writeatomic);
+
+    // appendDiscoveredContact
+    RUN_TEST(test_append_discovered_contact_succeeds);
+    RUN_TEST(test_append_discovered_contact_refuses_duplicate);
+    RUN_TEST(test_append_discovered_contact_refuses_at_cap);
 
     return UNITY_END();
 }

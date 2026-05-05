@@ -24,6 +24,7 @@ struct HeardAdvert {
     int32_t  gpsLon                   = 0;
     bool     hasGps                   = false;
     uint32_t lastHeardMs              = 0;        // millis() at last reception
+    bool     savePending              = false;    // user tapped Save; awaits next-boot activation
     // TODO: SNR (requires onAdvertRecv override to access mesh::Packet)
 };
 
@@ -72,6 +73,20 @@ public:
     void clear() {
         _count = 0;
         _version++;
+    }
+
+    // Flag the entry matching pubKey32 as queued for next-boot activation.
+    // No-op if the pubkey isn't in the cache. Bumps version so the row visual
+    // refreshes via the live-update tick.
+    bool markSavePending(const uint8_t* pubKey32) {
+        for (int i = 0; i < _count; i++) {
+            if (memcmp(_entries[i].pubKey, pubKey32, 32) == 0) {
+                _entries[i].savePending = true;
+                _version++;
+                return true;
+            }
+        }
+        return false;
     }
 
     static HeardAdvertCache& instance() {

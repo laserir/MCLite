@@ -16,6 +16,8 @@ namespace mclite {
     bool SDCard::fileExists(const char*) { return false; }
     String SDCard::readFile(const char*, size_t) { return ""; }
     bool SDCard::writeFile(const char*, const String&) { return false; }
+    bool SDCard::writeAtomic(const char*, const String&) { return false; }
+    bool SDCard::remove(const char*) { return false; }
 }
 
 #include <unity.h>

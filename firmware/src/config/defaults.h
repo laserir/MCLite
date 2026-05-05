@@ -2,7 +2,7 @@
 
 // MCLite default configuration values
 
-#define MCLITE_VERSION "0.1.7"
+#define MCLITE_VERSION "0.1.8"
 
 namespace mclite {
 namespace defaults {
@@ -21,6 +21,10 @@ constexpr int8_t   RADIO_TX_POWER        = 22;
 constexpr uint8_t  RADIO_CODING_RATE     = 8;
 constexpr const char* RADIO_SCOPE        = "*";  // No transport codes (wildcard)
 constexpr uint8_t  RADIO_PATH_HASH_MODE  = 0;    // 0=1B/hop (legacy), 1=2B/hop, 2=3B/hop
+
+// Contacts — must stay <= MAX_CONTACTS - MAX_ROOMS from platformio.ini (40 - 8 = 32).
+// Save-to-contacts refuses to append when this is reached.
+constexpr int      MAX_CHAT_CONTACTS     = 32;
 
 // Display
 constexpr uint8_t  DISPLAY_BRIGHTNESS    = 180;

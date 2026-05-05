@@ -143,6 +143,12 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"heard_one_hop",       "1 hop"},
     {"heard_hops_fmt",      "%d hops"},
     {"heard_aka_fmt",       "(heard: %s)"},
+    {"heard_btn_save",      "Save"},
+    {"heard_btn_reboot",    "Reboot now"},
+    {"heard_saved_msg",     "Saved. Applies on next boot."},
+    {"heard_save_failed",   "Save failed"},
+    {"heard_buffer_full",   "Contact list full (32/32)"},
+    {"heard_status_queued", "Queued -- applies on next boot"},
 
     {nullptr, nullptr}  // sentinel
 };

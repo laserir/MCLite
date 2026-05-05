@@ -124,5 +124,11 @@
     "heard_direct": "diretto",
     "heard_one_hop": "1 salto",
     "heard_hops_fmt": "%d salti",
-    "heard_aka_fmt": "(ricevuto: %s)"
+    "heard_aka_fmt": "(ricevuto: %s)",
+    "heard_btn_save": "Salva",
+    "heard_btn_reboot": "Riavvia ora",
+    "heard_saved_msg": "Salvato. Attivo al prossimo riavvio.",
+    "heard_save_failed": "Salvataggio fallito",
+    "heard_buffer_full": "Elenco contatti pieno (32/32)",
+    "heard_status_queued": "In attesa -- attivo al prossimo riavvio"
 }

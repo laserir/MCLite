@@ -1,6 +1,8 @@
 #include "HeardAdvertsScreen.h"
 #include "UIManager.h"
 #include "theme.h"
+#include "../config/ConfigManager.h"
+#include "../config/defaults.h"
 #include "../i18n/I18n.h"
 #include "../mesh/ContactStore.h"
 #include "../storage/HeardAdvertCache.h"
@@ -298,18 +300,34 @@ void HeardAdvertsScreen::rebuild() {
         lv_obj_set_user_data(row, (void*)(intptr_t)slot);
         lv_obj_add_event_cb(row, rowClickCb, LV_EVENT_CLICKED, this);
 
-        // Type icon
+        const Contact* known = contacts.findByPublicKey(e.pubKey);
+        bool queued = e.savePending && !known;
+        if (!queued && !known) {
+            // Catches the cache-evicted-but-already-in-config case so the
+            // row visual stays consistent with what openDetail will show.
+            char pubHex[65];
+            for (int i = 0; i < 32; i++) sprintf(pubHex + i * 2, "%02x", e.pubKey[i]);
+            pubHex[64] = '\0';
+            queued = ConfigManager::instance().hasContactByPubkeyHex(String(pubHex));
+        }
+
+        // Type icon — replaced with refresh glyph for queued (saved-this-session)
+        // entries so the user sees something is pending without opening the modal.
         lv_obj_t* icon = lv_label_create(row);
         lv_obj_set_style_text_font(icon, FONT_NORMAL, 0);
-        lv_obj_set_style_text_color(icon, typeColor(e.type), 0);
-        lv_label_set_text(icon, typeIcon(e.type));
+        if (queued) {
+            lv_obj_set_style_text_color(icon, theme::OFFGRID_ACCENT, 0);
+            lv_label_set_text(icon, LV_SYMBOL_REFRESH);
+        } else {
+            lv_obj_set_style_text_color(icon, typeColor(e.type), 0);
+            lv_label_set_text(icon, typeIcon(e.type));
+        }
 
         // Name (alias if known; show heard name in parens if it differs)
         lv_obj_t* name = lv_label_create(row);
         lv_obj_set_style_text_font(name, FONT_NORMAL, 0);
-        const Contact* known = contacts.findByPublicKey(e.pubKey);
         lv_obj_set_style_text_color(name,
-            known ? theme::TEXT_TIMESTAMP : theme::TEXT_PRIMARY, 0);
+            (known || queued) ? theme::TEXT_TIMESTAMP : theme::TEXT_PRIMARY, 0);
         lv_obj_set_flex_grow(name, 1);
         lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
         String label = " ";
@@ -395,6 +413,29 @@ void HeardAdvertsScreen::openDetail(int slotIdx) {
     auto& contacts = ContactStore::instance();
     const Contact* known = contacts.findByPublicKey(e.pubKey);
 
+    _detailSlot = slotIdx;
+
+    // Decide save state. Save is offered ONLY for CHAT-type adverts —
+    // repeaters, rooms, and sensors aren't messageable peers and don't
+    // belong in the contact list.
+    auto& cm = ConfigManager::instance();
+    char pubHex[65];
+    for (int i = 0; i < 32; i++) sprintf(pubHex + i * 2, "%02x", e.pubKey[i]);
+    pubHex[64] = '\0';
+
+    const bool isChat        = (e.type == ADV_TYPE_CHAT);
+    const bool atCap         = ((int)cm.config().contacts.size() >= defaults::MAX_CHAT_CONTACTS);
+    // "queued" combines two paths: the in-memory savePending flag (set
+    // when we just saved this entry) and a config check (covers the case
+    // where the cache evicted the just-saved entry and the user re-heard
+    // the same node; appendDiscoveredContact would refuse, so we surface
+    // the state up-front instead of letting Save fail silently).
+    const bool queued        = e.savePending || cm.hasContactByPubkeyHex(String(pubHex));
+    const bool savable       = isChat && !known && !queued && !atCap;
+
+    if (savable) _detailMode = DETAIL_SAVABLE;
+    else         _detailMode = DETAIL_INFO;
+
     // Build detail body. Persist as member to keep pointer stable for LVGL.
     // Order: human-readable identity first, transport details next, raw key last.
     _detailText = "";
@@ -426,9 +467,32 @@ void HeardAdvertsScreen::openDetail(int slotIdx) {
     }
     _detailText += t("heard_heard_label");
     _detailText += formatAge(e.lastHeardMs);
+
+    // Status line — surfaces why Save isn't offered (only for CHAT entries
+    // that the user might reasonably expect to be savable).
+    if (isChat && !known) {
+        if (queued) {
+            _detailText += "\n";
+            _detailText += t("heard_status_queued");
+        } else if (atCap) {
+            _detailText += "\n";
+            _detailText += t("heard_buffer_full");
+        }
+    }
     // (Key block is rendered as a separate, smaller-font label below.)
 
-    static const char* btns[2] = { "OK", "" };
+    // Buttons depend on save state.
+    static const char* btns_savable[3] = { nullptr, nullptr, "" };
+    static const char* btns_info[2]    = { nullptr, "" };
+    const char** btns;
+    if (_detailMode == DETAIL_SAVABLE) {
+        btns_savable[0] = t("heard_btn_save");
+        btns_savable[1] = "OK";
+        btns = btns_savable;
+    } else {
+        btns_info[0] = "OK";
+        btns = btns_info;
+    }
 
     _detailMsgbox = lv_msgbox_create(NULL, t("heard_adverts_title"),
                                      _detailText.c_str(), btns, false);
@@ -475,7 +539,9 @@ void HeardAdvertsScreen::closeDetail() {
     UIManager::instance().restoreFromModalGroup();
     lv_msgbox_close(_detailMsgbox);
     _detailMsgbox = nullptr;
-    _detailText = "";
+    _detailText   = "";
+    _detailSlot   = -1;
+    _detailMode   = DETAIL_INFO;
 }
 
 void HeardAdvertsScreen::closeBtnCb(lv_event_t* e) {
@@ -505,7 +571,108 @@ void HeardAdvertsScreen::detailBtnCb(lv_event_t* e) {
     if (!self || !self->_detailMsgbox) return;
     uint16_t btnIdx = lv_msgbox_get_active_btn(self->_detailMsgbox);
     if (btnIdx == LV_BTNMATRIX_BTN_NONE) return;
+
+    // Dispatch by mode. Index 0 in 2-button modes is the action; the
+    // trailing button is always OK/close.
+    if (self->_detailMode == DETAIL_SAVABLE && btnIdx == 0) {
+        self->handleSave();
+        return;
+    }
+    if (self->_detailMode == DETAIL_SAVED && btnIdx == 0) {
+        // Reboot now. Mirrors AdminScreen::offgridToggleCb.
+        UIManager::instance().restoreFromModalGroup();
+        delay(200);
+        ESP.restart();
+        return;
+    }
     self->closeDetail();
+}
+
+void HeardAdvertsScreen::handleSave() {
+    if (_detailSlot < 0 || _detailSlot >= HeardAdvertCache::instance().count()) {
+        closeDetail();
+        return;
+    }
+    const HeardAdvert& e = HeardAdvertCache::instance().entries()[_detailSlot];
+
+    ContactConfig cc;
+    if (e.name[0] != '\0') {
+        cc.alias = e.name;
+    } else {
+        cc.alias = String("node_") + pubKeyToShortId(e.pubKey).substring(0, 8);
+    }
+    // ContactStore parses publicKey as 64 contiguous hex chars (or base64).
+    char hex[65];
+    for (int i = 0; i < 32; i++) sprintf(hex + i * 2, "%02x", e.pubKey[i]);
+    hex[64] = '\0';
+    cc.publicKey = String(hex);
+    // Conservative defaults — user reviews via the config tool. The
+    // from_discovery flag tags this entry as auto-added.
+    cc.allowTelemetry   = false;
+    cc.allowLocation    = false;
+    cc.allowEnvironment = false;
+    cc.alwaysSound      = false;
+    cc.allowSos         = false;
+    cc.sendSos          = false;
+    cc.fromDiscovery    = true;
+
+    bool ok = ConfigManager::instance().appendDiscoveredContact(cc);
+    if (!ok) {
+        // openDetail's gating means cap/queue cases shouldn't reach here —
+        // by construction, Save is only offered when those don't apply. So
+        // this is realistically an SD I/O error. Surface it instead of
+        // closing silently.
+        Serial.println("[HeardAdverts] save failed");
+        closeDetail();
+        showSimpleInfoModal(t("heard_save_failed"));
+        return;
+    }
+    HeardAdvertCache::instance().markSavePending(e.pubKey);
+    closeDetail();
+    showSavedConfirmation();
+}
+
+void HeardAdvertsScreen::showSimpleInfoModal(const char* msg) {
+    _detailMode = DETAIL_INFO;
+    _detailText = msg;
+
+    static const char* btns[2] = { "OK", "" };
+    _detailMsgbox = lv_msgbox_create(NULL, t("heard_adverts_title"),
+                                     _detailText.c_str(), btns, false);
+    lv_obj_center(_detailMsgbox);
+    lv_obj_set_width(_detailMsgbox, 280);
+    lv_obj_set_height(_detailMsgbox, LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_color(_detailMsgbox, theme::BG_SECONDARY, 0);
+    lv_obj_set_style_text_color(_detailMsgbox, theme::TEXT_PRIMARY, 0);
+    lv_obj_set_style_text_font(_detailMsgbox, FONT_NORMAL, 0);
+
+    lv_obj_t* btnm = lv_msgbox_get_btns(_detailMsgbox);
+    if (btnm) UIManager::instance().switchToModalGroup(btnm);
+
+    lv_obj_add_event_cb(_detailMsgbox, detailBtnCb, LV_EVENT_VALUE_CHANGED, this);
+}
+
+void HeardAdvertsScreen::showSavedConfirmation() {
+    _detailMode = DETAIL_SAVED;
+    _detailText = t("heard_saved_msg");
+
+    static const char* btns[3] = { nullptr, nullptr, "" };
+    btns[0] = t("heard_btn_reboot");
+    btns[1] = "OK";
+
+    _detailMsgbox = lv_msgbox_create(NULL, t("heard_adverts_title"),
+                                     _detailText.c_str(), btns, false);
+    lv_obj_center(_detailMsgbox);
+    lv_obj_set_width(_detailMsgbox, 280);
+    lv_obj_set_height(_detailMsgbox, LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_color(_detailMsgbox, theme::BG_SECONDARY, 0);
+    lv_obj_set_style_text_color(_detailMsgbox, theme::TEXT_PRIMARY, 0);
+    lv_obj_set_style_text_font(_detailMsgbox, FONT_NORMAL, 0);
+
+    lv_obj_t* btnm = lv_msgbox_get_btns(_detailMsgbox);
+    if (btnm) UIManager::instance().switchToModalGroup(btnm);
+
+    lv_obj_add_event_cb(_detailMsgbox, detailBtnCb, LV_EVENT_VALUE_CHANGED, this);
 }
 
 }  // namespace mclite

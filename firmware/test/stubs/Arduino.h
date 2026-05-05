@@ -68,6 +68,15 @@ public:
     bool operator!=(const String& o) const { return _str != o._str; }
     bool operator!=(const char* o)   const { return _str != o; }
 
+    bool equalsIgnoreCase(const String& o) const {
+        if (_str.size() != o._str.size()) return false;
+        for (size_t i = 0; i < _str.size(); i++) {
+            if (std::tolower((unsigned char)_str[i]) !=
+                std::tolower((unsigned char)o._str[i])) return false;
+        }
+        return true;
+    }
+
     int indexOf(const char* s) const {
         auto pos = _str.find(s);
         return pos == std::string::npos ? -1 : (int)pos;
