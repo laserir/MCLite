@@ -26,6 +26,7 @@ Most features below are optional. The primary goal is to keep things extremely s
 - **Direct messages** -- private encrypted conversations between contacts
 - **Channels** -- group communication via shared or public channels, with optional read-only (listen-only) mode
 - **Room servers** -- join community message boards run by MeshCore room servers (up to 8). Posts arrive on the conversation list with an `R` icon, ordered alongside DMs and channels by last activity. Auto-login on boot with retry; re-login on chat-open and after 10 minutes of silence to recover from brief radio dropouts. Configured via `room_servers` in `config.json` (name, server public key, optional password)
+- **Heard adverts** -- browse a rolling 64-entry list of every device your radio has decoded, reachable from the admin screen. Per-row type icon (chat / repeater / room / sensor), hops, last-heard age, GPS when present. Tap a chat advert for the full per-hop path + fingerprint and a one-tap **Save** that adds it to your contact list (queued, applies on next reboot). Manual-advert button announces yourself on demand without waiting for the next periodic cycle
 - **SOS alerts** -- long-press the trackball (hold 6 seconds) to broadcast an emergency alert
 - **Battery alerts** -- automatic low-battery warnings sent to your contacts
 - **GPS location sharing** -- manually send your position in lat/lon or UTMREF/MGRS (military grid) format, used by search and rescue worldwide. Last-known position support when GPS signal is temporarily lost
@@ -164,7 +165,7 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
   "display": {
     "brightness": 180,                 // 0-255
     "auto_dim_seconds": 30,            // Dim screen after N seconds of inactivity (0 = off)
-    "dim_brightness": 20,              // Brightness when dimmed (0 = screen off)
+    "dim_brightness": 0,               // Brightness when dimmed (0 = screen off, default)
     "boot_text": "",                   // Optional text shown on boot screen (e.g. team name)
     "kbd_backlight": true,             // Keyboard backlight on/off with auto-dim
     "kbd_brightness": 127              // Keyboard backlight brightness (1-255)
