@@ -5,6 +5,7 @@
 #include "../config/defaults.h"
 #include "../i18n/I18n.h"
 #include "../mesh/ContactStore.h"
+#include "../mesh/MeshManager.h"
 #include "../storage/HeardAdvertCache.h"
 #include "../util/hex.h"
 
@@ -154,8 +155,9 @@ void HeardAdvertsScreen::create(lv_obj_t* parent) {
         return btn;
     };
 
-    _clearBtn = makeIconBtn(header, LV_SYMBOL_TRASH, clearBtnCb, this);
-    _closeBtn = makeIconBtn(header, LV_SYMBOL_CLOSE, closeBtnCb, nullptr);
+    _advertBtn = makeIconBtn(header, LV_SYMBOL_UPLOAD, advertBtnCb, this);
+    _clearBtn  = makeIconBtn(header, LV_SYMBOL_TRASH,  clearBtnCb,  this);
+    _closeBtn  = makeIconBtn(header, LV_SYMBOL_CLOSE,  closeBtnCb,  nullptr);
 
     // Scrollable list container — full screen width
     _list = lv_obj_create(_screen);
@@ -203,6 +205,7 @@ void HeardAdvertsScreen::hide() {
         for (uint32_t i = 0; i < cnt; i++) {
             lv_group_remove_obj(lv_obj_get_child(_list, i));
         }
+        lv_group_remove_obj(_advertBtn);
         lv_group_remove_obj(_clearBtn);
         lv_group_remove_obj(_closeBtn);
     }
@@ -241,12 +244,14 @@ void HeardAdvertsScreen::rebuild() {
         for (uint32_t i = 0; i < cnt; i++) {
             lv_group_remove_obj(lv_obj_get_child(_list, i));
         }
+        lv_group_remove_obj(_advertBtn);
         lv_group_remove_obj(_clearBtn);
         lv_group_remove_obj(_closeBtn);
     }
     // Clear any stale visual state. PRESSED can persist if a click handler
     // ran a screen transition before LVGL dispatched the release event;
     // FOCUSED can linger across show/hide cycles in some LVGL paths.
+    lv_obj_clear_state(_advertBtn, LV_STATE_FOCUSED | LV_STATE_PRESSED);
     lv_obj_clear_state(_clearBtn, LV_STATE_FOCUSED | LV_STATE_PRESSED);
     lv_obj_clear_state(_closeBtn, LV_STATE_FOCUSED | LV_STATE_PRESSED);
     lv_obj_clean(_list);
@@ -256,8 +261,9 @@ void HeardAdvertsScreen::rebuild() {
         lv_obj_clear_flag(_emptyHint, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(_clearBtn, LV_OBJ_FLAG_HIDDEN);  // nothing to clear
         if (grp) {
+            lv_group_add_obj(grp, _advertBtn);
             lv_group_add_obj(grp, _closeBtn);
-            lv_group_focus_obj(_closeBtn);
+            lv_group_focus_obj(_advertBtn);
         }
         return;
     }
@@ -360,8 +366,9 @@ void HeardAdvertsScreen::rebuild() {
         lv_label_set_text(age, formatAge(e.lastHeardMs).c_str());
     }
 
-    // Group: trackball cycles rows → clear → close → rows
+    // Group: trackball cycles rows → advert → clear → close → rows
     if (grp) {
+        lv_group_add_obj(grp, _advertBtn);
         lv_group_add_obj(grp, _clearBtn);
         lv_group_add_obj(grp, _closeBtn);
 
@@ -557,6 +564,20 @@ void HeardAdvertsScreen::clearBtnCb(lv_event_t* e) {
     self->_lastVersion   = HeardAdvertCache::instance().version();
     self->_lastRebuildMs = millis();
     self->rebuild();
+}
+
+void HeardAdvertsScreen::advertBtnCb(lv_event_t* e) {
+    HeardAdvertsScreen* self = (HeardAdvertsScreen*)lv_event_get_user_data(e);
+    if (!self) return;
+    // Rate-limit rapid taps to keep duty cycle sane (EU 10% limit on 868).
+    // Periodic adverts run every ~9 minutes; 4 s between manual sends is
+    // generous for any realistic user pacing.
+    uint32_t now = millis();
+    if (now - self->_lastAdvertTapMs < 4000) return;
+    self->_lastAdvertTapMs = now;
+    if (MeshManager::instance().sendAdvertNow()) {
+        UIManager::instance().showToast(t("heard_advert_sent"));
+    }
 }
 
 void HeardAdvertsScreen::rowClickCb(lv_event_t* e) {

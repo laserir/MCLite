@@ -79,6 +79,11 @@ public:
     // Periodic advertisement interval (ms). 0 = disabled.
     void setAdvertInterval(uint32_t ms) { _advertIntervalMs = ms; }
 
+    // Send an advertisement immediately (user-triggered) and reset the
+    // periodic timer so the next scheduled advert is a full interval out.
+    // Returns the underlying mesh send result.
+    bool sendAdvertNow();
+
     static MeshManager& instance();
 
 private:

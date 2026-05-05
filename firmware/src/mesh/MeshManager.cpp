@@ -295,6 +295,19 @@ void MeshManager::clearPendingTelemetry() {
     if (_mesh) _mesh->clearPendingTelemetry();
 }
 
+bool MeshManager::sendAdvertNow() {
+    if (!_mesh || !_radioReady) return false;
+    const auto& cfg = ConfigManager::instance().config();
+    bool ok = _mesh->advertise(cfg.deviceName.c_str());
+    if (ok) {
+        // Re-anchor the periodic schedule so the next automatic advert
+        // is a full interval after this manual one.
+        _lastAdvertMs = millis();
+        _firstAdvert  = false;
+    }
+    return ok;
+}
+
 float MeshManager::getTxDutyCyclePercent() const {
     if (_dcSlotsFilled == 0) return 0.0f;
     uint32_t totalMs = 0;

@@ -149,6 +149,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"heard_save_failed",   "Save failed"},
     {"heard_buffer_full",   "Contact list full (32/32)"},
     {"heard_status_queued", "Queued -- applies on next boot"},
+    {"heard_advert_sent",   "Advert sent"},
 
     {nullptr, nullptr}  // sentinel
 };

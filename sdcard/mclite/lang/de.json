@@ -130,5 +130,6 @@
     "heard_saved_msg": "Gespeichert. Aktiv nach Neustart.",
     "heard_save_failed": "Speichern fehlgeschlagen",
     "heard_buffer_full": "Kontaktliste voll (32/32)",
-    "heard_status_queued": "Wartet -- aktiv nach Neustart"
+    "heard_status_queued": "Wartet -- aktiv nach Neustart",
+    "heard_advert_sent": "Advert gesendet"
 }

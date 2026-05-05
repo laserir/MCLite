@@ -1578,6 +1578,40 @@ void UIManager::updateTelemetryModal(const uint8_t* pubKey) {
     }
 }
 
+void UIManager::showToast(const char* msg, uint32_t durationMs) {
+    if (!msg || !msg[0]) return;
+    // Wrapper lv_obj draws the rounded badge (lv_label alone won't render a
+    // bg even with bg styles set — labels paint glyphs only).
+    lv_obj_t* toast = lv_obj_create(lv_layer_top());
+    lv_obj_remove_style_all(toast);  // start clean
+    lv_obj_set_style_bg_color(toast, theme::BG_SECONDARY, 0);
+    lv_obj_set_style_bg_opa(toast, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_color(toast, theme::ACCENT, 0);
+    lv_obj_set_style_border_width(toast, 1, 0);
+    lv_obj_set_style_radius(toast, 6, 0);
+    lv_obj_set_style_pad_hor(toast, 12, 0);
+    lv_obj_set_style_pad_ver(toast, 6, 0);
+    lv_obj_set_size(toast, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_clear_flag(toast, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t* lbl = lv_label_create(toast);
+    lv_obj_set_style_text_color(lbl, theme::TEXT_PRIMARY, 0);
+    lv_obj_set_style_text_font(lbl, FONT_NORMAL, 0);
+    lv_label_set_text(lbl, msg);
+
+    lv_obj_align(toast, LV_ALIGN_BOTTOM_MID, 0, -24);
+
+    // Auto-dismiss via one-shot timer that deletes the wrapper async.
+    // lv_timer_set_repeat_count(timer, 1) tells LVGL to free the timer
+    // itself after the callback returns — don't call lv_timer_del(t) here
+    // or we'd double-free.
+    lv_timer_t* timer = lv_timer_create([](lv_timer_t* t) {
+        lv_obj_t* obj = (lv_obj_t*)t->user_data;
+        if (obj) lv_obj_del_async(obj);
+    }, durationMs, toast);
+    lv_timer_set_repeat_count(timer, 1);
+}
+
 void UIManager::switchToModalGroup(lv_obj_t* modalWidget) {
     if (_modalGroup) restoreFromModalGroup();  // clean up any stale modal group
     _modalGroup = lv_group_create();

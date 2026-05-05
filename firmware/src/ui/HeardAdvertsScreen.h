@@ -20,6 +20,7 @@ private:
     lv_obj_t* _emptyHint  = nullptr;
     lv_obj_t* _closeBtn   = nullptr;
     lv_obj_t* _clearBtn   = nullptr;
+    lv_obj_t* _advertBtn  = nullptr;
 
     // Detail modal state — only one open at a time
     lv_obj_t* _detailMsgbox = nullptr;
@@ -41,8 +42,11 @@ private:
 
     static void closeBtnCb(lv_event_t* e);
     static void clearBtnCb(lv_event_t* e);
+    static void advertBtnCb(lv_event_t* e);
     static void rowClickCb(lv_event_t* e);
     static void detailBtnCb(lv_event_t* e);
+
+    uint32_t _lastAdvertTapMs = 0;  // simple tap rate-limit (avoid duty-cycle spam)
 };
 
 }  // namespace mclite

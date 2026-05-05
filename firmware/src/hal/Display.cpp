@@ -106,6 +106,70 @@ void Display::flushCb(lv_disp_drv_t* drv, const lv_area_t* area, lv_color_t* buf
     self->flush(drv, area, buf);
 }
 
+// Build the MCLite mark glyph (5 dots + 4 strokes) inside `parent`. Coords
+// translated from docs/images/mclite-mark.svg (viewBox 240x220, mark
+// centered via translate(120,110)). The dot diameter has to fit inside the
+// container or LVGL clips it, so the line span is sized to leave half a
+// dot of margin on each side: line span 54 px (cx 5..59) + dot d=10 = 64.
+static void buildBootLogo(lv_obj_t* parent) {
+    constexpr int     kSize    = 64;
+    constexpr int     kStroke  = 4;
+    constexpr int     kDot     = 10;
+    const lv_color_t  color    = theme::TEXT_PRIMARY;
+
+    lv_obj_t* logo = lv_obj_create(parent);
+    lv_obj_set_size(logo, kSize, kSize);
+    lv_obj_set_style_bg_opa(logo, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(logo, 0, 0);
+    lv_obj_set_style_pad_all(logo, 0, 0);
+    lv_obj_set_style_pad_bottom(logo, 8, 0);  // gap between mark and "MCLite"
+    lv_obj_clear_flag(logo, LV_OBJ_FLAG_SCROLLABLE);
+
+    // lv_line stores the points pointer (not a copy), so the arrays must
+    // outlive the boot screen — file-scope static is the simplest fix.
+    static lv_point_t pL1[] = { { 5, 56}, { 5,  8} };  // left vertical
+    static lv_point_t pL2[] = { { 5,  8}, {32, 35} };  // left diagonal
+    static lv_point_t pL3[] = { {32, 35}, {59,  8} };  // right diagonal
+    static lv_point_t pL4[] = { {59,  8}, {59, 56} };  // right vertical
+
+    static lv_style_t lineStyle;
+    static bool       lineStyleInited = false;
+    if (!lineStyleInited) {
+        lv_style_init(&lineStyle);
+        lv_style_set_line_width(&lineStyle, kStroke);
+        lv_style_set_line_rounded(&lineStyle, true);
+        lineStyleInited = true;
+    }
+    lv_style_set_line_color(&lineStyle, color);
+
+    auto addLine = [&](lv_point_t* pts) {
+        lv_obj_t* l = lv_line_create(logo);
+        lv_line_set_points(l, pts, 2);
+        lv_obj_add_style(l, &lineStyle, 0);
+    };
+    addLine(pL1);
+    addLine(pL2);
+    addLine(pL3);
+    addLine(pL4);
+
+    // Dots — added after lines so they stack on top of the stroke ends.
+    auto addDot = [&](int cx, int cy) {
+        lv_obj_t* d = lv_obj_create(logo);
+        lv_obj_set_size(d, kDot, kDot);
+        lv_obj_set_pos(d, cx - kDot / 2, cy - kDot / 2);
+        lv_obj_set_style_radius(d, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_bg_color(d, color, 0);
+        lv_obj_set_style_bg_opa(d, LV_OPA_COVER, 0);
+        lv_obj_set_style_border_width(d, 0, 0);
+        lv_obj_clear_flag(d, LV_OBJ_FLAG_SCROLLABLE);
+    };
+    addDot( 5, 56);
+    addDot( 5,  8);
+    addDot(32, 35);
+    addDot(59,  8);
+    addDot(59, 56);
+}
+
 void Display::showBootScreen(const char* bootText) {
     // Create a dedicated boot screen
     _bootScreen = lv_obj_create(NULL);
@@ -121,6 +185,9 @@ void Display::showBootScreen(const char* bootText) {
     lv_obj_center(container);
     lv_obj_set_flex_flow(container, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(container, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    // Logo above the title
+    buildBootLogo(container);
 
     // "MCLite" title
     lv_obj_t* title = lv_label_create(container);

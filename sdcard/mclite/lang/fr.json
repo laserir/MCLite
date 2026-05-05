@@ -130,5 +130,6 @@
     "heard_saved_msg": "Enregistre. Actif au prochain demarrage.",
     "heard_save_failed": "Echec de l'enregistrement",
     "heard_buffer_full": "Liste de contacts pleine (32/32)",
-    "heard_status_queued": "En attente -- actif au prochain demarrage"
+    "heard_status_queued": "En attente -- actif au prochain demarrage",
+    "heard_advert_sent": "Advert envoye"
 }

@@ -130,5 +130,6 @@
     "heard_saved_msg": "Salvato. Attivo al prossimo riavvio.",
     "heard_save_failed": "Salvataggio fallito",
     "heard_buffer_full": "Elenco contatti pieno (32/32)",
-    "heard_status_queued": "In attesa -- attivo al prossimo riavvio"
+    "heard_status_queued": "In attesa -- attivo al prossimo riavvio",
+    "heard_advert_sent": "Advert inviato"
 }
