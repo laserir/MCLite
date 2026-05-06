@@ -4,9 +4,6 @@
 // Display is on dedicated QSPI bus.
 // LoRa + SD share regular SPI bus (MOSI=34, MISO=33, SCK=35).
 // All sensors/PMU/touch share I2C bus (SDA=3, SCL=2).
-//
-// NOTE: defines only — no T-Watch source files exist yet.
-// Consumers will be added in Phase 3 (T-Watch HAL ports).
 
 // Shared SPI bus (LoRa + SD)
 #define TWATCH_SPI_MOSI  34
