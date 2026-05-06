@@ -2,6 +2,7 @@
 #include "MCLiteMesh.h"
 #include "ContactStore.h"
 #include "ChannelStore.h"
+#include "hal/boards/board.h"
 #include "../config/ConfigManager.h"
 #include "../hal/GPS.h"
 

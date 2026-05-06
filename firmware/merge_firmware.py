@@ -1,18 +1,29 @@
 """
 Post-build script: merge bootloader + partitions + firmware into a single
-flashable binary named mclite-vX.Y.Z.bin.
+flashable binary. Output name depends on the PIO env (one binary per board):
+    [env:tdeck_plus]   → mclite-v{version}.bin
+    [env:twatch_ultra] → mclite-watch-v{version}.bin
+
+Patterns match the web flasher's binaryPattern regexes (tools/web-flasher/index.html).
 
 Usage (automatic via platformio.ini extra_scripts):
     Runs after each successful build.
 
 Manual flash:
-    esptool.py write_flash 0x0 mclite-vX.Y.Z.bin
+    esptool.py write_flash 0x0 mclite-v0.1.8.bin
 """
 
 Import("env")
 
 import re
 import os
+
+# Map PIO env name → output binary name prefix.
+# Must match the web flasher's TARGETS[*].binaryPattern regexes.
+ENV_TO_BIN_PREFIX = {
+    "tdeck_plus":   "mclite",
+    "twatch_ultra": "mclite-watch",
+}
 
 
 def merge_bin(source, target, env):
@@ -29,8 +40,11 @@ def merge_bin(source, target, env):
     except FileNotFoundError:
         print("WARNING: defaults.h not found, using 'unknown' version")
 
+    env_name = env["PIOENV"]
+    bin_prefix = ENV_TO_BIN_PREFIX.get(env_name, f"mclite-{env_name}")
+
     build_dir = env.subst("$BUILD_DIR")
-    output_name = f"mclite-v{version}.bin"
+    output_name = f"{bin_prefix}-v{version}.bin"
     output_path = os.path.join(build_dir, output_name)
 
     # ESP32-S3 flash layout offsets

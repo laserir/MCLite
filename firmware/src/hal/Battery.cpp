@@ -1,4 +1,5 @@
 #include "Battery.h"
+#include "hal/boards/board.h"
 #include <Arduino.h>
 
 namespace mclite {

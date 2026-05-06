@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+#include "hal/boards/board.h"
 #include "config/defaults.h"
 #include "hal/Display.h"
 #include "hal/Battery.h"

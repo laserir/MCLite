@@ -1,4 +1,5 @@
 #include "GPS.h"
+#include "hal/boards/board.h"
 #include "../util/mgrs.h"
 #include "../util/epoch.h"
 #include "../config/ConfigManager.h"

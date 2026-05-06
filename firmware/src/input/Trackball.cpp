@@ -1,4 +1,5 @@
 #include "Trackball.h"
+#include "hal/boards/board.h"
 #include "../ui/UIManager.h"
 #include <Arduino.h>
 

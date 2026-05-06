@@ -1,4 +1,5 @@
 #include "Speaker.h"
+#include "hal/boards/board.h"
 #include "../storage/SDCard.h"
 #include <Arduino.h>
 #include <driver/i2s.h>

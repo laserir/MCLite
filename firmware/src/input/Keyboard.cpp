@@ -1,4 +1,5 @@
 #include "Keyboard.h"
+#include "hal/boards/board.h"
 #include "../ui/UIManager.h"
 #include <Wire.h>
 #include <Arduino.h>

@@ -1,4 +1,5 @@
 #include "Display.h"
+#include "hal/boards/board.h"
 #include "../config/defaults.h"
 #include "../ui/theme.h"
 #include <Arduino.h>

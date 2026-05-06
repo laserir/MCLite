@@ -1,4 +1,5 @@
 #include "SDCard.h"
+#include "hal/boards/board.h"
 #include <SPI.h>
 #include <Arduino.h>
 

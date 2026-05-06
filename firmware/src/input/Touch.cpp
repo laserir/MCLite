@@ -1,4 +1,5 @@
 #include "Touch.h"
+#include "hal/boards/board.h"
 #include "../ui/UIManager.h"
 #include "../hal/Display.h"
 #include <Wire.h>
