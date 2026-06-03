@@ -138,12 +138,13 @@ void ConvoListScreen::addConvoRow(Conversation* convo) {
     ConvoId* idCopy = new ConvoId(convo->convoId);
     lv_obj_set_user_data(row, idCopy);
     lv_obj_add_event_cb(row, rowClickCb, LV_EVENT_CLICKED, this);
+    lv_obj_add_event_cb(row, rowLongPressCb, LV_EVENT_LONG_PRESSED, this);
     lv_obj_add_event_cb(row, [](lv_event_t* e) {
         ConvoId* id = (ConvoId*)lv_obj_get_user_data(lv_event_get_target(e));
         delete id;
     }, LV_EVENT_DELETE, nullptr);
 
-    // Top line: icon + name + telemetry badges + timestamp.
+    // Top line: icon + name + telemetry badges + timestamp + mute indicator.
     // Fill the row's inner width so the trailing badges align to the right edge.
     lv_obj_t* topLine = lv_obj_create(row);
     lv_obj_set_size(topLine, LV_PCT(100), LV_SIZE_CONTENT);
@@ -271,6 +272,14 @@ void ConvoListScreen::addConvoRow(Conversation* convo) {
         lv_label_set_text(ts, timeStr.c_str());
     }
 
+    // Mute indicator — shown on the right edge for muted conversations
+    if (convo->muted) {
+        lv_obj_t* muteIcon = lv_label_create(topLine);
+        lv_obj_set_style_text_font(muteIcon, FONT_BODY, 0);
+        lv_obj_set_style_text_color(muteIcon, theme::TEXT_SECONDARY, 0);
+        lv_label_set_text(muteIcon, LV_SYMBOL_MUTE);
+    }
+
     // Bottom line: last message preview
     const Message* last = convo->lastMessage();
     if (last && last->text.length() > 0) {
@@ -295,6 +304,26 @@ void ConvoListScreen::rowClickCb(lv_event_t* e) {
     if (id && self->_onSelect) {
         self->_onSelect(*id);
     }
+}
+
+void ConvoListScreen::rowLongPressCb(lv_event_t* e) {
+    ConvoListScreen* self = (ConvoListScreen*)lv_event_get_user_data(e);
+    lv_obj_t* row = lv_event_get_current_target(e);
+    ConvoId* id = (ConvoId*)lv_obj_get_user_data(row);
+    if (!id || !self->_onMute) return;
+
+    // Suppress the upcoming CLICKED event so releasing the long-press
+    // doesn't also open the conversation.
+    lv_indev_t* indev = lv_indev_get_act();
+    if (indev) lv_indev_wait_release(indev);
+
+    // Toggle mute state
+    bool muted = !MessageStore::instance().isMuted(*id);
+    MessageStore::instance().setMuted(*id, muted);
+    self->_onMute(*id, muted);
+
+    // Refresh the row to update the mute indicator
+    self->refresh();
 }
 
 void ConvoListScreen::show() {

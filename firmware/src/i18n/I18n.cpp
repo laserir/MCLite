@@ -188,6 +188,10 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"heard_status_queued", "Queued -- applies on next boot"},
     {"heard_advert_sent",   "Advert sent"},
 
+    // Mute / unmute chat
+    {"toast_muted",         "Chat muted"},
+    {"toast_unmuted",       "Chat unmuted"},
+
     {nullptr, nullptr}  // sentinel
 };
 

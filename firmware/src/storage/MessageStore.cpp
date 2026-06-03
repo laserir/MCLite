@@ -74,6 +74,7 @@ void MessageStore::loadHistory(const ConvoId& id) {
         // Track highest loaded value so new messages always sort above
         if (saved > _activityCounter) _activityCounter = saved;
         convo->syncSince = doc["syncSince"] | (uint32_t)0;
+        convo->muted = doc["muted"] | false;
         arr = doc["messages"].as<JsonArray>();
     } else {
         arr = doc.as<JsonArray>();
@@ -111,6 +112,9 @@ void MessageStore::saveHistory(const ConvoId& id) {
     doc["lastActivity"] = convo->lastActivity;
     if (convo->syncSince != 0) {
         doc["syncSince"] = convo->syncSince;
+    }
+    if (convo->muted) {
+        doc["muted"] = true;
     }
     JsonArray arr = doc["messages"].to<JsonArray>();
 
@@ -195,6 +199,19 @@ std::vector<Conversation*> MessageStore::getConversationsSorted() {
 void MessageStore::markRead(const ConvoId& id) {
     Conversation* c = getConversation(id);
     if (c) c->hasUnread = false;
+}
+
+void MessageStore::setMuted(const ConvoId& id, bool muted) {
+    Conversation* c = getConversation(id);
+    if (c) {
+        c->muted = muted;
+        saveHistory(id);
+    }
+}
+
+bool MessageStore::isMuted(const ConvoId& id) {
+    Conversation* c = getConversation(id);
+    return c ? c->muted : false;
 }
 
 void MessageStore::updateRoomSyncSince(const ConvoId& id, uint32_t timestamp) {

@@ -11,6 +11,7 @@ using OnSendCallback  = std::function<void(const ConvoId& id, const String& text
 using OnBackCallback  = std::function<void()>;
 using OnInfoCallback  = std::function<void(const ConvoId& id)>;
 using OnRetryCallback = std::function<void(const ConvoId& id, const String& text, uint32_t oldPacketId)>;
+using OnMuteCallback  = std::function<void(const ConvoId& id, bool muted)>;
 
 class ChatScreen {
 public:
@@ -27,6 +28,7 @@ public:
     void onBack(OnBackCallback cb)   { _onBack = cb; }
     void onInfo(OnInfoCallback cb)   { _onInfo = cb; }
     void onRetry(OnRetryCallback cb) { _onRetry = cb; }
+    void onMute(OnMuteCallback cb)  { _onMute = cb; }
 
     const ConvoId* currentConvo() const { return _currentConvo.get(); }
     lv_obj_t* obj() { return _screen; }
@@ -43,6 +45,7 @@ private:
     lv_obj_t* _cannedBtnm    = nullptr;  // btnmatrix picker overlay
     lv_obj_t* _cannedOverlay = nullptr;
     lv_obj_t* _headerName = nullptr;
+    lv_obj_t* _muteIcon = nullptr;  // Mute indicator in header
 #ifdef PLATFORM_TWATCH
     lv_obj_t* _kbd        = nullptr;  // T-Watch only: on-screen keyboard
 #endif
@@ -53,6 +56,7 @@ private:
     OnBackCallback  _onBack;
     OnInfoCallback  _onInfo;
     OnRetryCallback _onRetry;
+    OnMuteCallback  _onMute;
 
     void createHeader();
     void createChatArea();
@@ -64,6 +68,7 @@ private:
     void hideKeyboard();
 #endif
     void hideCannedPicker();
+    void updateMuteIndicator();
 
     void addBubble(const Message& msg);
     void scrollToBottom();
@@ -77,6 +82,7 @@ private:
     static void retryBtnCb(lv_event_t* e);
     static void cannedBtnCb(lv_event_t* e);
     static void cannedBtnmCb(lv_event_t* e);
+    static void muteIconCb(lv_event_t* e);
 };
 
 }  // namespace mclite

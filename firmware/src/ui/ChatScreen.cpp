@@ -98,6 +98,23 @@ void ChatScreen::createHeader() {
     // Vertically center on the button so the baseline matches the centered
     // back-arrow label next to it (default top-left would sit higher).
     lv_obj_align(_headerName, LV_ALIGN_LEFT_MID, 0, 0);
+
+    // Mute indicator — shown on the right of the header when chat is muted.
+    // Tapping it unmutes the conversation.
+    _muteIcon = lv_btn_create(_header);
+    lv_obj_set_size(_muteIcon, theme::BTN_HEADER_ICON_W, theme::BTN_HEADER_ICON_H);
+    lv_obj_set_style_bg_opa(_muteIcon, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_shadow_width(_muteIcon, 0, 0);
+    lv_obj_set_style_border_width(_muteIcon, 0, 0);
+    lv_obj_set_style_pad_all(_muteIcon, 0, 0);
+    lv_obj_add_event_cb(_muteIcon, muteIconCb, LV_EVENT_CLICKED, this);
+
+    lv_obj_t* muteLbl = lv_label_create(_muteIcon);
+    lv_label_set_text(muteLbl, LV_SYMBOL_MUTE);
+    lv_obj_set_style_text_font(muteLbl, FONT_HEADING, 0);
+    lv_obj_set_style_text_color(muteLbl, theme::TEXT_SECONDARY, 0);
+    lv_obj_center(muteLbl);
+    lv_obj_add_flag(_muteIcon, LV_OBJ_FLAG_HIDDEN);  // shown in open() if muted
 }
 
 void ChatScreen::createChatArea() {
@@ -313,6 +330,7 @@ void ChatScreen::open(const ConvoId& id) {
     MessageStore::instance().markRead(id);
 
     updateGpsButtonColor();
+    updateMuteIndicator();
     refresh();
     show();
 
@@ -821,6 +839,28 @@ void ChatScreen::hideCannedPicker() {
     _cannedBtnm = nullptr;
     lv_obj_del_async(_cannedOverlay);
     _cannedOverlay = nullptr;
+}
+
+void ChatScreen::updateMuteIndicator() {
+    if (!_muteIcon || !_currentConvo) return;
+    bool muted = MessageStore::instance().isMuted(*_currentConvo);
+    if (muted) {
+        lv_obj_clear_flag(_muteIcon, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(_muteIcon, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+void ChatScreen::muteIconCb(lv_event_t* e) {
+    ChatScreen* self = (ChatScreen*)lv_event_get_user_data(e);
+    if (!self || !self->_currentConvo) return;
+
+    // Unmute when tapping the mute icon
+    MessageStore::instance().setMuted(*self->_currentConvo, false);
+    self->updateMuteIndicator();
+    if (self->_onMute) {
+        self->_onMute(*self->_currentConvo, false);
+    }
 }
 
 }  // namespace mclite

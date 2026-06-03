@@ -40,6 +40,7 @@ struct Conversation {
     bool    isPrivate = false;  // For channels
     bool    readOnly  = false;  // Hide input bar in chat view
     bool    hasUnread = false;
+    bool    muted     = false;  // Mute regular message notifications for this chat
     uint32_t lastActivity = 0;
     uint32_t syncSince    = 0;  // ROOM: last synced post timestamp; 0 for DM/CHANNEL
     std::vector<Message> messages;  // RAM cache
@@ -75,6 +76,10 @@ public:
 
     // Mark conversation as read
     void markRead(const ConvoId& id);
+
+    // Mute / unmute a conversation
+    void setMuted(const ConvoId& id, bool muted);
+    bool isMuted(const ConvoId& id);
 
     // ROOM-only: persist sender_timestamp as syncSince. Triggers saveHistory().
     void updateRoomSyncSince(const ConvoId& id, uint32_t timestamp);
