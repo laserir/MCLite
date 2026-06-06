@@ -481,17 +481,16 @@ void ChatScreen::addMessageToView(const Message& msg) {
 }
 
 void ChatScreen::scrollToBottom() {
-    // Flush LVGL's deferred layout so the new bubble's height is committed
-    // before we compute the scroll target — otherwise LV_COORD_MAX clamps to
-    // the stale content height and the latest message ends up below the
-    // viewport (visually: the chat "jumps up" off the new message).
-    lv_obj_update_layout(_chatArea);
-    lv_obj_scroll_to_y(_chatArea, LV_COORD_MAX, LV_ANIM_ON);
+    uint32_t child_cnt = lv_obj_get_child_cnt(_chatArea);
+    if (child_cnt == 0) return;
+    lv_obj_t* last_child = lv_obj_get_child(_chatArea, child_cnt - 1);
+    lv_obj_scroll_to_view(last_child, LV_ANIM_ON);
 }
 
 void ChatScreen::show() {
     if (!_screen) return;
     lv_obj_clear_flag(_screen, LV_OBJ_FLAG_HIDDEN);
+    scrollToBottom();
     // Add interactive widgets to input group (skip if input bar is hidden / read-only)
     if (!lv_obj_has_flag(_inputBar, LV_OBJ_FLAG_HIDDEN)) {
         lv_group_t* grp = lv_group_get_default();
