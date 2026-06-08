@@ -274,6 +274,9 @@ void MCLiteMesh::loop() {
 
     // Check for timed-out ACKs
     checkAckTimeouts();
+
+    // Check for timed-out telemetry requests (retry via flood once)
+    checkTelemTimeout();
 }
 
 bool MCLiteMesh::advertise(const char* name) {
@@ -748,12 +751,55 @@ bool MCLiteMesh::requestTelemetry(size_t contactIdx, uint32_t& estTimeout) {
 
     _pendingTelemTag = tag;
     memcpy(_pendingTelemKey, ci->id.pub_key, PUB_KEY_SIZE);
+    
+    // Track for potential flood retry on timeout
+    _telemRetry.active = true;
+    _telemRetry.timeoutMs = millis() + estTimeout;
+    _telemRetry.contactIdx = contactIdx;
+    _telemRetry.tag = tag;
+    _telemRetry.retried = false;
+    
     LOGF("[MCLiteMesh] Telemetry requested from %s (timeout=%ums)\n",
                   ci->name, estTimeout);
     return true;
 }
 
-// CayenneLPP type sizes (for skipping unknown/unhandled types)
+void MCLiteMesh::checkTelemTimeout() {
+    if (!_telemRetry.active || _telemRetry.retried) return;
+
+    uint32_t now = millis();
+    if ((int32_t)(now - _telemRetry.timeoutMs) < 0) return;
+
+    // If outbound queue still has packets, extend timeout instead of retrying
+    if (_mgr->getOutboundCount(_ms->getMillis()) > 0) {
+        _telemRetry.timeoutMs = now + 2000;
+        return;
+    }
+
+    // Timeout — retry once via flood
+    ContactInfo* ci = getContactByIdx((int)_telemRetry.contactIdx);
+    if (ci) {
+        Serial.printf("[MCLiteMesh] Telemetry timeout for %s — retrying via flood\n", ci->name);
+        ContactInfo flood = *ci;
+        flood.out_path_len = OUT_PATH_UNKNOWN;
+        uint32_t newTag = 0, newTimeout = 0;
+        int result = sendRequest(flood, REQ_TYPE_GET_TELEMETRY_DATA, newTag, newTimeout);
+        if (result != MSG_SEND_FAILED) {
+            _pendingTelemTag = newTag;
+            _telemRetry.tag = newTag;
+            _telemRetry.retried = true;
+            _telemRetry.timeoutMs = now + newTimeout;
+            Serial.printf("[MCLiteMesh] Telemetry flood retry sent to %s (timeout=%ums)\n",
+                          ci->name, newTimeout);
+        if (_onTelemetryRetry) _onTelemetryRetry(newTimeout);
+            return;
+        }
+        Serial.printf("[MCLiteMesh] Telemetry flood retry failed to %s\n", ci->name);
+    }
+
+    // Give up
+    _telemRetry.active = false;
+}
 static int lppTypeSize(uint8_t type) {
     switch (type) {
         case 0:   return 1;  // Digital input
@@ -898,6 +944,7 @@ void MCLiteMesh::onContactResponse(const ContactInfo& contact,
 
     _pendingTelemTag = 0;
     memset(_pendingTelemKey, 0, PUB_KEY_SIZE);
+    _telemRetry.active = false;
 
     if (_onTelemetry) _onTelemetry(contact, telem);
 }

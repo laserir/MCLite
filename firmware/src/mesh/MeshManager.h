@@ -22,6 +22,7 @@ using OnAckCallback      = std::function<void(uint32_t packetId)>;
 using OnFailCallback     = std::function<void(uint32_t packetId)>;
 using OnAdvertCallback     = std::function<void(const uint8_t* senderKey)>;
 using OnTelemetryCallback  = std::function<void(const uint8_t* pubKey, const TelemetryData& data)>;
+using OnTelemetryRetryCallback = std::function<void(uint32_t newTimeoutMs)>;
 using OnRoomMessageCallback = std::function<void(size_t roomIdx,
                                                   const String& roomName,
                                                   const uint8_t* senderPrefix /* 4 B */,
@@ -50,6 +51,7 @@ public:
     void onFail(OnFailCallback cb)            { _onFail = cb; }
     void onAdvert(OnAdvertCallback cb)        { _onAdvert = cb; }
     void onTelemetry(OnTelemetryCallback cb)  { _onTelemetry = cb; }
+    void onTelemetryRetry(OnTelemetryRetryCallback cb) { _onTelemetryRetry = cb; }
     void onRoomMessage(OnRoomMessageCallback cb) { _onRoomMsg = cb; }
     void onRoomLogin(OnRoomLoginCallback cb)     { _onRoomLogin = cb; }
 
@@ -104,6 +106,7 @@ private:
     OnFailCallback     _onFail;
     OnAdvertCallback    _onAdvert;
     OnTelemetryCallback _onTelemetry;
+    OnTelemetryRetryCallback _onTelemetryRetry;
     OnRoomMessageCallback _onRoomMsg;
     OnRoomLoginCallback   _onRoomLogin;
 

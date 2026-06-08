@@ -32,6 +32,7 @@ using MeshAckCb      = std::function<void(uint32_t packetId)>;
 using MeshFailCb     = std::function<void(uint32_t packetId)>;
 using MeshAdvertCb   = std::function<void(const ContactInfo& contact, bool isNew)>;
 using MeshTelemetryCb = std::function<void(const ContactInfo& contact, const TelemetryData& data)>;
+using MeshTelemetryRetryCb = std::function<void(uint32_t newTimeoutMs)>;
 using MeshRoomMsgCb   = std::function<void(const ContactInfo& contact,
                                             const uint8_t* sender_prefix /* 4 B */,
                                             uint32_t sender_timestamp,
@@ -50,6 +51,15 @@ struct AckEntry {
     char     text[161];         // Message text for retry (MAX_TEXT_LEN + 1)
     uint32_t timestamp   = 0;
     bool     active      = false;
+};
+
+// Pending telemetry retry entry
+struct TelemRetry {
+    bool     active = false;
+    uint32_t timeoutMs = 0;
+    size_t   contactIdx = 0;
+    uint32_t tag = 0;
+    bool     retried = false;
 };
 
 static constexpr int PACKET_POOL_SIZE = 12;
@@ -93,6 +103,7 @@ public:
     void onFail(MeshFailCb cb)         { _onFail = cb; }
     void onAdvert(MeshAdvertCb cb)     { _onAdvert = cb; }
     void onTelemetry(MeshTelemetryCb cb) { _onTelemetry = cb; }
+    void onTelemetryRetry(MeshTelemetryRetryCb cb) { _onTelemetryRetry = cb; }
     void onRoomMsg(MeshRoomMsgCb cb)     { _onRoomMsg = cb; }
     void onRoomLogin(MeshRoomLoginCb cb) { _onRoomLogin = cb; }
 
@@ -100,7 +111,7 @@ public:
     bool requestTelemetry(size_t contactIdx, uint32_t& estTimeout);
 
     // Clear pending telemetry state (call on timeout)
-    void clearPendingTelemetry() { _pendingTelemTag = 0; memset(_pendingTelemKey, 0, PUB_KEY_SIZE); }
+    void clearPendingTelemetry() { _pendingTelemTag = 0; memset(_pendingTelemKey, 0, PUB_KEY_SIZE); _telemRetry.active = false; }
 
     // Access contacts managed by BaseChatMesh
     ContactInfo* getContactByIdx(int idx);
@@ -182,10 +193,12 @@ private:
     MeshFailCb     _onFail;
     MeshAdvertCb    _onAdvert;
     MeshTelemetryCb _onTelemetry;
+    MeshTelemetryRetryCb _onTelemetryRetry;
     MeshRoomMsgCb   _onRoomMsg;
     MeshRoomLoginCb _onRoomLogin;
     uint32_t        _pendingTelemTag = 0;
     uint8_t         _pendingTelemKey[PUB_KEY_SIZE] = {};
+    TelemRetry      _telemRetry;
 
     // Cached BaseChatMesh contact-index per registered room (avoids linear scan
     // on every login/post). Set during begin(); -1 means slot unused.
@@ -206,6 +219,7 @@ private:
     AckEntry* findFreeAck();
     AckEntry* findAckByHash(uint32_t hash);
     void checkAckTimeouts();
+    void checkTelemTimeout();
     void retryOrFail(AckEntry& entry);
     void _saveIdentity();
 };

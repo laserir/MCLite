@@ -123,6 +123,11 @@ void MeshManager::wireCallbacks() {
         if (_onTelemetry) _onTelemetry(contact.id.pub_key, data);
     });
 
+    // Telemetry retry notification (flood fallback)
+    _mesh->onTelemetryRetry([this](uint32_t newTimeoutMs) {
+        if (_onTelemetryRetry) _onTelemetryRetry(newTimeoutMs);
+    });
+
     // Advertisement received
     _mesh->onAdvert([this](const ContactInfo& contact, bool isNew) {
         // Update last-seen in our contact store

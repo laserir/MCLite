@@ -1679,6 +1679,14 @@ void UIManager::updateTelemetryModal(const uint8_t* pubKey) {
     }
 }
 
+void UIManager::onTelemetryRetry(uint32_t newTimeoutMs) {
+    if (!_telemMsgbox) return;
+    _telemText = t("telem_retrying");
+    lv_label_set_text(lv_msgbox_get_text(_telemMsgbox), _telemText.c_str());
+    _telemTimeout = millis() + newTimeoutMs;
+    Serial.printf("[UI] Telemetry retrying, extended timeout to %ums\n", newTimeoutMs);
+}
+
 void UIManager::showToast(const char* msg, uint32_t durationMs) {
     if (!msg || !msg[0]) return;
     // Wrapper lv_obj draws the rounded badge (lv_label alone won't render a

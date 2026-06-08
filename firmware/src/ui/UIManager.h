@@ -106,6 +106,7 @@ public:
     // Telemetry modal
     void showTelemetryModal(const ConvoId& id);
     void updateTelemetryModal(const uint8_t* pubKey);
+    void onTelemetryRetry(uint32_t newTimeoutMs);
 
     // Map screen (opened from telemetry modal)
     void showMapScreen(const uint8_t* pubKey, double lat, double lon, const String& contactName);

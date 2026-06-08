@@ -376,6 +376,10 @@ static void setupMeshCallbacks() {
         UIManager::instance().updateTelemetryModal(pubKey);
     });
 
+    mesh.onTelemetryRetry([](uint32_t newTimeoutMs) {
+        UIManager::instance().onTelemetryRetry(newTimeoutMs);
+    });
+
     mesh.onRoomMessage([](size_t roomIdx, const String& roomName,
                            const uint8_t* senderPrefix,
                            const String& text, uint32_t timestamp) {
