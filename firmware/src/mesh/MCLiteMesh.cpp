@@ -540,7 +540,11 @@ void MCLiteMesh::retryOrFail(AckEntry& entry) {
         ContactInfo* ci = getContactByIdx((int)entry.contactIdx);
         if (ci) {
             uint32_t newAck = 0, newTimeout = 0;
-            int result = sendMessage(*ci, entry.timestamp, entry.attempt,
+            // Force flood routing on retries — if the direct path has degraded,
+            // falling back to flood gives the mesh a better chance to deliver.
+            ContactInfo floodCi = *ci;
+            floodCi.out_path_len = OUT_PATH_UNKNOWN;
+            int result = sendMessage(floodCi, entry.timestamp, entry.attempt,
                                      entry.text, newAck, newTimeout);
             if (result != MSG_SEND_FAILED) {
                 entry.expectedAck = newAck;
