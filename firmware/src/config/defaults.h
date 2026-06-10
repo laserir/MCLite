@@ -19,6 +19,7 @@ namespace defaults {
 
 // Firmware
 constexpr const char* FIRMWARE_VERSION = MCLITE_VERSION;
+constexpr const char* FIRMWARE_VENDOR  = MCLITE_REPO_OWNER "/" MCLITE_REPO_NAME;
 
 // Device
 constexpr const char* DEVICE_NAME = "MCLite";

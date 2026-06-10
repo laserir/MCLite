@@ -316,6 +316,7 @@ void AdminScreen::show() {
     // --- Device ---
     addSection(t("sec_device"));
     addRow("Firmware", String("MCLite v") + defaults::FIRMWARE_VERSION);
+    addRow("Vendor", defaults::FIRMWARE_VENDOR);
     addRow("Built", String(__DATE__) + " " + __TIME__);
     addRow("Device Name", cfg.deviceName);
     if (cfg.publicKey.length() > 0) {
