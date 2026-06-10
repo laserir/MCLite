@@ -483,6 +483,7 @@ void ChatScreen::addMessageToView(const Message& msg) {
 void ChatScreen::scrollToBottom() {
     uint32_t child_cnt = lv_obj_get_child_cnt(_chatArea);
     if (child_cnt == 0) return;
+    lv_obj_update_layout(_chatArea);
     lv_obj_t* last_child = lv_obj_get_child(_chatArea, child_cnt - 1);
     lv_obj_scroll_to_view(last_child, LV_ANIM_ON);
 }
