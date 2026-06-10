@@ -779,7 +779,7 @@ void MCLiteMesh::checkTelemTimeout() {
     // Timeout — retry once via flood
     ContactInfo* ci = getContactByIdx((int)_telemRetry.contactIdx);
     if (ci) {
-        Serial.printf("[MCLiteMesh] Telemetry timeout for %s — retrying via flood\n", ci->name);
+        LOGF("[MCLiteMesh] Telemetry timeout for %s -- retrying via flood\n", ci->name);
         ContactInfo flood = *ci;
         flood.out_path_len = OUT_PATH_UNKNOWN;
         uint32_t newTag = 0, newTimeout = 0;
@@ -789,12 +789,12 @@ void MCLiteMesh::checkTelemTimeout() {
             _telemRetry.tag = newTag;
             _telemRetry.retried = true;
             _telemRetry.timeoutMs = now + newTimeout;
-            Serial.printf("[MCLiteMesh] Telemetry flood retry sent to %s (timeout=%ums)\n",
-                          ci->name, newTimeout);
-        if (_onTelemetryRetry) _onTelemetryRetry(newTimeout);
+            LOGF("[MCLiteMesh] Telemetry flood retry sent to %s (timeout=%ums)\n",
+                 ci->name, newTimeout);
+            if (_onTelemetryRetry) _onTelemetryRetry(newTimeout);
             return;
         }
-        Serial.printf("[MCLiteMesh] Telemetry flood retry failed to %s\n", ci->name);
+        LOGF("[MCLiteMesh] Telemetry flood retry failed to %s\n", ci->name);
     }
 
     // Give up

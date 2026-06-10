@@ -85,6 +85,7 @@
     "telem_updated": "Aggiornato %s fa",
     "telem_no_data": "Nessun dato telemetrico",
     "telem_requesting": "Richiesta in corso...",
+    "telem_retrying": "Nuovo tentativo...",
     "telem_no_response": "Nessuna risposta",
     "telem_send_failed": "Richiesta fallita",
     "telem_stale": "(dati forse obsoleti)",

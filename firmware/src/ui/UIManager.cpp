@@ -1684,7 +1684,7 @@ void UIManager::onTelemetryRetry(uint32_t newTimeoutMs) {
     _telemText = t("telem_retrying");
     lv_label_set_text(lv_msgbox_get_text(_telemMsgbox), _telemText.c_str());
     _telemTimeout = millis() + newTimeoutMs;
-    Serial.printf("[UI] Telemetry retrying, extended timeout to %ums\n", newTimeoutMs);
+    LOGF("[UI] Telemetry retrying, extended timeout to %ums\n", newTimeoutMs);
 }
 
 void UIManager::showToast(const char* msg, uint32_t durationMs) {

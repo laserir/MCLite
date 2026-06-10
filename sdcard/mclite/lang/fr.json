@@ -85,6 +85,7 @@
     "telem_updated": "Mis a jour il y a %s",
     "telem_no_data": "Pas de donnees telemetriques",
     "telem_requesting": "Demande en cours...",
+    "telem_retrying": "Nouvelle tentative...",
     "telem_no_response": "Pas de reponse",
     "telem_send_failed": "Echec de la demande",
     "telem_stale": "(donnees peut-etre obsoletes)",
