@@ -138,7 +138,9 @@ void ConvoListScreen::addConvoRow(Conversation* convo) {
     ConvoId* idCopy = new ConvoId(convo->convoId);
     lv_obj_set_user_data(row, idCopy);
     lv_obj_add_event_cb(row, rowClickCb, LV_EVENT_CLICKED, this);
-    lv_obj_add_event_cb(row, rowLongPressCb, LV_EVENT_LONG_PRESSED, this);
+    if (ConfigManager::instance().config().messaging.allowMute) {
+        lv_obj_add_event_cb(row, rowLongPressCb, LV_EVENT_LONG_PRESSED, this);
+    }
     lv_obj_add_event_cb(row, [](lv_event_t* e) {
         ConvoId* id = (ConvoId*)lv_obj_get_user_data(lv_event_get_target(e));
         delete id;
@@ -273,7 +275,7 @@ void ConvoListScreen::addConvoRow(Conversation* convo) {
     }
 
     // Mute indicator — shown on the right edge for muted conversations
-    if (convo->muted) {
+    if (convo->muted && ConfigManager::instance().config().messaging.allowMute) {
         lv_obj_t* muteIcon = lv_label_create(topLine);
         lv_obj_set_style_text_font(muteIcon, FONT_BODY, 0);
         lv_obj_set_style_text_color(muteIcon, theme::TEXT_SECONDARY, 0);

@@ -843,7 +843,8 @@ void ChatScreen::hideCannedPicker() {
 
 void ChatScreen::updateMuteIndicator() {
     if (!_muteIcon || !_currentConvo) return;
-    bool muted = MessageStore::instance().isMuted(*_currentConvo);
+    bool allowMute = ConfigManager::instance().config().messaging.allowMute;
+    bool muted = allowMute && MessageStore::instance().isMuted(*_currentConvo);
     if (muted) {
         lv_obj_clear_flag(_muteIcon, LV_OBJ_FLAG_HIDDEN);
     } else {

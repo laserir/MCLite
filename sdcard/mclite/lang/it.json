@@ -163,5 +163,7 @@
     "heard_save_failed": "Salvataggio fallito",
     "heard_buffer_full": "Elenco contatti pieno (32/32)",
     "heard_status_queued": "In attesa -- attivo al prossimo riavvio",
-    "heard_advert_sent": "Advert inviato"
+    "heard_advert_sent": "Advert inviato",
+    "toast_muted": "Chat silenziata",
+    "toast_unmuted": "Silenziamento disattivato"
 }

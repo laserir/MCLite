@@ -68,6 +68,7 @@ struct MessagingConfig {
     String   showTelemetry    = "both";  // "battery", "location", "both", "none"
     bool     cannedMessages   = true;    // Enable canned message quick-reply picker
     std::vector<String> cannedCustom;    // Optional custom texts from config array
+    bool     allowMute        = false;   // Allow per-chat mute via long-press (off by default)
 };
 
 struct BatteryConfig {

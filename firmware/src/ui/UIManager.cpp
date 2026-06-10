@@ -346,7 +346,8 @@ void UIManager::onIncomingMessage(const ConvoId& id, const Message& msg) {
 
     // Check SOS before normal notification
     bool isSos = checkSOS(id, msg);
-    bool chatMuted = MessageStore::instance().isMuted(id);
+    bool chatMuted = ConfigManager::instance().config().messaging.allowMute &&
+                     MessageStore::instance().isMuted(id);
     if (!isSos) {
         // Normal notification with per-contact always-sound check
         // Skip sound if this specific chat is muted

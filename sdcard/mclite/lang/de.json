@@ -163,5 +163,7 @@
     "heard_save_failed": "Speichern fehlgeschlagen",
     "heard_buffer_full": "Kontaktliste voll (32/32)",
     "heard_status_queued": "Wartet -- aktiv nach Neustart",
-    "heard_advert_sent": "Advert gesendet"
+    "heard_advert_sent": "Advert gesendet",
+    "toast_muted": "Chat stummgeschaltet",
+    "toast_unmuted": "Stummschaltung aufgehoben"
 }
