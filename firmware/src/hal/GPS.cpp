@@ -58,7 +58,7 @@ void GPS::update() {
             _cached.satellites = _gps.satellites.value();
             _cached.hdop = currentHdop;
             _cached.valid = true;
-            if (millis() - _lastSaveMillis >= 30000) {
+            if (millis() - _lastSaveMillis >= 120000) {  // throttle SD writes to <=1 / 2 min
                 saveLastLocation();
                 _lastSaveMillis = millis();
             }
@@ -146,7 +146,7 @@ String GPS::formatLocationWithStatus() const {
 
 void GPS::saveLastLocation() {
     if (!_cached.valid) return;
-    StaticJsonDocument<256> doc;
+    JsonDocument doc;
     doc["lat"] = _cached.lat;
     doc["lon"] = _cached.lon;
     doc["alt"] = _cached.altitude;
@@ -157,7 +157,9 @@ void GPS::saveLastLocation() {
 
     String out;
     serializeJson(doc, out);
-    SDCard::instance().writeFile("/mclite/last_location.json", out);
+    auto& sd = SDCard::instance();
+    sd.mkdir("/mclite");   // ensure the dir exists on a fresh SD
+    sd.writeAtomic("/mclite/last_location.json", out);
 }
 
 bool GPS::loadLastLocation() {
@@ -167,7 +169,7 @@ bool GPS::loadLastLocation() {
     String json = sd.readFile("/mclite/last_location.json", 512);
     if (json.isEmpty()) return false;
 
-    StaticJsonDocument<256> doc;
+    JsonDocument doc;
     DeserializationError err = deserializeJson(doc, json);
     if (err) return false;
 

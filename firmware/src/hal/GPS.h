@@ -61,7 +61,8 @@ public:
     String   formatLocationWithStatus() const;
 
     // Persist / restore last known location to SD so the map can open
-    // without a live GPS fix. Saved automatically on every good fix.
+    // without a live GPS fix. Saved automatically while a live fix is
+    // active, throttled to at most once every 2 minutes (atomic write).
     void saveLastLocation();
     bool loadLastLocation();
 
