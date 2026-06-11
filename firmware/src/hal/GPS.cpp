@@ -3,7 +3,10 @@
 #include "hal/boards/board.h"
 #include "../util/mgrs.h"
 #include "../util/epoch.h"
+#include "../util/TimeHelper.h"
 #include "../config/ConfigManager.h"
+#include "../storage/SDCard.h"
+#include <ArduinoJson.h>
 #include <Arduino.h>
 
 namespace mclite {
@@ -21,6 +24,7 @@ bool GPS::init() {
 #endif
     _enabled = true;
     LOGLN("[GPS] Initialized");
+    loadLastLocation();   // restore last known position from SD if available
     return true;
 }
 
@@ -49,9 +53,14 @@ void GPS::update() {
             _cached.lon = _gps.location.lng();
             _cached.altitude = _gps.altitude.meters();
             _cached.fixMillis = millis();
+            _cached.fixEpoch = hasTime() ? currentTimestamp() : 0;
             _cached.satellites = _gps.satellites.value();
             _cached.hdop = currentHdop;
             _cached.valid = true;
+            if (millis() - _lastSaveMillis >= 30000) {
+                saveLastLocation();
+                _lastSaveMillis = millis();
+            }
         }
     }
 }
@@ -64,6 +73,14 @@ FixStatus GPS::fixStatus() const {
 
 uint32_t GPS::fixAgeSeconds() const {
     if (!_cached.valid) return UINT32_MAX;
+    // If we have a reboot-safe epoch, use the system clock to compute age.
+    if (_cached.fixEpoch) {
+        uint32_t now = mclite::TimeHelper::instance().bestEpoch();
+        if (now >= _cached.fixEpoch) return now - _cached.fixEpoch;
+        // Clock hasn't synced yet since boot; treat loaded fix as fresh.
+        return 0;
+    }
+    // Fallback to uptime-based age (valid only within the same boot).
     return (millis() - _cached.fixMillis) / 1000;
 }
 
@@ -125,6 +142,44 @@ String GPS::formatLocationWithStatus() const {
     }
 
     return loc;
+}
+
+void GPS::saveLastLocation() {
+    if (!_cached.valid) return;
+    StaticJsonDocument<256> doc;
+    doc["lat"] = _cached.lat;
+    doc["lon"] = _cached.lon;
+    doc["alt"] = _cached.altitude;
+    doc["ts"]  = _cached.fixMillis;
+    doc["epoch"] = _cached.fixEpoch;
+    doc["sats"] = _cached.satellites;
+    doc["hdop"] = _cached.hdop;
+
+    String out;
+    serializeJson(doc, out);
+    SDCard::instance().writeFile("/mclite/last_location.json", out);
+}
+
+bool GPS::loadLastLocation() {
+    auto& sd = SDCard::instance();
+    if (!sd.isMounted() || !sd.fileExists("/mclite/last_location.json")) return false;
+
+    String json = sd.readFile("/mclite/last_location.json", 512);
+    if (json.isEmpty()) return false;
+
+    StaticJsonDocument<256> doc;
+    DeserializationError err = deserializeJson(doc, json);
+    if (err) return false;
+
+    _cached.lat      = doc["lat"]   | _cached.lat;
+    _cached.lon      = doc["lon"]   | _cached.lon;
+    _cached.altitude = doc["alt"]   | _cached.altitude;
+    _cached.fixMillis= doc["ts"]    | _cached.fixMillis;
+    _cached.fixEpoch = doc["epoch"] | _cached.fixEpoch;
+    _cached.satellites = doc["sats"] | _cached.satellites;
+    _cached.hdop     = doc["hdop"]  | _cached.hdop;
+    _cached.valid    = true;
+    return true;
 }
 
 }  // namespace mclite
