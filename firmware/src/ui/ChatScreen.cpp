@@ -572,19 +572,7 @@ void ChatScreen::gpsBtnCb(lv_event_t* e) {
     btns[1] = t("btn_location_send");
     btns[2] = "";
 
-    // Title includes age warning for last-known position
     String locTitle = String(LV_SYMBOL_GPS " ") + t("location_title");
-    if (status == FixStatus::LAST_KNOWN) {
-        char ageBuf[32];
-        uint32_t age = gps.fixAgeSeconds();
-        if (age < 60)
-            snprintf(ageBuf, sizeof(ageBuf), t("loc_last_known_s"), (int)age);
-        else if (age < 3600)
-            snprintf(ageBuf, sizeof(ageBuf), t("loc_last_known_m"), (int)(age / 60));
-        else
-            snprintf(ageBuf, sizeof(ageBuf), t("loc_last_known_h"), (int)(age / 3600));
-        locStr += "\n\n" + String(ageBuf);
-    }
 
     lv_obj_t* msgbox = lv_msgbox_create(NULL,
         locTitle.c_str(), locStr.c_str(), btns, false);

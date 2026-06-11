@@ -6,6 +6,7 @@
 #include "../util/TimeHelper.h"
 #include "../config/ConfigManager.h"
 #include "../storage/SDCard.h"
+#include "../i18n/I18n.h"
 #include <ArduinoJson.h>
 #include <Arduino.h>
 
@@ -128,14 +129,13 @@ String GPS::formatLocationWithStatus() const {
 
     if (status == FixStatus::LAST_KNOWN) {
         uint32_t age = fixAgeSeconds();
-        char ageBuf[16];
-        if (age < 60) {
-            snprintf(ageBuf, sizeof(ageBuf), "~%ds ago", (int)age);
-        } else if (age < 3600) {
-            snprintf(ageBuf, sizeof(ageBuf), "~%dm ago", (int)(age / 60));
-        } else {
-            snprintf(ageBuf, sizeof(ageBuf), "~%dh ago", (int)(age / 3600));
-        }
+        char ageBuf[32];
+        if (age < 60)
+            snprintf(ageBuf, sizeof(ageBuf), t("loc_last_known_s"), (int)age);
+        else if (age < 3600)
+            snprintf(ageBuf, sizeof(ageBuf), t("loc_last_known_m"), (int)(age / 60));
+        else
+            snprintf(ageBuf, sizeof(ageBuf), t("loc_last_known_h"), (int)(age / 3600));
         loc += " [";
         loc += ageBuf;
         loc += "]";
