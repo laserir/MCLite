@@ -154,7 +154,7 @@ void setup() {
     Display::instance().setBootStatus("Speaker...");
     Speaker::instance().init();
     if (!cfg.soundEnabled) {
-        Speaker::instance().setMuted(true);
+        Speaker::instance().setMuted();
     }
 
     // 8. UI — creates main screen (hidden, boot screen still active)

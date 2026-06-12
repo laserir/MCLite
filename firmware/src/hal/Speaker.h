@@ -2,6 +2,11 @@
 
 #include <cstdint>
 
+#define SPEAKER_VOLUME_SOS            80  // +4.10dB, 1.30x perceived loudness
+#define SPEAKER_VOLUME_CHIME_MAX      50  //  0.00dB, 1.00x perceived loudness
+#define SPEAKER_VOLUME_CHIME_MID      16  // -9.90dB, 0.50x perceived loudness
+#define SPEAKER_VOLUME_CHIME_MUTE     0
+
 namespace mclite {
 
 class Speaker {
@@ -19,19 +24,30 @@ public:
     void stopSOS();
     void update();  // Call from main loop for non-blocking SOS repeat
 
-    // Mute/unmute (toggleable from status bar bell icon)
-    void setMuted(bool muted) { _muted = muted; }
-    bool isMuted() const { return _muted; }
-    void toggleMute() { _muted = !_muted; }
+    bool isVolumeMax() const { return _volume == SPEAKER_VOLUME_CHIME_MAX; }
+    bool isVolumeMid() const { return _volume == SPEAKER_VOLUME_CHIME_MID; }
+    
+    void toggleVolume() {
+        if (_volume == SPEAKER_VOLUME_CHIME_MUTE) {
+            _volume = SPEAKER_VOLUME_CHIME_MID;
+        } else if (_volume == SPEAKER_VOLUME_CHIME_MID) {
+            _volume = SPEAKER_VOLUME_CHIME_MAX;
+        } else if (_volume == SPEAKER_VOLUME_CHIME_MAX) {
+            _volume = SPEAKER_VOLUME_CHIME_MUTE;
+        }
+    }
+
+    void setMuted() { _volume = SPEAKER_VOLUME_CHIME_MUTE; }
+    bool isMuted() const { return _volume == SPEAKER_VOLUME_CHIME_MUTE; }
 
     static Speaker& instance();
 
 private:
     Speaker() = default;
     bool _initialized = false;
-    bool _muted       = false;
     bool _hasCustomSound = false;
     bool _hasSOSWav      = false;
+    uint8_t _volume = SPEAKER_VOLUME_CHIME_MID;
 
     // SOS repeat state
     uint8_t  _sosRepeatsRemaining = 0;
@@ -39,13 +55,13 @@ private:
     bool     _sosCheckedWav       = false;
 
     // Built-in two-tone ascending chime (iMessage-style)
-    void playBuiltinChime();
+    void playBuiltinChime(uint8_t volume);
 
     // Built-in morse SOS pattern (urgent 2000 Hz)
     void playBuiltinSOS();
 
     // Play a WAV file from SD card
-    bool playWavFile(const char* path);
+    bool playWavFile(const char* path, uint8_t volume);
 
     // Generate a sine tone into the I2S buffer
     void writeTone(uint16_t freqHz, uint16_t durationMs, uint8_t volume);

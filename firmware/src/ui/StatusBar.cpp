@@ -193,7 +193,7 @@ void StatusBar::create(lv_obj_t* parent) {
 
 void StatusBar::soundClickCb(lv_event_t* e) {
     StatusBar* self = (StatusBar*)lv_event_get_user_data(e);
-    Speaker::instance().toggleMute();
+    Speaker::instance().toggleVolume();
     self->updateSoundIcon();
 }
 
@@ -204,7 +204,13 @@ void StatusBar::gpsClickCb(lv_event_t* e) {
 void StatusBar::updateSoundIcon() {
     if (!_soundIcon) return;
     bool muted = Speaker::instance().isMuted();
-    lv_label_set_text(_soundIcon, muted ? LV_SYMBOL_MUTE : LV_SYMBOL_VOLUME_MAX);
+
+    if (muted) {
+        lv_label_set_text(_soundIcon, LV_SYMBOL_MUTE);
+    } else {
+        bool isMid = Speaker::instance().isVolumeMid();
+        lv_label_set_text(_soundIcon, isMid ? LV_SYMBOL_VOLUME_MID : LV_SYMBOL_VOLUME_MAX);
+    }
     lv_obj_set_style_text_color(_soundIcon,
         muted ? theme::TEXT_SECONDARY : theme::TEXT_PRIMARY, 0);
 }

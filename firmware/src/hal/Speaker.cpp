@@ -67,23 +67,26 @@ bool Speaker::init() {
 }
 
 void Speaker::playNotification() {
-    if (!_initialized || _muted) return;
+    if (!_initialized || isMuted()) return;
 
-    if (_hasCustomSound && playWavFile(CUSTOM_SOUND_PATH)) {
+    if (_hasCustomSound && playWavFile(CUSTOM_SOUND_PATH, _volume)) {
         return;  // Custom sound played successfully
     }
 
     // Fall back to built-in chime
-    playBuiltinChime();
+    playBuiltinChime(_volume);
 }
 
 void Speaker::playNotificationForced() {
     if (!_initialized) return;
 
-    if (_hasCustomSound && playWavFile(CUSTOM_SOUND_PATH)) {
+    // if muted, play at max volume.
+    uint8_t volume = isMuted() ? SPEAKER_VOLUME_CHIME_MAX : _volume;
+
+    if (_hasCustomSound && playWavFile(CUSTOM_SOUND_PATH, volume)) {
         return;
     }
-    playBuiltinChime();
+    playBuiltinChime(volume);
 }
 
 void Speaker::startSOS(uint8_t repeatCount) {
@@ -110,7 +113,7 @@ void Speaker::update() {
     if (_sosNextPlayMs != 0 && (int32_t)(millis() - _sosNextPlayMs) < 0) return;
 
     // Play one SOS cycle
-    if (_hasSOSWav && playWavFile(SOS_SOUND_PATH)) {
+    if (_hasSOSWav && playWavFile(SOS_SOUND_PATH, SPEAKER_VOLUME_SOS)) {
         // Custom WAV played
     } else {
         playBuiltinSOS();
@@ -126,17 +129,17 @@ void Speaker::playBuiltinSOS() {
     // Morse SOS: ... --- ... at 2000 Hz urgent tone
     // Three short beeps
     for (int i = 0; i < 3; i++) {
-        writeTone(2000, 100, 80);
+        writeTone(2000, 100, SPEAKER_VOLUME_SOS);
         writeSilence(50);
     }
     // Three long beeps
     for (int i = 0; i < 3; i++) {
-        writeTone(2000, 300, 80);
+        writeTone(2000, 300, SPEAKER_VOLUME_SOS);
         writeSilence(50);
     }
     // Three short beeps
     for (int i = 0; i < 3; i++) {
-        writeTone(2000, 100, 80);
+        writeTone(2000, 100, SPEAKER_VOLUME_SOS);
         writeSilence(50);
     }
 }
@@ -178,17 +181,17 @@ void Speaker::writeSilence(uint16_t durationMs) {
     }
 }
 
-void Speaker::playBuiltinChime() {
+void Speaker::playBuiltinChime(uint8_t volume) {
     // Two-tone ascending chime (iMessage-inspired)
     // Note 1: E6 (1318 Hz), 80ms
     // Note 2: A6 (1760 Hz), 120ms — slight overlap feel
-    writeTone(1318, 80, 50);
+    writeTone(1318, 80, volume);
     writeSilence(30);
-    writeTone(1760, 120, 50);
+    writeTone(1760, 120, volume);
     writeSilence(20);  // Flush DMA
 }
 
-bool Speaker::playWavFile(const char* path) {
+bool Speaker::playWavFile(const char* path, uint8_t volume) {
     // Simple WAV parser: expects 16-bit PCM, mono or stereo
     auto& sd = SDCard::instance();
     if (!sd.isMounted()) return false;
@@ -259,10 +262,17 @@ bool Speaker::playWavFile(const char* path) {
             int samples = bytesRead / 4;  // 2 channels * 2 bytes
             for (int i = 0; i < samples; i++) {
                 buf[i] = (src[i * 2] / 2) + (src[i * 2 + 1] / 2);
+                // Scale by volume
+                buf[i] = (int16_t)(buf[i] * volume / 255);
             }
             size_t bytesWritten = 0;
             i2s_write(I2S_PORT, buf, samples * sizeof(int16_t), &bytesWritten, portMAX_DELAY);
         } else {
+            // Mono — scale by volume
+            int samples = bytesRead / 2;
+            for (int i = 0; i < samples; i++) {
+                buf[i] = (int16_t)(buf[i] * volume / 255);
+            }
             size_t bytesWritten = 0;
             i2s_write(I2S_PORT, buf, bytesRead, &bytesWritten, portMAX_DELAY);
         }
