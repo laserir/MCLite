@@ -47,7 +47,7 @@ private:
     bool _initialized = false;
     bool _hasCustomSound = false;
     bool _hasSOSWav      = false;
-    uint8_t _volume = SPEAKER_VOLUME_CHIME_MID;
+    uint8_t _volume = SPEAKER_VOLUME_CHIME_MAX;  // boot at max so upgrades keep current loudness; bell steps down
 
     // SOS repeat state
     uint8_t  _sosRepeatsRemaining = 0;
