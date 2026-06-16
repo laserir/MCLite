@@ -57,6 +57,9 @@ constexpr bool     CANNED_MESSAGES_ENABLED = true;
 constexpr bool     ALLOW_MUTE            = false;  // Enable per-chat mute (long-press); off by default
 constexpr bool     AUTO_TELEMETRY        = true;   // Auto-refresh contacts' GPS via periodic telemetry
 
+// Advertisement
+constexpr uint32_t ADVERT_INTERVAL_MS    = 3600000; // Periodic advert interval (ms). 0 = disabled.
+
 // Auto-telemetry scheduler tuning (background GPS refresh for contacts who don't advert location)
 constexpr uint32_t AUTO_TELEM_SCAN_MS        = 60000;    // Evaluate at most one request per minute
 constexpr uint32_t AUTO_TELEM_REFRESH_AGE_MS = 1500000;  // 25 min — refresh just before the 30-min stale window

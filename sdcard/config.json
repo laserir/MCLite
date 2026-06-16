@@ -80,5 +80,6 @@
   },
   "offgrid": {
     "enabled": false
-  }
+  },
+  "advert_interval_ms": 3600000
 }

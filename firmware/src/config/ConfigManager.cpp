@@ -67,6 +67,7 @@ void ConfigManager::applyDefaults() {
     _config.gpsTimezone    = defaults::GPS_TIMEZONE;
     _config.gpsLastKnownMaxAge = defaults::GPS_LAST_KNOWN_MAX_AGE;
     _config.locationAdvertEnabled = defaults::GPS_LOCATION_ADVERT;
+    _config.advertIntervalMs      = defaults::ADVERT_INTERVAL_MS;
     _config.battery.lowAlertEnabled   = defaults::BATTERY_LOW_ALERT_ENABLED;
     _config.battery.lowAlertThreshold = defaults::BATTERY_LOW_ALERT_THRESHOLD;
     _config.security.lockMode     = defaults::LOCK_MODE;
@@ -276,6 +277,11 @@ bool ConfigManager::parseJson(const String& json) {
     _config.gpsLastKnownMaxAge = constrain(lastKnownAge, (uint16_t)60, (uint16_t)7200);
     _config.locationAdvertEnabled = doc["gps"]["location_advert"] | defaults::GPS_LOCATION_ADVERT;
 
+    // Advertisement interval (ms). 0 = disabled. Clamp to 0–24h.
+    uint32_t advertInterval = doc["advert_interval_ms"] | defaults::ADVERT_INTERVAL_MS;
+    if (advertInterval > 86400000UL) advertInterval = defaults::ADVERT_INTERVAL_MS;
+    _config.advertIntervalMs = advertInterval;
+
     // Battery
     _config.battery.lowAlertEnabled   = doc["battery"]["low_alert_enabled"] | defaults::BATTERY_LOW_ALERT_ENABLED;
     uint8_t threshold = doc["battery"]["low_alert_threshold"] | defaults::BATTERY_LOW_ALERT_THRESHOLD;
@@ -438,6 +444,8 @@ String ConfigManager::toJson() const {
     }
     doc["gps"]["last_known_max_age"] = _config.gpsLastKnownMaxAge;
     doc["gps"]["location_advert"]    = _config.locationAdvertEnabled;
+
+    doc["advert_interval_ms"] = _config.advertIntervalMs;
 
     doc["battery"]["low_alert_enabled"]   = _config.battery.lowAlertEnabled;
     doc["battery"]["low_alert_threshold"] = _config.battery.lowAlertThreshold;

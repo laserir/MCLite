@@ -226,6 +226,9 @@ bool MeshManager::init() {
         return false;
     }
 
+    // Apply user-configured advert interval (0 = disabled)
+    _advertIntervalMs = cfg.advertIntervalMs;
+
     LOGLN("[Mesh] Initialization complete");
     return true;
 }

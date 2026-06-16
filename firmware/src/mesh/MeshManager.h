@@ -117,7 +117,7 @@ private:
     OnRoomLoginCallback   _onRoomLogin;
 
     // Advertisement
-    uint32_t _advertIntervalMs = 540000;  // Default: every 9 minutes (under 10-min "recently seen" threshold)
+    uint32_t _advertIntervalMs = 3600000;  // Default: every 1 hour
     uint32_t _lastAdvertMs     = 0;
     bool     _firstAdvert      = true;   // Send first advert immediately on boot
 

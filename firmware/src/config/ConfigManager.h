@@ -126,6 +126,7 @@ struct AppConfig {
     String          gpsTimezone;         // POSIX TZ string for auto-DST (e.g. "CET-1CEST,M3.5.0/2,M10.5.0/3")
     uint16_t        gpsLastKnownMaxAge = 1800;  // Seconds before last-known expires
     bool            locationAdvertEnabled = false;  // Include own location in adverts (opt-in)
+    uint32_t        advertIntervalMs = 3600000;     // Periodic advert interval (ms). 0 = disabled.
     BatteryConfig   battery;
     SecurityConfig  security;
     OffgridConfig   offgrid;
