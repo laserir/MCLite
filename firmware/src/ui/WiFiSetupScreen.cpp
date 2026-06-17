@@ -14,51 +14,61 @@
 namespace mclite {
 
 void WiFiSetupScreen::create(lv_obj_t* parent) {
-    _screen = lv_obj_create(parent);
+    _screen = lv_win_create(parent, theme::CHAT_HEADER_HEIGHT);
     lv_obj_set_size(_screen, Display::width(),
                     Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT);
     lv_obj_align(_screen, LV_ALIGN_BOTTOM_MID, 0, -theme::FOOTER_HEIGHT);
     lv_obj_set_style_bg_color(_screen, theme::BG_PRIMARY, 0);
-    lv_obj_set_style_pad_all(_screen, 0, 0);
+    lv_obj_set_style_bg_opa(_screen, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(_screen, 0, 0);
-    lv_obj_clear_flag(_screen, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_flex_flow(_screen, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(_screen, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_radius(_screen, 0, 0);
+    lv_obj_set_style_pad_all(_screen, 0, 0);
+    lv_obj_set_style_pad_row(_screen, theme::PAD_SMALL, 0);
 
 #ifdef PLATFORM_TWATCH
+    lv_obj_clear_flag(_screen, LV_OBJ_FLAG_GESTURE_BUBBLE);
     lv_obj_add_event_cb(_screen, [](lv_event_t*) {
         lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
         if (dir == LV_DIR_RIGHT) UIManager::instance().goHome();
     }, LV_EVENT_GESTURE, nullptr);
 #endif
 
-    // Header: title + close
-    lv_obj_t* header = lv_obj_create(_screen);
-    lv_obj_set_size(header, theme::CONTENT_WIDTH, LV_SIZE_CONTENT);
-    lv_obj_set_style_bg_opa(header, LV_OPA_0, 0);
+    // Style the header
+    lv_obj_t* header = lv_win_get_header(_screen);
+    lv_obj_set_style_bg_color(header, theme::BG_STATUS_BAR, 0);
+    lv_obj_set_style_bg_opa(header, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(header, 0, 0);
+    lv_obj_set_style_radius(header, 0, 0);
     lv_obj_set_style_pad_all(header, theme::PAD_SMALL, 0);
-    lv_obj_clear_flag(header, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_flex_flow(header, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(header, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_hor(header, theme::CHAT_HEADER_PAD_HOR, 0);
 
-    lv_obj_t* title = lv_label_create(header);
-    lv_label_set_text(title, t("wifi_setup_title"));
+    // Back button
+    _backBtn = lv_win_add_btn(_screen, LV_SYMBOL_LEFT, theme::BTN_HEADER_BACK_W);
+    lv_obj_set_style_bg_opa(_backBtn, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_shadow_width(_backBtn, 0, 0);
+    lv_obj_set_style_border_width(_backBtn, 0, 0);
+    lv_obj_add_event_cb(_backBtn, backBtnCb, LV_EVENT_CLICKED, nullptr);
+
+    lv_obj_t* backLbl = lv_obj_get_child(_backBtn, 0);
+    lv_obj_set_style_text_font(backLbl, FONT_HEADING, 0);
+    lv_obj_set_style_text_color(backLbl, theme::ACCENT, 0);
+
+    // Title
+    lv_obj_t* title = lv_win_add_title(_screen, t("wifi_setup_title"));
     lv_obj_set_style_text_font(title, FONT_HEADING, 0);
     lv_obj_set_style_text_color(title, theme::TEXT_PRIMARY, 0);
-    lv_obj_set_flex_grow(title, 1);
 
-    _closeBtn = lv_btn_create(header);
-    lv_obj_set_size(_closeBtn, theme::BTN_HEADER_ICON_W, theme::BTN_HEADER_ICON_H);
-    lv_obj_set_style_bg_color(_closeBtn, theme::BG_SECONDARY, 0);
-    lv_obj_set_style_bg_color(_closeBtn, theme::ACCENT, LV_STATE_FOCUSED);
-    lv_obj_add_event_cb(_closeBtn, closeBtnCb, LV_EVENT_CLICKED, this);
-    lv_obj_t* cl = lv_label_create(_closeBtn);
-    lv_label_set_text(cl, LV_SYMBOL_CLOSE);
-    lv_obj_center(cl);
+    // Content area
+    lv_obj_t* cont = lv_win_get_content(_screen);
+    lv_obj_set_style_bg_opa(cont, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(cont, 0, 0);
+    lv_obj_set_style_pad_all(cont, 0, 0);
+    lv_obj_set_style_pad_row(cont, theme::PAD_SMALL, 0);
+    lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
     // Control row: WiFi switch + status text
-    lv_obj_t* ctl = lv_obj_create(_screen);
+    lv_obj_t* ctl = lv_obj_create(cont);
     lv_obj_set_size(ctl, theme::CONTENT_WIDTH, LV_SIZE_CONTENT);
     lv_obj_set_style_bg_color(ctl, theme::BG_SECONDARY, 0);
     lv_obj_set_style_radius(ctl, 4, 0);
@@ -79,7 +89,7 @@ void WiFiSetupScreen::create(lv_obj_t* parent) {
 
     // Companion-mode row (enabled only while WiFi is connected). Turning it on
     // exposes the radio to a phone/PC client over the MeshCore companion protocol.
-    _companionRow = lv_obj_create(_screen);
+    _companionRow = lv_obj_create(cont);
     lv_obj_set_size(_companionRow, theme::CONTENT_WIDTH, LV_SIZE_CONTENT);
     lv_obj_set_style_bg_color(_companionRow, theme::BG_SECONDARY, 0);
     lv_obj_set_style_radius(_companionRow, 4, 0);
@@ -100,7 +110,7 @@ void WiFiSetupScreen::create(lv_obj_t* parent) {
     lv_obj_add_event_cb(_companionSwitch, companionSwitchCb, LV_EVENT_VALUE_CHANGED, this);
 
     // "Check for updates" button (shown only while connected)
-    _checkBtn = lv_btn_create(_screen);
+    _checkBtn = lv_btn_create(cont);
     lv_obj_set_width(_checkBtn, theme::CONTENT_WIDTH);
     lv_obj_set_style_bg_color(_checkBtn, theme::ACCENT, 0);
     lv_obj_add_event_cb(_checkBtn, checkBtnCb, LV_EVENT_CLICKED, this);
@@ -111,7 +121,7 @@ void WiFiSetupScreen::create(lv_obj_t* parent) {
 
     // Reboot button — shown only when WiFi is locked out by an active BLE stack,
     // giving a one-tap way to reboot into a clean state where WiFi works.
-    _rebootBtn = lv_btn_create(_screen);
+    _rebootBtn = lv_btn_create(cont);
     lv_obj_set_width(_rebootBtn, theme::CONTENT_WIDTH);
     lv_obj_set_style_bg_color(_rebootBtn, theme::ACCENT, 0);
     lv_obj_add_event_cb(_rebootBtn, rebootBtnCb, LV_EVENT_CLICKED, this);
@@ -121,7 +131,7 @@ void WiFiSetupScreen::create(lv_obj_t* parent) {
     lv_obj_add_flag(_rebootBtn, LV_OBJ_FLAG_HIDDEN);
 
     // Scrollable network list (shown when not connected)
-    _list = lv_obj_create(_screen);
+    _list = lv_obj_create(cont);
     lv_obj_set_size(_list, theme::CONTENT_WIDTH, LV_SIZE_CONTENT);
     lv_obj_set_flex_grow(_list, 1);
     lv_obj_set_style_bg_opa(_list, LV_OPA_0, 0);
@@ -170,7 +180,7 @@ void WiFiSetupScreen::hide() {
             uint32_t cnt = lv_obj_get_child_cnt(_list);
             for (uint32_t i = 0; i < cnt; i++) lv_group_remove_obj(lv_obj_get_child(_list, i));
         }
-        lv_group_remove_obj(_closeBtn);
+        lv_group_remove_obj(_backBtn);
         lv_group_remove_obj(_switch);
         lv_group_remove_obj(_companionSwitch);
         lv_group_remove_obj(_checkBtn);
@@ -194,7 +204,7 @@ void WiFiSetupScreen::updateStatusUi() {
         lv_obj_clear_flag(_rebootBtn, LV_OBJ_FLAG_HIDDEN);
         lv_label_set_text(_statusLabel, t("wifi_ble_reboot"));
         lv_group_t* g = UIManager::instance().inputGroup();
-        if (g) { lv_group_add_obj(g, _rebootBtn); lv_group_add_obj(g, _closeBtn); }
+        if (g) { lv_group_add_obj(g, _rebootBtn); lv_group_add_obj(g, _backBtn); }
         return;
     }
     lv_obj_add_flag(_rebootBtn, LV_OBJ_FLAG_HIDDEN);
@@ -248,7 +258,7 @@ void WiFiSetupScreen::updateStatusUi() {
             lv_group_add_obj(grp, _companionSwitch);
             lv_group_add_obj(grp, _checkBtn);
         }
-        lv_group_add_obj(grp, _closeBtn);
+        lv_group_add_obj(grp, _backBtn);
     }
 }
 
@@ -480,7 +490,7 @@ void WiFiSetupScreen::checkUpdatesNow() {
     else       UIManager::instance().showToast(t("wifi_no_update"));
 }
 
-void WiFiSetupScreen::closeBtnCb(lv_event_t* e) {
+void WiFiSetupScreen::backBtnCb(lv_event_t* e) {
     UIManager::instance().goHome();
 }
 

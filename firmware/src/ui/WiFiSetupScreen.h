@@ -24,7 +24,7 @@ private:
     lv_obj_t* _checkBtn    = nullptr;   // "Check for updates" (visible only when connected)
     lv_obj_t* _rebootBtn   = nullptr;   // shown only when WiFi is BLE-locked (reboot to switch)
     lv_obj_t* _list        = nullptr;   // scanned networks (shown when not connected)
-    lv_obj_t* _closeBtn    = nullptr;
+    lv_obj_t* _backBtn     = nullptr;
     lv_obj_t* _companionRow    = nullptr;   // "WiFi Companion Mode" row (enabled when connected)
     lv_obj_t* _companionSwitch = nullptr;
     lv_obj_t* _companionLabel  = nullptr;   // "WiFi Companion" / "Companion: <ip>:5000 (connected)"
@@ -55,7 +55,7 @@ private:
     void doDisconnect();
     void checkUpdatesNow();
 
-    static void closeBtnCb(lv_event_t* e);
+    static void backBtnCb(lv_event_t* e);
     static void switchCb(lv_event_t* e);
     static void companionSwitchCb(lv_event_t* e);
     static void checkBtnCb(lv_event_t* e);
