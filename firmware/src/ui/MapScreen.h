@@ -42,6 +42,7 @@ private:
     // --- rendering ---
     void render();
     void recenter();               // own location if available, else the open-center
+    void panBy(int dxPx, int dyPx); // shift view by pixel delta (button pan)
     void renderTiles();
     void drawHeardMarkers();       // type-letter dots for contacts + heard nodes w/ GPS
     void drawOwnMarker();
@@ -59,6 +60,10 @@ private:
     static void zoomInCb(lv_event_t* e);
     static void zoomOutCb(lv_event_t* e);
     static void centerBtnCb(lv_event_t* e);
+    static void panUpCb(lv_event_t* e);
+    static void panDownCb(lv_event_t* e);
+    static void panLeftCb(lv_event_t* e);
+    static void panRightCb(lv_event_t* e);
     static void screenKeyCb(lv_event_t* e);
     static void panPressedCb(lv_event_t* e);
     static void panPressingCb(lv_event_t* e);
@@ -74,6 +79,10 @@ private:
     lv_obj_t*   _zoomInBtn    = nullptr;
     lv_obj_t*   _zoomOutBtn   = nullptr;
     lv_obj_t*   _centerBtn    = nullptr;
+    lv_obj_t*   _panUpBtn     = nullptr;
+    lv_obj_t*   _panDownBtn   = nullptr;
+    lv_obj_t*   _panLeftBtn   = nullptr;
+    lv_obj_t*   _panRightBtn  = nullptr;
     lv_obj_t*   _infoLabel    = nullptr;
     lv_obj_t*   _selLabel     = nullptr;   // tapped-marker name (general mode), hidden by default
     lv_group_t* _mapGroup     = nullptr;
