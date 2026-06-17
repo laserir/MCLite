@@ -24,7 +24,7 @@
 namespace mclite {
 
 void AdminScreen::create(lv_obj_t* parent) {
-    _screen = lv_obj_create(parent);
+    _screen = lv_win_create(parent, theme::CHAT_HEADER_HEIGHT);
     lv_obj_set_size(_screen, Display::width(),
                     Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT);
     lv_obj_align(_screen, LV_ALIGN_BOTTOM_MID, 0, -theme::FOOTER_HEIGHT);
@@ -32,22 +32,10 @@ void AdminScreen::create(lv_obj_t* parent) {
     lv_obj_set_style_bg_opa(_screen, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(_screen, 0, 0);
     lv_obj_set_style_radius(_screen, 0, 0);
-    lv_obj_set_style_pad_all(_screen, theme::PAD_MEDIUM, 0);
-    lv_obj_set_flex_flow(_screen, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_all(_screen, 0, 0);
     lv_obj_set_style_pad_row(_screen, theme::PAD_SMALL, 0);
-    lv_obj_add_flag(_screen, LV_OBJ_FLAG_SCROLLABLE);
 
 #ifdef PLATFORM_TWATCH
-    // Pull horizontal pad into the rounded-corner safe-area so rows/header
-    // can fill LV_PCT(100) without clipping. T-Deck branch above already set
-    // pad_all=PAD_MEDIUM and stays as-is.
-    lv_obj_set_style_pad_hor(_screen, theme::SAFE_AREA_LEFT, 0);
-    lv_obj_set_style_pad_ver(_screen, theme::PAD_MEDIUM, 0);
-
-    // Vertical-only scroll so horizontal swipes never get claimed for scroll
-    // detection; combined with clearing GESTURE_BUBBLE this lets the gesture
-    // event reach our handler.
-    lv_obj_set_scroll_dir(_screen, LV_DIR_VER);
     lv_obj_clear_flag(_screen, LV_OBJ_FLAG_GESTURE_BUBBLE);
     lv_obj_add_event_cb(_screen, [](lv_event_t* e) {
         lv_dir_t dir = lv_indev_get_gesture_dir(lv_indev_get_act());
@@ -55,35 +43,45 @@ void AdminScreen::create(lv_obj_t* parent) {
     }, LV_EVENT_GESTURE, nullptr);
 #endif
 
-    // Header row: title + close button
-    lv_obj_t* header = lv_obj_create(_screen);
-    lv_obj_set_size(header, LV_PCT(100), LV_SIZE_CONTENT);
-    lv_obj_set_style_bg_opa(header, LV_OPA_TRANSP, 0);
+    // Style the header
+    lv_obj_t* header = lv_win_get_header(_screen);
+    lv_obj_set_style_bg_color(header, theme::BG_STATUS_BAR, 0);
+    lv_obj_set_style_bg_opa(header, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(header, 0, 0);
-    lv_obj_set_style_pad_all(header, 0, 0);
-    lv_obj_clear_flag(header, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_flex_flow(header, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(header, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_radius(header, 0, 0);
+    lv_obj_set_style_pad_all(header, theme::PAD_SMALL, 0);
+    lv_obj_set_style_pad_hor(header, theme::CHAT_HEADER_PAD_HOR, 0);
 
-    lv_obj_t* title = lv_label_create(header);
-    lv_obj_set_style_text_font(title, FONT_LARGE, 0);
+    // Back button
+    _backBtn = lv_win_add_btn(_screen, LV_SYMBOL_LEFT, theme::BTN_HEADER_BACK_W);
+    lv_obj_set_style_bg_opa(_backBtn, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_shadow_width(_backBtn, 0, 0);
+    lv_obj_set_style_border_width(_backBtn, 0, 0);
+    lv_obj_add_event_cb(_backBtn, backBtnCb, LV_EVENT_CLICKED, nullptr);
+
+    lv_obj_t* backLbl = lv_obj_get_child(_backBtn, 0);
+    lv_obj_set_style_text_font(backLbl, FONT_HEADING, 0);
+    lv_obj_set_style_text_color(backLbl, theme::ACCENT, 0);
+
+    // Title
+    lv_obj_t* title = lv_win_add_title(_screen, t("admin_title"));
+    lv_obj_set_style_text_font(title, FONT_HEADING, 0);
     lv_obj_set_style_text_color(title, theme::TEXT_PRIMARY, 0);
-    lv_label_set_text(title, t("admin_title"));
 
-    _closeBtn = lv_btn_create(header);
-    lv_obj_set_size(_closeBtn, theme::BTN_HEADER_ICON_W, theme::BTN_HEADER_ICON_H);
-    lv_obj_set_style_bg_color(_closeBtn, theme::BG_SECONDARY, 0);
-    lv_obj_set_style_bg_opa(_closeBtn, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(_closeBtn, 4, 0);
-    lv_obj_set_style_bg_color(_closeBtn, theme::ACCENT, LV_STATE_FOCUSED);
-    lv_obj_set_style_bg_opa(_closeBtn, LV_OPA_60, LV_STATE_FOCUSED);
-    lv_obj_add_event_cb(_closeBtn, closeBtnCb, LV_EVENT_CLICKED, nullptr);
+    // Content area
+    _content = lv_win_get_content(_screen);
+    lv_obj_set_style_bg_opa(_content, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(_content, 0, 0);
+    lv_obj_set_style_pad_all(_content, theme::PAD_MEDIUM, 0);
+    lv_obj_set_style_pad_row(_content, theme::PAD_SMALL, 0);
+    lv_obj_set_flex_flow(_content, LV_FLEX_FLOW_COLUMN);
+    lv_obj_add_flag(_content, LV_OBJ_FLAG_SCROLLABLE);
 
-    lv_obj_t* btnLabel = lv_label_create(_closeBtn);
-    lv_obj_set_style_text_font(btnLabel, FONT_HEADING, 0);
-    lv_obj_set_style_text_color(btnLabel, theme::TEXT_PRIMARY, 0);
-    lv_label_set_text(btnLabel, LV_SYMBOL_CLOSE);
-    lv_obj_center(btnLabel);
+#ifdef PLATFORM_TWATCH
+    lv_obj_set_style_pad_hor(_content, theme::SAFE_AREA_LEFT, 0);
+    lv_obj_set_style_pad_ver(_content, theme::PAD_MEDIUM, 0);
+    lv_obj_set_scroll_dir(_content, LV_DIR_VER);
+#endif
 
     lv_obj_add_flag(_screen, LV_OBJ_FLAG_HIDDEN);
 }
@@ -91,18 +89,14 @@ void AdminScreen::create(lv_obj_t* parent) {
 void AdminScreen::show() {
     if (!_screen) return;
 
-    // Clear old content except title
-    uint32_t childCount = lv_obj_get_child_cnt(_screen);
-    while (childCount > 1) {
-        lv_obj_del(lv_obj_get_child(_screen, childCount - 1));
-        childCount--;
-    }
+    // Clear old content
+    lv_obj_clean(_content);
 
     const auto& cfg = ConfigManager::instance().config();
 
     // Helper to add a row
     auto addRow = [this](const char* label, const String& value) {
-        lv_obj_t* row = lv_obj_create(_screen);
+        lv_obj_t* row = lv_obj_create(_content);
         lv_obj_set_size(row, LV_PCT(100), LV_SIZE_CONTENT);
         lv_obj_set_style_bg_color(row, theme::BG_SECONDARY, 0);
         lv_obj_set_style_bg_opa(row, LV_OPA_COVER, 0);
@@ -126,7 +120,7 @@ void AdminScreen::show() {
 
     // Helper for section headers
     auto addSection = [this](const char* title) {
-        lv_obj_t* lbl = lv_label_create(_screen);
+        lv_obj_t* lbl = lv_label_create(_content);
         lv_obj_set_style_text_font(lbl, FONT_HEADING, 0);
         lv_obj_set_style_text_color(lbl, theme::ACCENT, 0);
         lv_obj_set_style_pad_top(lbl, theme::PAD_MEDIUM, 0);
@@ -137,7 +131,7 @@ void AdminScreen::show() {
     // Clickable row with tinted OFFGRID_ACCENT bg; tint depth signals state
     // (subtle when OFF, stronger when ON), distinct from BG_SECONDARY info rows.
     {
-        lv_obj_t* row = lv_obj_create(_screen);
+        lv_obj_t* row = lv_obj_create(_content);
         lv_obj_set_size(row, LV_PCT(100), LV_SIZE_CONTENT);
         lv_obj_set_style_bg_color(row, theme::OFFGRID_ACCENT, 0);
         lv_obj_set_style_bg_opa(row, cfg.offgrid.enabled ? LV_OPA_50 : LV_OPA_20, 0);
@@ -172,7 +166,7 @@ void AdminScreen::show() {
 
     // Heard adverts shortcut — mirrors info-row styling but clickable, with chevron.
     {
-        lv_obj_t* row = lv_obj_create(_screen);
+        lv_obj_t* row = lv_obj_create(_content);
         lv_obj_set_size(row, LV_PCT(100), LV_SIZE_CONTENT);
         lv_obj_set_style_bg_color(row, theme::BG_SECONDARY, 0);
         lv_obj_set_style_bg_opa(row, LV_OPA_COVER, 0);
@@ -209,7 +203,7 @@ void AdminScreen::show() {
     // WiFi setup shortcut — shows the configured network (or "not configured"),
     // tap to scan/connect on-device.
     {
-        lv_obj_t* row = lv_obj_create(_screen);
+        lv_obj_t* row = lv_obj_create(_content);
         lv_obj_set_size(row, LV_PCT(100), LV_SIZE_CONTENT);
         lv_obj_set_style_bg_color(row, theme::BG_SECONDARY, 0);
         lv_obj_set_style_bg_opa(row, LV_OPA_COVER, 0);
@@ -250,7 +244,7 @@ void AdminScreen::show() {
 
     // USB companion shortcut — opens a dedicated screen with just the toggle.
     {
-        lv_obj_t* row = lv_obj_create(_screen);
+        lv_obj_t* row = lv_obj_create(_content);
         lv_obj_set_size(row, LV_PCT(100), LV_SIZE_CONTENT);
         lv_obj_set_style_bg_color(row, theme::BG_SECONDARY, 0);
         lv_obj_set_style_bg_opa(row, LV_OPA_COVER, 0);
@@ -283,7 +277,7 @@ void AdminScreen::show() {
 
     // BLE companion shortcut — opens a dedicated screen with the toggle + PIN.
     {
-        lv_obj_t* row = lv_obj_create(_screen);
+        lv_obj_t* row = lv_obj_create(_content);
         lv_obj_set_size(row, LV_PCT(100), LV_SIZE_CONTENT);
         lv_obj_set_style_bg_color(row, theme::BG_SECONDARY, 0);
         lv_obj_set_style_bg_opa(row, LV_OPA_COVER, 0);
@@ -540,7 +534,7 @@ void AdminScreen::show() {
     addRow("MCLite", "MIT");
 
     // Expandable 3rd-party licenses
-    lv_obj_t* licToggle = lv_label_create(_screen);
+    lv_obj_t* licToggle = lv_label_create(_content);
     lv_obj_set_style_text_font(licToggle, FONT_BODY, 0);
     lv_obj_set_style_text_color(licToggle, theme::ACCENT, 0);
     lv_obj_add_flag(licToggle, LV_OBJ_FLAG_CLICKABLE);
@@ -548,7 +542,7 @@ void AdminScreen::show() {
     String licToggleText = String(LV_SYMBOL_RIGHT " ") + t("licenses_toggle");
     lv_label_set_text(licToggle, licToggleText.c_str());
 
-    lv_obj_t* licContainer = lv_obj_create(_screen);
+    lv_obj_t* licContainer = lv_obj_create(_content);
     lv_obj_set_size(licContainer, LV_PCT(100), LV_SIZE_CONTENT);
     lv_obj_set_style_bg_opa(licContainer, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(licContainer, 0, 0);
@@ -622,24 +616,25 @@ void AdminScreen::show() {
     }, LV_EVENT_CLICKED, licContainer);
 
     // Footer
-    lv_obj_t* footer = lv_label_create(_screen);
+    lv_obj_t* footer = lv_label_create(_content);
     lv_obj_set_style_text_font(footer, FONT_BODY, 0);
     lv_obj_set_style_text_color(footer, theme::TEXT_TIMESTAMP, 0);
     lv_obj_set_style_pad_top(footer, theme::PAD_MEDIUM, 0);
     lv_label_set_text(footer, t("admin_footer"));
 
-    // Add screen to input group so trackball can scroll content
+    // Add content to input group so trackball can scroll
     lv_group_t* grp = lv_group_get_default();
     if (grp) {
-        lv_group_add_obj(grp, _screen);
-        lv_group_focus_obj(_screen);
+        lv_group_add_obj(grp, _backBtn);
+        lv_group_add_obj(grp, _content);
+        lv_group_focus_obj(_content);
         lv_group_set_editing(grp, true);
     }
 
     lv_obj_clear_flag(_screen, LV_OBJ_FLAG_HIDDEN);
 }
 
-void AdminScreen::closeBtnCb(lv_event_t* e) {
+void AdminScreen::backBtnCb(lv_event_t* e) {
     UIManager::instance().goHome();
 }
 
@@ -700,7 +695,8 @@ void AdminScreen::hide() {
         lv_group_t* grp = lv_group_get_default();
         if (grp) {
             lv_group_set_editing(grp, false);
-            lv_group_remove_obj(_screen);
+            lv_group_remove_obj(_backBtn);
+            lv_group_remove_obj(_content);
         }
         // _heardCountLabel lives inside the row that show() recreates each visit,
         // so the pointer is dead until next show(). Drop it now to avoid a
