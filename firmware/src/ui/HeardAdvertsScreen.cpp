@@ -619,7 +619,7 @@ void HeardAdvertsScreen::closeDetail() {
 }
 
 void HeardAdvertsScreen::backBtnCb(lv_event_t* e) {
-    UIManager::instance().goHome();
+    UIManager::instance().showScreen(Screen::ADMIN);
 }
 
 void HeardAdvertsScreen::clearBtnCb(lv_event_t* e) {
