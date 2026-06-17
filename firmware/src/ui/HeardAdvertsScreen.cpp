@@ -9,6 +9,7 @@
 #include "../mesh/ContactStore.h"
 #include "../mesh/MeshManager.h"
 #include "../storage/HeardAdvertCache.h"
+#include "../storage/TileLoader.h"
 #include "../util/hex.h"
 
 #include <helpers/AdvertDataHelpers.h>  // ADV_TYPE_*
@@ -222,7 +223,12 @@ void HeardAdvertsScreen::hide() {
     if (grp && _list) {
         uint32_t cnt = lv_obj_get_child_cnt(_list);
         for (uint32_t i = 0; i < cnt; i++) {
-            lv_group_remove_obj(lv_obj_get_child(_list, i));
+            lv_obj_t* row = lv_obj_get_child(_list, i);
+            lv_group_remove_obj(row);
+            uint32_t rowCnt = lv_obj_get_child_cnt(row);
+            for (uint32_t j = 0; j < rowCnt; j++) {
+                lv_group_remove_obj(lv_obj_get_child(row, j));
+            }
         }
         lv_group_remove_obj(_advertBtn);
         lv_group_remove_obj(_localBtn);
@@ -258,11 +264,16 @@ void HeardAdvertsScreen::rebuild() {
         }
     }
 
-    // Drop existing rows + header buttons from group
+    // Drop existing rows + their buttons + header buttons from group
     if (grp && _list) {
         uint32_t cnt = lv_obj_get_child_cnt(_list);
         for (uint32_t i = 0; i < cnt; i++) {
-            lv_group_remove_obj(lv_obj_get_child(_list, i));
+            lv_obj_t* row = lv_obj_get_child(_list, i);
+            lv_group_remove_obj(row);
+            uint32_t rowCnt = lv_obj_get_child_cnt(row);
+            for (uint32_t j = 0; j < rowCnt; j++) {
+                lv_group_remove_obj(lv_obj_get_child(row, j));
+            }
         }
         lv_group_remove_obj(_advertBtn);
         lv_group_remove_obj(_localBtn);
@@ -316,18 +327,8 @@ void HeardAdvertsScreen::rebuild() {
         lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
         lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-        lv_obj_set_style_bg_color(row, theme::ACCENT, LV_STATE_FOCUSED);
-        lv_obj_set_style_bg_opa(row, LV_OPA_40, LV_STATE_FOCUSED);
-        lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
-
-        if (grp) lv_group_add_obj(grp, row);
-        lv_obj_add_event_cb(row, [](lv_event_t* ev) {
-            lv_obj_scroll_to_view(lv_event_get_target(ev), LV_ANIM_ON);
-        }, LV_EVENT_FOCUSED, nullptr);
-
         // Stash the slot index in user_data (no allocation, no delete cleanup needed)
         lv_obj_set_user_data(row, (void*)(intptr_t)slot);
-        lv_obj_add_event_cb(row, rowClickCb, LV_EVENT_CLICKED, this);
 
         const Contact* known = contacts.findByPublicKey(e.pubKey);
         bool queued = e.savePending && !known;
@@ -387,6 +388,48 @@ void HeardAdvertsScreen::rebuild() {
         lv_obj_set_style_text_font(age, FONT_BODY, 0);
         lv_obj_set_style_text_color(age, theme::TEXT_TIMESTAMP, 0);
         lv_label_set_text(age, formatAge(e.lastHeardMs).c_str());
+
+        // Info button — opens the detail dialog
+        lv_obj_t* infoBtn = lv_btn_create(row);
+        lv_obj_set_size(infoBtn, theme::BTN_HEADER_ICON_H, theme::BTN_HEADER_ICON_H);
+        lv_obj_set_style_bg_opa(infoBtn, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_shadow_width(infoBtn, 0, 0);
+        lv_obj_set_style_border_width(infoBtn, 0, 0);
+        lv_obj_set_style_pad_all(infoBtn, 0, 0);
+        lv_obj_set_user_data(infoBtn, (void*)(intptr_t)slot);
+        lv_obj_add_event_cb(infoBtn, infoBtnCb, LV_EVENT_CLICKED, this);
+        if (grp) lv_group_add_obj(grp, infoBtn);
+        lv_obj_add_event_cb(infoBtn, [](lv_event_t* ev) {
+            lv_obj_scroll_to_view(lv_event_get_target(ev), LV_ANIM_ON);
+        }, LV_EVENT_FOCUSED, nullptr);
+
+        lv_obj_t* infoLbl = lv_label_create(infoBtn);
+        lv_label_set_text(infoLbl, LV_SYMBOL_EYE_OPEN);
+        lv_obj_set_style_text_font(infoLbl, FONT_HEADING, 0);
+        lv_obj_set_style_text_color(infoLbl, theme::TEXT_SECONDARY, 0);
+        lv_obj_center(infoLbl);
+
+        // Map button — shown only when the advert carries a location
+        if (e.hasGps) {
+            lv_obj_t* mapBtn = lv_btn_create(row);
+            lv_obj_set_size(mapBtn, theme::BTN_HEADER_ICON_H, theme::BTN_HEADER_ICON_H);
+            lv_obj_set_style_bg_opa(mapBtn, LV_OPA_TRANSP, 0);
+            lv_obj_set_style_shadow_width(mapBtn, 0, 0);
+            lv_obj_set_style_border_width(mapBtn, 0, 0);
+            lv_obj_set_style_pad_all(mapBtn, 0, 0);
+            lv_obj_set_user_data(mapBtn, (void*)(intptr_t)slot);
+            lv_obj_add_event_cb(mapBtn, mapBtnCb, LV_EVENT_CLICKED, this);
+            if (grp) lv_group_add_obj(grp, mapBtn);
+            lv_obj_add_event_cb(mapBtn, [](lv_event_t* ev) {
+                lv_obj_scroll_to_view(lv_event_get_target(ev), LV_ANIM_ON);
+            }, LV_EVENT_FOCUSED, nullptr);
+
+            lv_obj_t* mapLbl = lv_label_create(mapBtn);
+            lv_label_set_text(mapLbl, LV_SYMBOL_GPS);
+            lv_obj_set_style_text_font(mapLbl, FONT_HEADING, 0);
+            lv_obj_set_style_text_color(mapLbl, theme::ACCENT, 0);
+            lv_obj_center(mapLbl);
+        }
     }
 
     // Group: trackball cycles rows → back → clear → advert → rows
@@ -616,11 +659,36 @@ void HeardAdvertsScreen::localBtnCb(lv_event_t* e) {
     }
 }
 
-void HeardAdvertsScreen::rowClickCb(lv_event_t* e) {
+void HeardAdvertsScreen::infoBtnCb(lv_event_t* e) {
     HeardAdvertsScreen* self = (HeardAdvertsScreen*)lv_event_get_user_data(e);
     if (!self) return;
     int slot = (int)(intptr_t)lv_obj_get_user_data(lv_event_get_current_target(e));
     self->openDetail(slot);
+}
+
+void HeardAdvertsScreen::mapBtnCb(lv_event_t* e) {
+    HeardAdvertsScreen* self = (HeardAdvertsScreen*)lv_event_get_user_data(e);
+    if (!self) return;
+    int slot = (int)(intptr_t)lv_obj_get_user_data(lv_event_get_current_target(e));
+
+    auto& cache = HeardAdvertCache::instance();
+    if (slot < 0 || slot >= cache.count()) return;
+    const HeardAdvert& advert = cache.entries()[slot];
+    if (!advert.hasGps) return;
+
+    if (!TileLoader::instance().tilesAvailable()) {
+        UIManager::instance().showToast(t("map_no_tiles"));
+        return;
+    }
+
+    String name;
+    if (advert.name[0] != '\0') {
+        name = advert.name;
+    } else {
+        name = pubKeyToShortId(advert.pubKey);
+    }
+
+    UIManager::instance().openMapAt(advert.gpsLat / 1e6, advert.gpsLon / 1e6, name);
 }
 
 void HeardAdvertsScreen::detailBtnCb(lv_event_t* e) {
