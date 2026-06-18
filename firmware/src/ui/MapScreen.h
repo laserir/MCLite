@@ -15,7 +15,7 @@ namespace mclite {
 // the map takes over the whole display (lv_scr_load) as before.
 #ifdef PLATFORM_TDECK
 static constexpr int MAP_SCREEN_Y = theme::STATUS_BAR_HEIGHT;
-static constexpr int MAP_CANVAS_H  = Display::height() - theme::STATUS_BAR_HEIGHT;
+static constexpr int MAP_CANVAS_H  = Display::height() - theme::STATUS_BAR_HEIGHT - theme::CHAT_HEADER_HEIGHT;
 #else
 static constexpr int MAP_SCREEN_Y = 0;
 static constexpr int MAP_CANVAS_H  = Display::height();
