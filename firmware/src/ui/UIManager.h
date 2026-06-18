@@ -125,6 +125,7 @@ public:
 
     Screen currentScreen() const { return _currentScreen; }
     lv_group_t* inputGroup() const { return _inputGroup; }
+    lv_obj_t* mainScreen() const { return _mainScreen; }
 
     static UIManager& instance();
 

@@ -217,7 +217,9 @@ void MapScreen::doOpen() {
     }
     _cbuf = s_cbuf;
 
+#ifndef PLATFORM_TDECK
     _prevScreen = lv_scr_act();
+#endif
     buildWidgets();
 
 #ifdef PLATFORM_TDECK
@@ -237,7 +239,11 @@ void MapScreen::doOpen() {
         lv_indev_set_group(Trackball::instance().indev(), _mapGroup);
 #endif
 
+#ifdef PLATFORM_TDECK
+    lv_obj_clear_flag(_screen, LV_OBJ_FLAG_HIDDEN);
+#else
     lv_scr_load(_screen);
+#endif
     render();
 }
 
@@ -259,9 +265,13 @@ void MapScreen::close() {
 #endif
 
     // Restore previous screen and delete ours.
+#ifdef PLATFORM_TDECK
+    lv_obj_add_flag(_screen, LV_OBJ_FLAG_HIDDEN);
+#else
     if (_prevScreen && _prevScreen != _screen) {
         lv_scr_load(_prevScreen);
     }
+#endif
     destroyWidgets();
 
     // Don't free _cbuf — it's a shared PSRAM reservation owned by open()'s
@@ -290,8 +300,16 @@ void MapScreen::pickInitialZoom() {
 }
 
 void MapScreen::buildWidgets() {
+#ifdef PLATFORM_TDECK
+    _screen = lv_obj_create(UIManager::instance().mainScreen());
+    lv_obj_set_size(_screen, Display::width(), Display::height() - theme::STATUS_BAR_HEIGHT);
+    lv_obj_align(_screen, LV_ALIGN_TOP_MID, 0, theme::STATUS_BAR_HEIGHT);
+#else
     _screen = lv_obj_create(nullptr);
+#endif
     lv_obj_set_style_bg_color(_screen, lv_color_black(), 0);
+    lv_obj_set_style_radius(_screen, 0, 0);
+    lv_obj_set_style_border_width(_screen, 0, 0);
     lv_obj_clear_flag(_screen, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_pad_all(_screen, 0, 0);
 

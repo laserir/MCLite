@@ -4,9 +4,22 @@
 #include <Arduino.h>
 #include <vector>
 
+#include "theme.h"
 #include "../hal/Display.h"
 
 namespace mclite {
+
+// Board-specific map layout constants.
+// On T-Deck the map screen is a child of _mainScreen so the status bar stays
+// visible; the canvas is shifted down and shortened accordingly. On T-Watch
+// the map takes over the whole display (lv_scr_load) as before.
+#ifdef PLATFORM_TDECK
+static constexpr int MAP_SCREEN_Y = theme::STATUS_BAR_HEIGHT;
+static constexpr int MAP_CANVAS_H  = Display::height() - theme::STATUS_BAR_HEIGHT;
+#else
+static constexpr int MAP_SCREEN_Y = 0;
+static constexpr int MAP_CANVAS_H  = Display::height();
+#endif
 
 // Full-screen map view: renders slippy tiles from SD centred on a contact's
 // location, with close / zoom-in / center / zoom-out controls overlaid.
@@ -122,7 +135,7 @@ private:
     uint8_t  _zoom    = 0;
 
     static constexpr int CANVAS_W = Display::width();
-    static constexpr int CANVAS_H = Display::height();
+    static constexpr int CANVAS_H = MAP_CANVAS_H;
 };
 
 }  // namespace mclite
