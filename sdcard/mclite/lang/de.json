@@ -123,6 +123,8 @@
     "lbl_sos_repeat": "SOS-Wiederholung",
     "lbl_level": "Ladestand",
     "lbl_low_alert": "Niedrig-Alarm",
+    "lbl_uptime": "Betriebszeit",
+    "lbl_last_charged": "Zuletzt geladen",
     "lbl_lock": "Sperre",
     "lock_key": "Tastensperre",
     "lock_pin": "PIN-Sperre",

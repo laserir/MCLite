@@ -49,12 +49,31 @@ public:
     // will see 1970-01-XX in the fallback case but local sort works).
     uint32_t bestEpoch() const;
 
+    // Record the boot instant using the best available clock.
+    // Call once from setup() after RTC restore / timezone apply.
+    void recordBootTime();
+
+    // Wall-clock epoch when the device booted. 0 if not yet recorded.
+    uint32_t bootEpoch() const { return _bootEpoch; }
+
+    // Format a duration (seconds) as a relative-time string using the
+    // existing i18n keys (time_s, time_m, time_h, time_d).
+    static void formatAgo(uint32_t diffSeconds, char* buf, size_t bufLen);
+
+    // Format UTC epoch as "%Y-%m-%d %H:%M" in local time. Writes "" if invalid.
+    void formatTimestamp(uint32_t utcEpoch, char* buf, size_t bufLen) const;
+
 private:
     TimeHelper() = default;
     bool     _synced = false;
     uint32_t _lastSyncEpoch = 0;
     String   _tz;                 // effective POSIX TZ from applyTimezone()
     bool     _ntpStarted = false; // SNTP kicked off for the current WiFi connection
+
+    // Boot-time tracking
+    bool     _bootRecorded = false;
+    uint32_t _bootMillis = 0;     // millis() at recordBootTime()
+    uint32_t _bootEpoch = 0;      // bestEpoch() at recordBootTime(); adjusted on first sync
 };
 
 }  // namespace mclite

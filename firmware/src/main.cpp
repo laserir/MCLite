@@ -126,6 +126,10 @@ void setup() {
     }
 #endif
 
+    // Record boot time using the best available clock (RTC-restored or uptime).
+    // Adjusted later when GPS/NTP provides the first accurate sync.
+    mclite::TimeHelper::instance().recordBootTime();
+
     // Load language translations (before UI init)
     I18n::instance().init(cfg.language);
 

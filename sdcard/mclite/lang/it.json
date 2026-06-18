@@ -123,6 +123,8 @@
     "lbl_sos_repeat": "Ripetizione SOS",
     "lbl_level": "Livello",
     "lbl_low_alert": "Avviso basso",
+    "lbl_uptime": "Tempo attivo",
+    "lbl_last_charged": "Ultima carica",
     "lbl_lock": "Blocco",
     "lock_key": "Blocco tasti",
     "lock_pin": "Blocco PIN",

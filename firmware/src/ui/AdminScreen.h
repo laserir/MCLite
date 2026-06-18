@@ -28,6 +28,10 @@ private:
     lv_obj_t* _wifiRowLabel    = nullptr;
     bool      _wifiLastConnected = false;
 
+    // Battery rows — refreshed live while visible.
+    lv_obj_t* _uptimeLabel     = nullptr;
+    lv_obj_t* _lastChargedLabel = nullptr;
+
     // Theme picker overlay (canned-message-style btnmatrix).
     lv_obj_t* _themeOverlay = nullptr;
     lv_obj_t* _themeBtnm    = nullptr;

@@ -150,6 +150,8 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"lbl_sos_repeat",      "SOS Repeat"},
     {"lbl_level",           "Level"},
     {"lbl_low_alert",       "Low Alert"},
+    {"lbl_uptime",          "Uptime"},
+    {"lbl_last_charged",    "Last Charged"},
     {"lbl_lock",            "Lock"},
     {"lock_key",            "Key Lock"},
     {"lock_pin",            "PIN Lock"},

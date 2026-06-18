@@ -123,6 +123,8 @@
     "lbl_sos_repeat": "Repetition SOS",
     "lbl_level": "Niveau",
     "lbl_low_alert": "Alerte basse",
+    "lbl_uptime": "Duree",
+    "lbl_last_charged": "Dernier charge",
     "lbl_lock": "Verrouillage",
     "lock_key": "Verrouillage touches",
     "lock_pin": "Verrouillage PIN",

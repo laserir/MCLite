@@ -1,5 +1,6 @@
 #include "TimeHelper.h"
 #include "util/log.h"
+#include "../i18n/I18n.h"
 #include "../config/ConfigManager.h"
 #include "../net/WiFiManager.h"
 #include <sys/time.h>
@@ -92,6 +93,46 @@ void TimeHelper::syncSystemClock(uint32_t utcEpoch) {
     settimeofday(&tv, nullptr);
     _lastSyncEpoch = utcEpoch;
     _synced = true;
+
+    // Adjust the recorded boot epoch on the first accurate sync so that
+    // bootEpoch() reflects the true wall-clock boot time.
+    if (_bootRecorded && _bootEpoch < 1700000000) {
+        uint32_t elapsed = (millis() - _bootMillis) / 1000;
+        if (utcEpoch > elapsed) {
+            _bootEpoch = utcEpoch - elapsed;
+            LOGF("[Time] Boot epoch adjusted to %lu\n", (unsigned long)_bootEpoch);
+        }
+    }
+}
+
+void TimeHelper::recordBootTime() {
+    if (_bootRecorded) return;
+    _bootRecorded = true;
+    _bootMillis = millis();
+    _bootEpoch = bestEpoch();
+    LOGF("[Time] Boot recorded: millis=%lu epoch=%lu\n",
+         (unsigned long)_bootMillis, (unsigned long)_bootEpoch);
+}
+
+void TimeHelper::formatAgo(uint32_t diffSeconds, char* buf, size_t bufLen) {
+    if (bufLen < 8) { buf[0] = '\0'; return; }
+    if (diffSeconds < 60)       { snprintf(buf, bufLen, t("time_s"), (int)diffSeconds); }
+    else if (diffSeconds < 3600){ snprintf(buf, bufLen, t("time_m"), (int)(diffSeconds / 60)); }
+    else if (diffSeconds < 86400){ snprintf(buf, bufLen, t("time_h"), (int)(diffSeconds / 3600)); }
+    else                        { snprintf(buf, bufLen, t("time_d"), (int)(diffSeconds / 86400)); }
+}
+
+void TimeHelper::formatTimestamp(uint32_t utcEpoch, char* buf, size_t bufLen) const {
+    if (utcEpoch < 1700000000 || bufLen < 17) {
+        buf[0] = '\0';
+        return;
+    }
+    time_t t = (time_t)utcEpoch;
+    struct tm result;
+    localtime_r(&t, &result);
+    snprintf(buf, bufLen, "%04d-%02d-%02d %02d:%02d",
+             result.tm_year + 1900, result.tm_mon + 1, result.tm_mday,
+             result.tm_hour, result.tm_min);
 }
 
 void TimeHelper::formatHHMM(uint32_t utcEpoch, char* buf, size_t bufLen) const {

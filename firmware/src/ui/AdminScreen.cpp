@@ -559,6 +559,46 @@ void AdminScreen::show() {
         addRow(t("lbl_low_alert"), t("off"));
     }
 
+    // Uptime — wall-clock boot time + relative ago.
+    {
+        uint32_t bootEp = TimeHelper::instance().bootEpoch();
+        char tsBuf[20], agoBuf[16];
+        TimeHelper::instance().formatTimestamp(bootEp, tsBuf, sizeof(tsBuf));
+        uint32_t nowEp = TimeHelper::instance().bestEpoch();
+        if (bootEp >= 1700000000 && nowEp > bootEp) {
+            TimeHelper::formatAgo(nowEp - bootEp, agoBuf, sizeof(agoBuf));
+        } else {
+            strncpy(agoBuf, "--", sizeof(agoBuf));
+            agoBuf[sizeof(agoBuf) - 1] = '\0';
+        }
+        char rowBuf[48];
+        snprintf(rowBuf, sizeof(rowBuf), "%s (%s)", tsBuf, agoBuf);
+        addRow(t("lbl_uptime"), rowBuf);
+    }
+
+    // Last charged — timestamp when charging last stopped + relative ago + level.
+    {
+        auto& batt = Battery::instance();
+        if (!batt.isCharging()) {
+            uint32_t lcEp = batt.lastChargedEpoch();
+            if (lcEp >= 1700000000) {
+                char tsBuf[20], agoBuf[16];
+                TimeHelper::instance().formatTimestamp(lcEp, tsBuf, sizeof(tsBuf));
+                uint32_t nowEp = TimeHelper::instance().bestEpoch();
+                if (nowEp >= lcEp) {
+                    TimeHelper::formatAgo(nowEp - lcEp, agoBuf, sizeof(agoBuf));
+                } else {
+                    strncpy(agoBuf, "--", sizeof(agoBuf));
+                    agoBuf[sizeof(agoBuf) - 1] = '\0';
+                }
+                char rowBuf[48];
+                snprintf(rowBuf, sizeof(rowBuf), "%s (%s, %d%%)",
+                        tsBuf, agoBuf, (int)batt.lastChargedPercent());
+                addRow(t("lbl_last_charged"), rowBuf);
+            }
+        }
+    }
+
     // --- Security ---
     addSection(t("sec_security"));
     String lockLabel = t("off");
@@ -849,6 +889,8 @@ void AdminScreen::hide() {
         // so the pointer is dead until next show(). Drop it now to avoid a
         // dangling deref from tick() if something else paints over it.
         _heardCountLabel = nullptr;
+        _uptimeLabel = nullptr;
+        _lastChargedLabel = nullptr;
         lv_obj_add_flag(_screen, LV_OBJ_FLAG_HIDDEN);
     }
 }

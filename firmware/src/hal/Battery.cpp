@@ -1,5 +1,6 @@
 #include "Battery.h"
 #include "hal/boards/board.h"
+#include "../util/TimeHelper.h"
 #include <Arduino.h>
 #ifdef PLATFORM_TWATCH
 #include "hal/twatch/Pmu.h"
@@ -46,6 +47,13 @@ void Battery::update() {
     _pct = Pmu::instance().batteryPercent();
     _charging = Pmu::instance().isCharging();
 #endif
+
+    // Detect charging-to-not-charging transition and record the event.
+    if (_prevCharging && !_charging) {
+        _lastChargedEpoch = mclite::TimeHelper::instance().bestEpoch();
+        _lastChargedPct = _pct;
+    }
+    _prevCharging = _charging;
 }
 
 }  // namespace mclite
