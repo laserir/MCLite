@@ -5,6 +5,7 @@
 #include "ConvoListScreen.h"
 #include "ChatScreen.h"
 #include "AdminScreen.h"
+#include "DeviceSettingsScreen.h"
 #include "HeardAdvertsScreen.h"
 #include "WiFiSetupScreen.h"
 #include "UsbSetupScreen.h"
@@ -18,6 +19,7 @@ enum class Screen {
     CONVO_LIST,
     CHAT,
     ADMIN,
+    DEVICE_SETTINGS,
     HEARD_ADVERTS,
     WIFI_SETUP,
     USB_SETUP,
@@ -140,6 +142,7 @@ private:
     ConvoListScreen     _convoList;
     ChatScreen          _chatScreen;
     AdminScreen         _adminScreen;
+    DeviceSettingsScreen _deviceSettingsScreen;
     HeardAdvertsScreen  _heardAdvertsScreen;
     WiFiSetupScreen     _wifiSetupScreen;
     UsbSetupScreen      _usbSetupScreen;
