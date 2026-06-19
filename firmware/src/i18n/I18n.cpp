@@ -45,6 +45,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"msg_send_failed",     "Send failed - try again"},
     {"location_title",      "Send Location?"},
     {"btn_cancel",          "Cancel"},
+    {"btn_save",            "Save"},
     {"btn_location_send",   "Send"},
     {"loc_last_known",      "Last known position"},
     {"loc_last_known_s",    "Last known position (~%ds ago)"},
@@ -82,6 +83,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"sec_battery",         "Battery"},
     {"sec_security",        "Security"},
     {"sec_licenses",        "Licenses"},
+    {"sec_debug",           "Debug"},
     {"ch_util",             "Ch. Util"},
     {"ready",               "Ready"},
     {"error",               "Error"},
@@ -112,6 +114,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"lbl_vendor",          "Vendor"},
     {"lbl_built",           "Built"},
     {"lbl_device_name",     "Device Name"},
+    {"lbl_language",        "Language"},
     {"lbl_public_key",      "Public Key"},
     {"lbl_frequency",       "Frequency"},
     {"lbl_sf_bw",           "SF / BW"},
@@ -125,6 +128,9 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"lbl_dim_brightness",  "Dim Brightness"},
     {"lbl_kbd_backlight",   "Kbd Backlight"},
     {"lbl_emoji",           "Emoji Picker"},
+    {"lbl_pin_code",        "PIN Code"},
+    {"lbl_lock_mode",       "Lock Mode"},
+    {"lbl_auto_lock",       "Auto-Lock"},
     {"lbl_screenshots",     "Screenshots"},
     {"lbl_theme",           "Theme"},
     {"theme_dark",          "Dark"},
@@ -150,6 +156,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"lbl_sos_repeat",      "SOS Repeat"},
     {"lbl_level",           "Level"},
     {"lbl_low_alert",       "Low Alert"},
+    {"lbl_low_alert_threshold", "Low Alert Threshold"},
     {"lbl_uptime",          "Uptime"},
     {"lbl_last_charged",    "Last Charged"},
     {"lbl_lock",            "Lock"},
@@ -254,6 +261,8 @@ const DefaultString DEFAULT_STRINGS[] = {
     // Screenshot (debug.screenshots)
     {"screenshot_saved",    "Screenshot saved"},
     {"screenshot_failed",   "Screenshot failed"},
+
+    {"device_settings_title", "Device Settings"},
 
     {nullptr, nullptr}  // sentinel
 };
