@@ -81,6 +81,7 @@ void UsbSetupScreen::create(lv_obj_t* parent) {
     lv_obj_set_style_text_color(_statusLabel, theme::TEXT_PRIMARY(), 0);
 
     _switch = lv_switch_create(ctl);
+    lv_obj_set_style_bg_color(_switch, theme::ACCENT(), LV_PART_INDICATOR | LV_STATE_CHECKED);
     lv_obj_add_event_cb(_switch, switchCb, LV_EVENT_VALUE_CHANGED, this);
 
     // Hint

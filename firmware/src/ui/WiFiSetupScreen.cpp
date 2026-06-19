@@ -85,6 +85,7 @@ void WiFiSetupScreen::create(lv_obj_t* parent) {
     lv_obj_set_style_text_color(_statusLabel, theme::TEXT_PRIMARY(), 0);
 
     _switch = lv_switch_create(ctl);
+    lv_obj_set_style_bg_color(_switch, theme::ACCENT(), LV_PART_INDICATOR | LV_STATE_CHECKED);
     lv_obj_add_event_cb(_switch, switchCb, LV_EVENT_VALUE_CHANGED, this);
 
     // Companion-mode row (enabled only while WiFi is connected). Turning it on
@@ -107,6 +108,7 @@ void WiFiSetupScreen::create(lv_obj_t* parent) {
     lv_label_set_text(_companionLabel, t("wifi_companion"));
 
     _companionSwitch = lv_switch_create(_companionRow);
+    lv_obj_set_style_bg_color(_companionSwitch, theme::ACCENT(), LV_PART_INDICATOR | LV_STATE_CHECKED);
     lv_obj_add_event_cb(_companionSwitch, companionSwitchCb, LV_EVENT_VALUE_CHANGED, this);
 
     // "Check for updates" button (shown only while connected)
