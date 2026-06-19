@@ -703,7 +703,7 @@ void ChatScreen::senderNameClickCb(lv_event_t* e) {
     if (!self || !name || !self->_textarea) return;
     // Prepend "@name " to whatever's already typed, then bring up the keyboard.
     String cur = lv_textarea_get_text(self->_textarea);
-    String mention = "@" + *name + " ";
+    String mention = "@[" + *name + "] ";
     // Only prepend if this mention isn't already in the draft — repeated taps just
     // (re)focus the input instead of stacking "@name @name ...". Also skip if it
     // wouldn't fit the 160-char textarea limit, so we never silently truncate the
