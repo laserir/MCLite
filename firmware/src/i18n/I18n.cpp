@@ -255,6 +255,27 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"screenshot_saved",    "Screenshot saved"},
     {"screenshot_failed",   "Screenshot failed"},
 
+    // Messaging Settings screen
+    {"messaging_settings_title", "Messaging Settings"},
+    {"sec_history",           "History"},
+    {"sec_location",          "Location"},
+    {"sec_canned_custom",     "Custom Quick Replies"},
+    {"lbl_save_history",      "Save History"},
+    {"lbl_location_format",   "Location Format"},
+    {"lbl_canned_messages",   "Canned Messages"},
+    {"lbl_allow_mute",        "Allow Mute"},
+    {"lbl_canned_slot",       "Slot"},
+    {"lbl_canned_placeholder","Quick reply text…"},
+    {"fmt_decimal",           "Decimal"},
+    {"fmt_dms",               "DMS"},
+    {"fmt_mgrs",              "MGRS"},
+    {"fmt_utm",               "UTM"},
+    {"telem_battery",         "Battery"},
+    {"telem_location",        "Location"},
+    {"telem_both",            "Both"},
+    {"telem_none",            "None"},
+    {"empty",                 "Empty"},
+
     {nullptr, nullptr}  // sentinel
 };
 

@@ -10,6 +10,7 @@
 #include "UsbSetupScreen.h"
 #include "BleSetupScreen.h"
 #include "MapScreen.h"
+#include "MessagingSettingsScreen.h"
 #include "../storage/MessageStore.h"
 
 namespace mclite {
@@ -19,6 +20,7 @@ enum class Screen {
     CHAT,
     ADMIN,
     HEARD_ADVERTS,
+    MESSAGING_SETTINGS,
     WIFI_SETUP,
     USB_SETUP,
     BLE_SETUP
@@ -140,6 +142,7 @@ private:
     ConvoListScreen     _convoList;
     ChatScreen          _chatScreen;
     AdminScreen         _adminScreen;
+    MessagingSettingsScreen _messagingSettingsScreen;
     HeardAdvertsScreen  _heardAdvertsScreen;
     WiFiSetupScreen     _wifiSetupScreen;
     UsbSetupScreen      _usbSetupScreen;

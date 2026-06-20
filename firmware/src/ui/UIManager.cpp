@@ -57,6 +57,7 @@ bool UIManager::init() {
     _chatScreen.create(_mainScreen);
     _adminScreen.create(_mainScreen);
     _heardAdvertsScreen.create(_mainScreen);
+    _messagingSettingsScreen.create(_mainScreen);
     _wifiSetupScreen.create(_mainScreen);
     _usbSetupScreen.create(_mainScreen);
     _bleSetupScreen.create(_mainScreen);
@@ -284,6 +285,7 @@ void UIManager::showScreen(Screen screen) {
     _convoList.hide();
     _chatScreen.hide();
     _adminScreen.hide();
+    _messagingSettingsScreen.hide();
     _heardAdvertsScreen.hide();
     _wifiSetupScreen.hide();
     _usbSetupScreen.hide();
@@ -299,6 +301,9 @@ void UIManager::showScreen(Screen screen) {
             break;
         case Screen::ADMIN:
             _adminScreen.show();
+            break;
+        case Screen::MESSAGING_SETTINGS:
+            _messagingSettingsScreen.show();
             break;
         case Screen::HEARD_ADVERTS:
             _heardAdvertsScreen.show();
