@@ -156,6 +156,10 @@ void UIManager::update() {
     // Periodic status bar update
     if (now - _lastStatusUpdate >= STATUS_UPDATE_MS) {
         _statusBar.update();
+        // Re-evaluate the chat header map button so it appears when an advert
+        // brings in a position and disappears when a last-known fix ages out of
+        // its freshness window (bestKnownLocation is time-sensitive).
+        if (_currentScreen == Screen::CHAT) refreshChatMapButton();
         _lastStatusUpdate = now;
     }
 
