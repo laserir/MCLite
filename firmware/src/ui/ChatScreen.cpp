@@ -360,16 +360,17 @@ void ChatScreen::open(const ConvoId& id) {
         lv_obj_set_height(_win, Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT - theme::CHAT_INPUT_HEIGHT);
     }
 
-    // DM-only header buttons: map, telemetry, info
+    // DM-only header buttons: telemetry + info. The map button is shown only
+    // once we know a position for the contact (see setMapAvailable, driven by
+    // UIManager) — otherwise the map would open with nothing to centre on.
     if (id.type == ConvoId::DM) {
-        lv_obj_clear_flag(_mapBtn,   LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(_telemBtn, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(_infoBtn,  LV_OBJ_FLAG_HIDDEN);
     } else {
-        lv_obj_add_flag(_mapBtn,   LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(_telemBtn, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(_infoBtn,  LV_OBJ_FLAG_HIDDEN);
     }
+    lv_obj_add_flag(_mapBtn, LV_OBJ_FLAG_HIDDEN);  // revealed by setMapAvailable()
 
     // Mark as read
     MessageStore::instance().markRead(id);
@@ -1075,15 +1076,24 @@ void ChatScreen::updateMuteIndicator() {
     }
 }
 
+// Show the header map button only when the contact has a known position (DM
+// only). Called by UIManager on chat open and whenever a location is learned.
+void ChatScreen::setMapAvailable(bool avail) {
+    if (!_mapBtn) return;
+    bool isDM = _currentConvo && _currentConvo->type == ConvoId::DM;
+    if (avail && isDM) lv_obj_clear_flag(_mapBtn, LV_OBJ_FLAG_HIDDEN);
+    else               lv_obj_add_flag(_mapBtn, LV_OBJ_FLAG_HIDDEN);
+}
+
 void ChatScreen::mapBtnCb(lv_event_t* e) {
     auto* self = static_cast<ChatScreen*>(lv_event_get_user_data(e));
-    if (!self->_currentConvo || !self->_onMap) return;
+    if (!self || !self->_currentConvo || !self->_onMap) return;
     self->_onMap(*self->_currentConvo);
 }
 
 void ChatScreen::telemBtnCb(lv_event_t* e) {
     auto* self = static_cast<ChatScreen*>(lv_event_get_user_data(e));
-    if (!self->_currentConvo || !self->_onTelem) return;
+    if (!self || !self->_currentConvo || !self->_onTelem) return;
     self->_onTelem(*self->_currentConvo);
 }
 

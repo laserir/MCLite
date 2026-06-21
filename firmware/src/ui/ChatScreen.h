@@ -34,6 +34,10 @@ public:
     void onMap(OnMapCallback cb)     { _onMap = cb; }
     void onTelem(OnTelemCallback cb) { _onTelem = cb; }
 
+    // Show/hide the header map button (DM only) — driven by UIManager when a
+    // contact's position is known, so the map never opens without a centre.
+    void setMapAvailable(bool avail);
+
     const ConvoId* currentConvo() const { return _currentConvo.get(); }
     lv_obj_t* obj() { return _screen; }
 
