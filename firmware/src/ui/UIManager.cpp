@@ -79,10 +79,6 @@ bool UIManager::init() {
         goHome();
     });
 
-    _chatScreen.onInfo([this](const ConvoId& id) {
-        showTelemetryModal(id);
-    });
-
     _chatScreen.onMap([this](const ConvoId& id) {
         auto& contacts = ContactStore::instance();
         for (size_t i = 0; i < contacts.count(); i++) {

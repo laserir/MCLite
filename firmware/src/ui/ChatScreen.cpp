@@ -116,18 +116,6 @@ void ChatScreen::createHeader() {
     lv_obj_set_style_text_color(telemImg, theme::TEXT_SECONDARY(), 0);
     lv_obj_add_flag(_telemBtn, LV_OBJ_FLAG_HIDDEN);
 
-    // Contact info button — shown only for DM conversations
-    _infoBtn = lv_win_add_btn(_win, LV_SYMBOL_EYE_OPEN, theme::BTN_HEADER_ICON_W);
-    lv_obj_set_style_bg_opa(_infoBtn, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_shadow_width(_infoBtn, 0, 0);
-    lv_obj_set_style_border_width(_infoBtn, 0, 0);
-    lv_obj_set_style_pad_all(_infoBtn, 0, 0);
-    lv_obj_add_event_cb(_infoBtn, headerNameCb, LV_EVENT_CLICKED, this);
-    lv_obj_t* infoImg = lv_obj_get_child(_infoBtn, 0);
-    lv_obj_set_style_text_font(infoImg, FONT_HEADING, 0);
-    lv_obj_set_style_text_color(infoImg, theme::TEXT_SECONDARY(), 0);
-    lv_obj_add_flag(_infoBtn, LV_OBJ_FLAG_HIDDEN);
-
     // Mute indicator — shown on the right of the header when chat is muted
     _muteIcon = lv_win_add_btn(_win, LV_SYMBOL_MUTE, theme::BTN_HEADER_ICON_W);
     lv_obj_set_style_bg_opa(_muteIcon, LV_OPA_TRANSP, 0);
@@ -360,16 +348,11 @@ void ChatScreen::open(const ConvoId& id) {
         lv_obj_set_height(_win, Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT - theme::CHAT_INPUT_HEIGHT);
     }
 
-    // DM-only header buttons: telemetry + info. The map button is shown only
-    // once we know a position for the contact (see setMapAvailable, driven by
+    // DM-only header telemetry button. The map button is shown only once we
+    // know a position for the contact (see setMapAvailable, driven by
     // UIManager) — otherwise the map would open with nothing to centre on.
-    if (id.type == ConvoId::DM) {
-        lv_obj_clear_flag(_telemBtn, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_clear_flag(_infoBtn,  LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_add_flag(_telemBtn, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(_infoBtn,  LV_OBJ_FLAG_HIDDEN);
-    }
+    if (id.type == ConvoId::DM) lv_obj_clear_flag(_telemBtn, LV_OBJ_FLAG_HIDDEN);
+    else                        lv_obj_add_flag(_telemBtn, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(_mapBtn, LV_OBJ_FLAG_HIDDEN);  // revealed by setMapAvailable()
 
     // Mark as read
@@ -704,12 +687,6 @@ void ChatScreen::backBtnCb(lv_event_t* e) {
         self->close();
         self->_onBack();
     }
-}
-
-void ChatScreen::headerNameCb(lv_event_t* e) {
-    ChatScreen* self = (ChatScreen*)lv_event_get_user_data(e);
-    if (!self->_currentConvo || self->_currentConvo->type != ConvoId::DM) return;
-    if (self->_onInfo) self->_onInfo(*self->_currentConvo);
 }
 
 void ChatScreen::textareaCb(lv_event_t* e) {

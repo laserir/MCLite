@@ -9,7 +9,6 @@ namespace mclite {
 
 using OnSendCallback  = std::function<void(const ConvoId& id, const String& text)>;
 using OnBackCallback  = std::function<void()>;
-using OnInfoCallback  = std::function<void(const ConvoId& id)>;
 using OnRetryCallback = std::function<void(const ConvoId& id, const String& text, uint32_t oldPacketId)>;
 using OnMuteCallback  = std::function<void(const ConvoId& id, bool muted)>;
 using OnMapCallback   = std::function<void(const ConvoId& id)>;
@@ -28,7 +27,6 @@ public:
 
     void onSend(OnSendCallback cb)   { _onSend = cb; }
     void onBack(OnBackCallback cb)   { _onBack = cb; }
-    void onInfo(OnInfoCallback cb)   { _onInfo = cb; }
     void onRetry(OnRetryCallback cb) { _onRetry = cb; }
     void onMute(OnMuteCallback cb)   { _onMute = cb; }
     void onMap(OnMapCallback cb)     { _onMap = cb; }
@@ -58,7 +56,6 @@ private:
     lv_obj_t* _headerName = nullptr;
     lv_obj_t* _mapBtn   = nullptr;  // Map button (DM only)
     lv_obj_t* _telemBtn = nullptr;  // Telemetry button (DM only)
-    lv_obj_t* _infoBtn  = nullptr;  // Contact info button (DM only)
     lv_obj_t* _muteIcon = nullptr;  // Mute indicator in header
 #ifdef PLATFORM_TWATCH
     lv_obj_t* _kbd        = nullptr;  // T-Watch only: on-screen keyboard
@@ -69,7 +66,6 @@ private:
 
     OnSendCallback  _onSend;
     OnBackCallback  _onBack;
-    OnInfoCallback  _onInfo;
     OnRetryCallback _onRetry;
     OnMuteCallback  _onMute;
     OnMapCallback   _onMap;
@@ -99,7 +95,6 @@ private:
     static void gpsBtnCb(lv_event_t* e);
     static void backBtnCb(lv_event_t* e);
     static void textareaCb(lv_event_t* e);
-    static void headerNameCb(lv_event_t* e);
     static void senderNameClickCb(lv_event_t* e);
     static void retryBtnCb(lv_event_t* e);
     static void mapLinkCb(lv_event_t* e);
