@@ -2303,12 +2303,72 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
         <div class="v4-region-card-freq">910.525 MHz · SF7 · 62.5 kHz</div>
       </button>
       <button type="button" class="v4-region-card" data-region="au_wide" onclick="v4SelectRegion('au_wide')">
-        <div class="v4-region-card-name">Australia Wide</div>
+        <div class="v4-region-card-name">Australia</div>
         <div class="v4-region-card-freq">915.800 MHz · SF10 · 250 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="au_narrow" onclick="v4SelectRegion('au_narrow')">
+        <div class="v4-region-card-name">Australia (Narrow)</div>
+        <div class="v4-region-card-freq">916.575 MHz · SF7 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="au_mid" onclick="v4SelectRegion('au_mid')">
+        <div class="v4-region-card-name">Australia (Mid)</div>
+        <div class="v4-region-card-freq">915.075 MHz · SF9 · 125 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="au_sa_wa" onclick="v4SelectRegion('au_sa_wa')">
+        <div class="v4-region-card-name">Australia SA/WA</div>
+        <div class="v4-region-card-freq">923.125 MHz · SF8 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="au_qld" onclick="v4SelectRegion('au_qld')">
+        <div class="v4-region-card-name">Australia QLD</div>
+        <div class="v4-region-card-freq">923.125 MHz · SF8 · 62.5 kHz · CR5</div>
       </button>
       <button type="button" class="v4-region-card" data-region="au_vic" onclick="v4SelectRegion('au_vic')">
         <div class="v4-region-card-name">Australia Victoria</div>
         <div class="v4-region-card-freq">916.575 MHz · SF10 · 250 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="br" onclick="v4SelectRegion('br')">
+        <div class="v4-region-card-name">Brazil</div>
+        <div class="v4-region-card-freq">923.125 MHz · SF8 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="cz_narrow" onclick="v4SelectRegion('cz_narrow')">
+        <div class="v4-region-card-name">Czech Republic</div>
+        <div class="v4-region-card-freq">869.432 MHz · SF7 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="eu_433_lr" onclick="v4SelectRegion('eu_433_lr')">
+        <div class="v4-region-card-name">EU 433 Long Range</div>
+        <div class="v4-region-card-freq">433.650 MHz · SF11 · 250 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="eu_433_narrow" onclick="v4SelectRegion('eu_433_narrow')">
+        <div class="v4-region-card-name">EU 433 Narrow</div>
+        <div class="v4-region-card-freq">433.650 MHz · SF8 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="nl" onclick="v4SelectRegion('nl')">
+        <div class="v4-region-card-name">Netherlands</div>
+        <div class="v4-region-card-freq">869.618 MHz · SF7 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="nz" onclick="v4SelectRegion('nz')">
+        <div class="v4-region-card-name">New Zealand</div>
+        <div class="v4-region-card-freq">917.375 MHz · SF11 · 250 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="nz_narrow" onclick="v4SelectRegion('nz_narrow')">
+        <div class="v4-region-card-name">New Zealand (Narrow)</div>
+        <div class="v4-region-card-freq">917.375 MHz · SF7 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="pt_433" onclick="v4SelectRegion('pt_433')">
+        <div class="v4-region-card-name">Portugal 433</div>
+        <div class="v4-region-card-freq">433.375 MHz · SF9 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="pt_868" onclick="v4SelectRegion('pt_868')">
+        <div class="v4-region-card-name">Portugal 868</div>
+        <div class="v4-region-card-freq">869.618 MHz · SF7 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="ch" onclick="v4SelectRegion('ch')">
+        <div class="v4-region-card-name">Switzerland</div>
+        <div class="v4-region-card-freq">869.618 MHz · SF8 · 62.5 kHz</div>
+      </button>
+      <button type="button" class="v4-region-card" data-region="vn_narrow" onclick="v4SelectRegion('vn_narrow')">
+        <div class="v4-region-card-name">Vietnam (Narrow)</div>
+        <div class="v4-region-card-freq">920.250 MHz · SF8 · 62.5 kHz</div>
       </button>
       <button type="button" class="v4-region-card custom hidden" data-mode="advanced" data-region="custom" onclick="v4SelectRegion('custom')">
         <span class="v4-region-icon">⚙</span>
@@ -2381,8 +2441,23 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
     <select id="radioPreset" onchange="applyPreset()" style="display:none">
       <option value="eu_narrow" selected>EU/UK/CH (869.618 MHz)</option>
       <option value="us_ca">US/Canada (910.525 MHz)</option>
-      <option value="au_wide">Australia Wide (915.800 MHz)</option>
+      <option value="au_wide">Australia (915.800 MHz)</option>
+      <option value="au_narrow">Australia Narrow (916.575 MHz)</option>
+      <option value="au_mid">Australia Mid (915.075 MHz)</option>
+      <option value="au_sa_wa">Australia SA/WA (923.125 MHz)</option>
+      <option value="au_qld">Australia QLD (923.125 MHz)</option>
       <option value="au_vic">Australia Victoria (916.575 MHz)</option>
+      <option value="br">Brazil (923.125 MHz)</option>
+      <option value="cz_narrow">Czech Republic (869.432 MHz)</option>
+      <option value="eu_433_lr">EU 433 Long Range (433.650 MHz)</option>
+      <option value="eu_433_narrow">EU 433 Narrow (433.650 MHz)</option>
+      <option value="nl">Netherlands (869.618 MHz)</option>
+      <option value="nz">New Zealand (917.375 MHz)</option>
+      <option value="nz_narrow">New Zealand Narrow (917.375 MHz)</option>
+      <option value="pt_433">Portugal 433 (433.375 MHz)</option>
+      <option value="pt_868">Portugal 868 (869.618 MHz)</option>
+      <option value="ch">Switzerland (869.618 MHz)</option>
+      <option value="vn_narrow">Vietnam Narrow (920.250 MHz)</option>
       <option value="custom">Custom</option>
     </select>
 
@@ -3127,10 +3202,25 @@ function setThemeSelect(theme) {
 }
 
 const PRESETS = {
-  eu_narrow: { freq: 869.618, sf: 8, bw: 62.5, cr: 8, tx: 22, label: 'EU/UK/CH' },
-  us_ca:     { freq: 910.525, sf: 7, bw: 62.5, cr: 5, tx: 22, label: 'US/Canada' },
-  au_wide:   { freq: 915.800, sf: 10, bw: 250, cr: 5, tx: 22, label: 'AU Wide' },
-  au_vic:    { freq: 916.575, sf: 10, bw: 250, cr: 5, tx: 22, label: 'AU Victoria' },
+  eu_narrow:     { freq: 869.618, sf: 8,  bw: 62.5, cr: 8, tx: 22, label: 'EU/UK/CH' },
+  us_ca:         { freq: 910.525, sf: 7,  bw: 62.5, cr: 5, tx: 22, label: 'US/Canada' },
+  au_wide:       { freq: 915.800, sf: 10, bw: 250,  cr: 5, tx: 22, label: 'AU Wide' },
+  au_vic:        { freq: 916.575, sf: 10, bw: 250,  cr: 5, tx: 22, label: 'AU Victoria' },
+  au_narrow:     { freq: 916.575, sf: 7,  bw: 62.5, cr: 8, tx: 22, label: 'AU Narrow' },
+  au_mid:        { freq: 915.075, sf: 9,  bw: 125,  cr: 5, tx: 22, label: 'AU Mid' },
+  au_sa_wa:      { freq: 923.125, sf: 8,  bw: 62.5, cr: 8, tx: 22, label: 'AU SA/WA' },
+  au_qld:        { freq: 923.125, sf: 8,  bw: 62.5, cr: 5, tx: 22, label: 'AU QLD' },
+  br:            { freq: 923.125, sf: 8,  bw: 62.5, cr: 8, tx: 22, label: 'Brazil' },
+  cz_narrow:     { freq: 869.432, sf: 7,  bw: 62.5, cr: 5, tx: 22, label: 'Czech Republic' },
+  eu_433_lr:     { freq: 433.650, sf: 11, bw: 250,  cr: 5, tx: 22, label: 'EU 433 Long Range' },
+  eu_433_narrow: { freq: 433.650, sf: 8,  bw: 62.5, cr: 8, tx: 22, label: 'EU 433 Narrow' },
+  nl:            { freq: 869.618, sf: 7,  bw: 62.5, cr: 5, tx: 22, label: 'Netherlands' },
+  nz:            { freq: 917.375, sf: 11, bw: 250,  cr: 5, tx: 22, label: 'New Zealand' },
+  nz_narrow:     { freq: 917.375, sf: 7,  bw: 62.5, cr: 5, tx: 22, label: 'NZ Narrow' },
+  pt_433:        { freq: 433.375, sf: 9,  bw: 62.5, cr: 6, tx: 22, label: 'Portugal 433' },
+  pt_868:        { freq: 869.618, sf: 7,  bw: 62.5, cr: 6, tx: 22, label: 'Portugal 868' },
+  ch:            { freq: 869.618, sf: 8,  bw: 62.5, cr: 8, tx: 22, label: 'Switzerland' },
+  vn_narrow:     { freq: 920.250, sf: 8,  bw: 62.5, cr: 5, tx: 22, label: 'Vietnam (Narrow)' },
 };
 
 // ===== Embedded Language Files =====
@@ -5219,10 +5309,25 @@ function renderWizDevices(box) {
 
 function renderWizRegion(box) {
   const regions = [
-    { key: 'eu_narrow', label: 'EU / UK / CH' },
-    { key: 'us_ca', label: 'US / Canada' },
-    { key: 'au_wide', label: 'Australia Wide' },
-    { key: 'au_vic', label: 'Australia Victoria' },
+    { key: 'eu_narrow',     label: 'EU / UK / CH' },
+    { key: 'us_ca',         label: 'US / Canada' },
+    { key: 'au_wide',       label: 'Australia' },
+    { key: 'au_narrow',     label: 'Australia (Narrow)' },
+    { key: 'au_mid',        label: 'Australia (Mid)' },
+    { key: 'au_sa_wa',      label: 'Australia SA/WA' },
+    { key: 'au_qld',        label: 'Australia QLD' },
+    { key: 'au_vic',        label: 'Australia Victoria' },
+    { key: 'br',            label: 'Brazil' },
+    { key: 'cz_narrow',     label: 'Czech Republic' },
+    { key: 'eu_433_lr',     label: 'EU 433 Long Range' },
+    { key: 'eu_433_narrow', label: 'EU 433 Narrow' },
+    { key: 'nl',            label: 'Netherlands' },
+    { key: 'nz',            label: 'New Zealand' },
+    { key: 'nz_narrow',     label: 'New Zealand (Narrow)' },
+    { key: 'pt_433',        label: 'Portugal 433' },
+    { key: 'pt_868',        label: 'Portugal 868' },
+    { key: 'ch',            label: 'Switzerland' },
+    { key: 'vn_narrow',     label: 'Vietnam (Narrow)' },
   ];
   box.innerHTML = `
     <h2>Where are you located?</h2>

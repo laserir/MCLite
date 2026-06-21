@@ -758,7 +758,7 @@ void SettingsScreen::hide() {
         if (_pinTextarea) hidePinEditor();
         if (_sosKeywordTextarea) hideSosKeywordEditor();
         if (_bootTextTextarea) hideBootTextEditor();
-        if (_choiceBtnm) hideChoicePicker();
+        if (_choicePanel) hideChoicePicker();
         if (_timezoneTextarea) hideTimezoneEditor();
         lv_group_t* grp = lv_group_get_default();
         if (grp) {
@@ -881,10 +881,9 @@ void SettingsScreen::gpsToggleCb(lv_event_t* e) {
 // ─────────────────────────── Generic choice picker ───────────────────────────
 
 namespace {
-std::vector<String>      g_choiceNames;   // option codes (string fields)
-std::vector<int>         g_choiceVals;    // numeric values (precision/region idx)
-std::vector<String>      g_choiceLabels;
-std::vector<const char*> g_choiceMap;
+std::vector<String> g_choiceNames;   // option codes (string fields)
+std::vector<int>    g_choiceVals;    // numeric values (precision/region idx)
+std::vector<String> g_choiceLabels;
 }  // namespace
 
 void SettingsScreen::locFormatRowCb(lv_event_t* e) {
@@ -909,10 +908,10 @@ void SettingsScreen::advertRowCb(lv_event_t* e) {
 }
 
 void SettingsScreen::openChoicePicker(ChoiceField f) {
-    if (_choiceBtnm) return;
+    if (_choicePanel) return;
     _choiceField = f;
 
-    g_choiceNames.clear(); g_choiceVals.clear(); g_choiceLabels.clear(); g_choiceMap.clear();
+    g_choiceNames.clear(); g_choiceVals.clear(); g_choiceLabels.clear();
 
     switch (f) {
         case ChoiceField::LocationFormat:
@@ -944,15 +943,39 @@ void SettingsScreen::openChoicePicker(ChoiceField f) {
             }
             break;
     }
-    g_choiceLabels.push_back(t("btn_cancel"));
 
-    for (size_t i = 0; i < g_choiceLabels.size(); i++) {
-        if (i > 0) g_choiceMap.push_back("\n");
-        g_choiceMap.push_back(g_choiceLabels[i].c_str());
+    // Determine which option matches the current config value.
+    uint16_t initSel = 0;
+    const auto& cfg = ConfigManager::instance().config();
+    switch (f) {
+        case ChoiceField::LocationFormat:
+            for (size_t i = 0; i < g_choiceNames.size(); i++) {
+                if (g_choiceNames[i] == cfg.messaging.locationFormat) { initSel = (uint16_t)i; break; }
+            }
+            break;
+        case ChoiceField::ShowTelemetry:
+            for (size_t i = 0; i < g_choiceNames.size(); i++) {
+                if (g_choiceNames[i] == cfg.messaging.showTelemetry) { initSel = (uint16_t)i; break; }
+            }
+            break;
+        case ChoiceField::LocationPrecision:
+            for (size_t i = 0; i < g_choiceVals.size(); i++) {
+                if (g_choiceVals[i] == (int)cfg.locationPrecision) { initSel = (uint16_t)i; break; }
+            }
+            break;
+        case ChoiceField::RegionPreset: {
+            int idx = matchRadioPreset(cfg.radio);
+            if (idx >= 0) initSel = (uint16_t)idx;
+            break;
+        }
+        case ChoiceField::AdvertInterval:
+            for (size_t i = 0; i < g_choiceVals.size(); i++) {
+                if (g_choiceVals[i] == (int)cfg.radio.advertIntervalMin) { initSel = (uint16_t)i; break; }
+            }
+            break;
     }
-    g_choiceMap.push_back("");
-    int count = (int)g_choiceLabels.size();
 
+    // Overlay — dim background, click to cancel.
     _choiceOverlay = lv_obj_create(lv_layer_top());
     lv_obj_set_size(_choiceOverlay, Display::width(), Display::height());
     lv_obj_set_pos(_choiceOverlay, 0, 0);
@@ -966,92 +989,150 @@ void SettingsScreen::openChoicePicker(ChoiceField f) {
         lv_async_call([](void* ctx) { ((SettingsScreen*)ctx)->hideChoicePicker(); }, s);
     }, LV_EVENT_CLICKED, this);
 
-    _choiceBtnm = lv_btnmatrix_create(lv_layer_top());
-    lv_btnmatrix_set_map(_choiceBtnm, g_choiceMap.data());
-#ifdef PLATFORM_TWATCH
-    lv_coord_t rowH = 64;
-#else
-    lv_coord_t rowH = 26;
-#endif
-    lv_coord_t pickerH = count * rowH + 8;
-    lv_coord_t maxH = Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT - 16;
-    if (pickerH > maxH) pickerH = maxH;
-    lv_obj_set_size(_choiceBtnm, theme::MODAL_TEXT_WIDTH, pickerH);
-    lv_obj_align(_choiceBtnm, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_set_style_text_font(_choiceBtnm, FONT_HEADING, 0);
-    lv_obj_set_style_bg_color(_choiceBtnm, theme::BG_SECONDARY(), 0);
-    lv_obj_set_style_bg_opa(_choiceBtnm, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_color(_choiceBtnm, theme::ACCENT(), 0);
-    lv_obj_set_style_border_width(_choiceBtnm, 1, 0);
-    lv_obj_set_style_radius(_choiceBtnm, 8, 0);
-    lv_obj_set_style_bg_color(_choiceBtnm, theme::BG_INPUT(), LV_PART_ITEMS);
-    lv_obj_set_style_text_color(_choiceBtnm, theme::TEXT_PRIMARY(), LV_PART_ITEMS);
-    lv_obj_set_style_radius(_choiceBtnm, 4, LV_PART_ITEMS);
-    lv_obj_set_style_bg_color(_choiceBtnm, theme::ACCENT(), LV_PART_ITEMS | LV_STATE_FOCUSED);
-    lv_obj_set_style_text_color(_choiceBtnm, theme::TEXT_ON_ACCENT(), LV_PART_ITEMS | LV_STATE_FOCUSED);
+    // Panel — flex column: roller + button row.
+    _choicePanel = lv_obj_create(lv_layer_top());
+    lv_obj_set_size(_choicePanel, theme::MODAL_TEXT_WIDTH, LV_SIZE_CONTENT);
+    lv_obj_align(_choicePanel, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_style_bg_color(_choicePanel, theme::BG_SECONDARY(), 0);
+    lv_obj_set_style_bg_opa(_choicePanel, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_color(_choicePanel, theme::ACCENT(), 0);
+    lv_obj_set_style_border_width(_choicePanel, 1, 0);
+    lv_obj_set_style_radius(_choicePanel, 8, 0);
+    lv_obj_set_style_pad_all(_choicePanel, theme::PAD_SMALL, 0);
+    lv_obj_set_style_pad_row(_choicePanel, theme::PAD_SMALL, 0);
+    lv_obj_set_flex_flow(_choicePanel, LV_FLEX_FLOW_COLUMN);
+    lv_obj_clear_flag(_choicePanel, LV_OBJ_FLAG_SCROLLABLE);
 
-    lv_obj_add_event_cb(_choiceBtnm, choiceChosenCb, LV_EVENT_CLICKED, this);
-    UIManager::instance().switchToModalGroup(_choiceBtnm);
+    // Build newline-separated options string for the roller.
+    String opts;
+    for (size_t i = 0; i < g_choiceLabels.size(); i++) {
+        if (i > 0) opts += "\n";
+        opts += g_choiceLabels[i];
+    }
+
+    _choiceRoller = lv_roller_create(_choicePanel);
+    lv_roller_set_options(_choiceRoller, opts.c_str(), LV_ROLLER_MODE_NORMAL);
+    lv_roller_set_selected(_choiceRoller, initSel, LV_ANIM_OFF);
+    lv_obj_set_width(_choiceRoller, LV_PCT(100));
+    lv_obj_set_style_text_font(_choiceRoller, FONT_HEADING, 0);
+    lv_obj_set_style_text_color(_choiceRoller, theme::TEXT_PRIMARY(), LV_PART_MAIN);
+    lv_obj_set_style_bg_color(_choiceRoller, theme::BG_SECONDARY(), LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(_choiceRoller, LV_OPA_COVER, LV_PART_MAIN);
+    lv_obj_set_style_border_width(_choiceRoller, 0, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(_choiceRoller, theme::ACCENT(), LV_PART_SELECTED);
+    lv_obj_set_style_bg_opa(_choiceRoller, LV_OPA_COVER, LV_PART_SELECTED);
+    lv_obj_set_style_text_color(_choiceRoller, theme::TEXT_ON_ACCENT(), LV_PART_SELECTED);
+#ifdef PLATFORM_TWATCH
+    lv_roller_set_visible_row_count(_choiceRoller, 3);
+#else
+    lv_roller_set_visible_row_count(_choiceRoller, 5);
+#endif
+
+    // Button row — OK (confirm) and Cancel.
+    lv_obj_t* btnRow = lv_obj_create(_choicePanel);
+    lv_obj_set_size(btnRow, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_opa(btnRow, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(btnRow, 0, 0);
+    lv_obj_set_style_pad_all(btnRow, 0, 0);
+    lv_obj_set_flex_flow(btnRow, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btnRow, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(btnRow, theme::PAD_SMALL, 0);
+    lv_obj_clear_flag(btnRow, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t* okBtn = lv_btn_create(btnRow);
+    lv_obj_set_style_bg_color(okBtn, theme::ACCENT(), 0);
+    lv_obj_set_style_bg_color(okBtn, theme::BG_SECONDARY(), LV_STATE_FOCUSED);
+    lv_obj_set_style_border_color(okBtn, theme::ACCENT(), LV_STATE_FOCUSED);
+    lv_obj_set_style_border_width(okBtn, 1, LV_STATE_FOCUSED);
+    lv_obj_add_event_cb(okBtn, choiceChosenCb, LV_EVENT_CLICKED, this);
+    lv_obj_t* okLbl = lv_label_create(okBtn);
+    lv_label_set_text(okLbl, t("btn_save"));
+    lv_obj_set_style_text_font(okLbl, FONT_HEADING, 0);
+    lv_obj_set_style_text_color(okLbl, theme::TEXT_ON_ACCENT(), 0);
+    lv_obj_center(okLbl);
+
+    lv_obj_t* cancelBtn = lv_btn_create(btnRow);
+    lv_obj_set_style_bg_color(cancelBtn, theme::BG_SECONDARY(), 0);
+    lv_obj_set_style_border_color(cancelBtn, theme::ACCENT(), 0);
+    lv_obj_set_style_border_width(cancelBtn, 1, 0);
+    lv_obj_set_style_bg_color(cancelBtn, theme::ACCENT(), LV_STATE_FOCUSED);
+    lv_obj_add_event_cb(cancelBtn, [](lv_event_t* ev) {
+        SettingsScreen* s = (SettingsScreen*)lv_event_get_user_data(ev);
+        lv_async_call([](void* ctx) { ((SettingsScreen*)ctx)->hideChoicePicker(); }, s);
+    }, LV_EVENT_CLICKED, this);
+    lv_obj_t* cxlLbl = lv_label_create(cancelBtn);
+    lv_label_set_text(cxlLbl, t("btn_cancel"));
+    lv_obj_set_style_text_font(cxlLbl, FONT_HEADING, 0);
+    lv_obj_set_style_text_color(cxlLbl, theme::TEXT_PRIMARY(), 0);
+    lv_obj_center(cxlLbl);
+
+    // Encoder group: roller (enter editing mode to scroll) → OK → Cancel.
+    lv_group_t* g = lv_group_create();
+    _editorGroup = g;
+    lv_group_add_obj(g, _choiceRoller);
+    lv_group_add_obj(g, okBtn);
+    lv_group_add_obj(g, cancelBtn);
+    lv_group_focus_obj(_choiceRoller);
+
+    UIManager::instance().switchToModalGroup(_choicePanel);
+    IInput::instance().attachToGroup(g);
 }
 
 void SettingsScreen::choiceChosenCb(lv_event_t* e) {
     SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
-    if (!self || !self->_choiceBtnm) return;
-    uint16_t idx = lv_btnmatrix_get_selected_btn(self->_choiceBtnm);
-    if (idx == LV_BTNMATRIX_BTN_NONE) { goto done; }
+    if (!self || !self->_choiceRoller) return;
+    uint16_t idx = lv_roller_get_selected(self->_choiceRoller);
 
-    {
-        auto& c = ConfigManager::instance().config();
-        switch (self->_choiceField) {
-            case ChoiceField::LocationFormat:
-                if (idx < g_choiceNames.size() && c.messaging.locationFormat != g_choiceNames[idx]) {
-                    c.messaging.locationFormat = g_choiceNames[idx]; g_dsDirty = true;
-                }
-                break;
-            case ChoiceField::ShowTelemetry:
-                if (idx < g_choiceNames.size() && c.messaging.showTelemetry != g_choiceNames[idx]) {
-                    c.messaging.showTelemetry = g_choiceNames[idx]; g_dsDirty = true;
-                }
-                break;
-            case ChoiceField::LocationPrecision:
-                if (idx < g_choiceVals.size() && c.locationPrecision != (uint8_t)g_choiceVals[idx]) {
-                    c.locationPrecision = (uint8_t)g_choiceVals[idx]; g_dsDirty = true;
-                }
-                break;
-            case ChoiceField::AdvertInterval:
-                if (idx < g_choiceVals.size() && c.radio.advertIntervalMin != (uint16_t)g_choiceVals[idx]) {
-                    c.radio.advertIntervalMin = (uint16_t)g_choiceVals[idx];
+    auto& c = ConfigManager::instance().config();
+    switch (self->_choiceField) {
+        case ChoiceField::LocationFormat:
+            if (idx < g_choiceNames.size() && c.messaging.locationFormat != g_choiceNames[idx]) {
+                c.messaging.locationFormat = g_choiceNames[idx]; g_dsDirty = true;
+            }
+            break;
+        case ChoiceField::ShowTelemetry:
+            if (idx < g_choiceNames.size() && c.messaging.showTelemetry != g_choiceNames[idx]) {
+                c.messaging.showTelemetry = g_choiceNames[idx]; g_dsDirty = true;
+            }
+            break;
+        case ChoiceField::LocationPrecision:
+            if (idx < g_choiceVals.size() && c.locationPrecision != (uint8_t)g_choiceVals[idx]) {
+                c.locationPrecision = (uint8_t)g_choiceVals[idx]; g_dsDirty = true;
+            }
+            break;
+        case ChoiceField::AdvertInterval:
+            if (idx < g_choiceVals.size() && c.radio.advertIntervalMin != (uint16_t)g_choiceVals[idx]) {
+                c.radio.advertIntervalMin = (uint16_t)g_choiceVals[idx];
+                g_dsDirty = true;
+                g_dsReboot = true;
+                UIManager::instance().showToast(t("theme_apply_body"));
+            }
+            break;
+        case ChoiceField::RegionPreset:
+            if (idx < g_choiceVals.size()) {
+                RadioConfig before = c.radio;
+                applyRadioPreset(c.radio, (size_t)g_choiceVals[idx]);
+                if (before.frequency != c.radio.frequency ||
+                    before.spreadingFactor != c.radio.spreadingFactor ||
+                    before.bandwidth != c.radio.bandwidth ||
+                    before.codingRate != c.radio.codingRate ||
+                    before.txPower != c.radio.txPower) {
                     g_dsDirty = true;
                     g_dsReboot = true;
                     UIManager::instance().showToast(t("theme_apply_body"));
                 }
-                break;
-            case ChoiceField::RegionPreset:
-                if (idx < g_choiceVals.size()) {
-                    RadioConfig before = c.radio;
-                    applyRadioPreset(c.radio, (size_t)g_choiceVals[idx]);
-                    if (before.frequency != c.radio.frequency ||
-                        before.spreadingFactor != c.radio.spreadingFactor ||
-                        before.bandwidth != c.radio.bandwidth ||
-                        before.codingRate != c.radio.codingRate ||
-                        before.txPower != c.radio.txPower) {
-                        g_dsDirty = true;
-                        g_dsReboot = true;
-                        UIManager::instance().showToast(t("theme_apply_body"));
-                    }
-                }
-                break;
-        }
+            }
+            break;
     }
-
-done:
     lv_async_call([](void* p) { ((SettingsScreen*)p)->hideChoicePicker(); }, self);
 }
 
 void SettingsScreen::hideChoicePicker() {
-    if (!_choiceBtnm) return;
+    if (!_choicePanel) return;
     UIManager::instance().restoreFromModalGroup();
-    lv_obj_del_async(_choiceBtnm);    _choiceBtnm = nullptr;
+    if (_editorGroup) { lv_group_del(_editorGroup); _editorGroup = nullptr; }
+    _choiceRoller = nullptr;
+    lv_obj_del_async(_choicePanel);   _choicePanel   = nullptr;
     lv_obj_del_async(_choiceOverlay); _choiceOverlay = nullptr;
     if (_screen) show();
 }

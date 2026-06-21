@@ -140,9 +140,10 @@ private:
     static void boolToggleCb(lv_event_t* e);
     static void gpsToggleCb(lv_event_t* e);  // GPS enable needs reboot to (de)init
 
-    // Shared enum/string choice picker (btnmatrix). _choiceField selects the set.
-    ChoiceField _choiceField = ChoiceField::LocationFormat;
-    lv_obj_t*   _choiceBtnm    = nullptr;
+    // Shared enum/string choice picker (roller). _choiceField selects the set.
+    ChoiceField _choiceField   = ChoiceField::LocationFormat;
+    lv_obj_t*   _choicePanel   = nullptr;  // modal container (overlay child)
+    lv_obj_t*   _choiceRoller  = nullptr;
     lv_obj_t*   _choiceOverlay = nullptr;
     void openChoicePicker(ChoiceField f);
     void hideChoicePicker();
