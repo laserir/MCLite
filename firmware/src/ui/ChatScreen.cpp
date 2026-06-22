@@ -58,81 +58,64 @@ void ChatScreen::create(lv_obj_t* parent) {
 }
 
 void ChatScreen::createHeader() {
-    _header = lv_obj_create(_screen);
-    lv_obj_set_size(_header, Display::width(), theme::CHAT_HEADER_HEIGHT);
-    lv_obj_align(_header, LV_ALIGN_TOP_MID, 0, 0);
-    lv_obj_set_style_bg_color(_header, theme::BG_STATUS_BAR(), 0);
-    lv_obj_set_style_bg_opa(_header, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(_header, 0, 0);
-    lv_obj_set_style_radius(_header, 0, 0);
-    lv_obj_set_style_pad_all(_header, theme::PAD_SMALL, 0);
-    // Inner horizontal padding — full-width bg, content inset from edges.
-    lv_obj_set_style_pad_hor(_header, theme::CHAT_HEADER_PAD_HOR, 0);
-    lv_obj_clear_flag(_header, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_flex_flow(_header, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(_header, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    _win = lv_win_create(_screen, theme::CHAT_HEADER_HEIGHT);
+    lv_obj_set_size(_win, Display::width(),
+                    Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT
+                    - theme::CHAT_INPUT_HEIGHT);
+    lv_obj_align(_win, LV_ALIGN_TOP_MID, 0, 0);
+    lv_obj_set_style_bg_color(_win, theme::BG_PRIMARY(), 0);
+    lv_obj_set_style_bg_opa(_win, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(_win, 0, 0);
+    lv_obj_set_style_radius(_win, 0, 0);
+    lv_obj_set_style_pad_all(_win, 0, 0);
+
+    lv_obj_t* header = lv_win_get_header(_win);
+    lv_obj_set_style_bg_color(header, theme::BG_STATUS_BAR(), 0);
+    lv_obj_set_style_bg_opa(header, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(header, 0, 0);
+    lv_obj_set_style_radius(header, 0, 0);
+    lv_obj_set_style_pad_all(header, theme::PAD_SMALL, 0);
+    lv_obj_set_style_pad_hor(header, theme::CHAT_HEADER_PAD_HOR, 0);
 
     // Back button
-    lv_obj_t* backBtn = lv_btn_create(_header);
-    lv_obj_set_size(backBtn, theme::BTN_HEADER_BACK_W, theme::BTN_HEADER_BACK_H);
+    lv_obj_t* backBtn = lv_win_add_btn(_win, LV_SYMBOL_LEFT, theme::BTN_HEADER_BACK_W);
     lv_obj_set_style_bg_opa(backBtn, LV_OPA_TRANSP, 0);
     lv_obj_set_style_shadow_width(backBtn, 0, 0);
     lv_obj_set_style_border_width(backBtn, 0, 0);
     lv_obj_add_event_cb(backBtn, backBtnCb, LV_EVENT_CLICKED, this);
+    lv_obj_t* backImg = lv_obj_get_child(backBtn, 0);
+    lv_obj_set_style_text_font(backImg, FONT_HEADING, 0);
+    lv_obj_set_style_text_color(backImg, theme::ACCENT(), 0);
 
-    lv_obj_t* backLbl = lv_label_create(backBtn);
-    lv_label_set_text(backLbl, LV_SYMBOL_LEFT);
-    lv_obj_set_style_text_font(backLbl, FONT_HEADING, 0);  // match the name font for baseline alignment
-    lv_obj_set_style_text_color(backLbl, theme::ACCENT(), 0);
-    lv_obj_center(backLbl);
-
-    // Contact/channel name — wrapped in a transparent button for tap detection
-    // Touch-only: do NOT add to encoder group (breaks trackball navigation)
-    lv_obj_t* nameBtn = lv_btn_create(_header);
-    lv_obj_set_height(nameBtn, theme::CHAT_NAME_BTN_H);
-    lv_obj_set_style_bg_opa(nameBtn, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_shadow_width(nameBtn, 0, 0);
-    lv_obj_set_style_border_width(nameBtn, 0, 0);
-    lv_obj_set_style_pad_all(nameBtn, 0, 0);
-    lv_obj_set_flex_grow(nameBtn, 1);
-    lv_obj_add_event_cb(nameBtn, headerNameCb, LV_EVENT_CLICKED, this);
-
-    _headerName = lv_label_create(nameBtn);
+    // Contact/channel name — touch-only: do NOT add to encoder group
+    _headerName = lv_win_add_title(_win, "");
     lv_obj_set_style_text_font(_headerName, FONT_HEADING, 0);
     lv_obj_set_style_text_color(_headerName, theme::TEXT_PRIMARY(), 0);
-    lv_label_set_text(_headerName, "");
-    // Vertically center on the button so the baseline matches the centered
-    // back-arrow label next to it (default top-left would sit higher).
-    lv_obj_align(_headerName, LV_ALIGN_LEFT_MID, 0, 0);
+    lv_obj_add_flag(_headerName, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(_headerName, headerNameCb, LV_EVENT_CLICKED, this);
 
-    // Mute indicator — shown on the right of the header when chat is muted.
-    // Tapping it unmutes the conversation.
-    _muteIcon = lv_btn_create(_header);
-    lv_obj_set_size(_muteIcon, theme::BTN_HEADER_ICON_W, theme::BTN_HEADER_ICON_H);
+    // Mute indicator — shown on the right of the header when chat is muted
+    _muteIcon = lv_win_add_btn(_win, LV_SYMBOL_MUTE, theme::BTN_HEADER_ICON_W);
     lv_obj_set_style_bg_opa(_muteIcon, LV_OPA_TRANSP, 0);
     lv_obj_set_style_shadow_width(_muteIcon, 0, 0);
     lv_obj_set_style_border_width(_muteIcon, 0, 0);
     lv_obj_set_style_pad_all(_muteIcon, 0, 0);
     lv_obj_add_event_cb(_muteIcon, muteIconCb, LV_EVENT_CLICKED, this);
-
-    lv_obj_t* muteLbl = lv_label_create(_muteIcon);
-    lv_label_set_text(muteLbl, LV_SYMBOL_MUTE);
-    lv_obj_set_style_text_font(muteLbl, FONT_HEADING, 0);
-    lv_obj_set_style_text_color(muteLbl, theme::TEXT_SECONDARY(), 0);
-    lv_obj_center(muteLbl);
-    lv_obj_add_flag(_muteIcon, LV_OBJ_FLAG_HIDDEN);  // shown in open() if muted
+    lv_obj_t* muteImg = lv_obj_get_child(_muteIcon, 0);
+    lv_obj_set_style_text_font(muteImg, FONT_HEADING, 0);
+    lv_obj_set_style_text_color(muteImg, theme::TEXT_SECONDARY(), 0);
+    lv_obj_add_flag(_muteIcon, LV_OBJ_FLAG_HIDDEN);
 }
 
 void ChatScreen::createChatArea() {
-    _chatArea = lv_obj_create(_screen);
-    lv_obj_set_size(_chatArea, theme::CONTENT_WIDTH,
-                    Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT
-                    - theme::CHAT_HEADER_HEIGHT - theme::CHAT_INPUT_HEIGHT);
-    lv_obj_align(_chatArea, LV_ALIGN_TOP_MID, 0, theme::CHAT_HEADER_HEIGHT);
+    _chatArea = lv_win_get_content(_win);
     lv_obj_set_style_bg_opa(_chatArea, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(_chatArea, 0, 0);
     lv_obj_set_style_pad_all(_chatArea, theme::PAD_SMALL, 0);
     lv_obj_set_style_pad_row(_chatArea, theme::PAD_SMALL, 0);
+#ifdef PLATFORM_TWATCH
+    lv_obj_set_style_pad_hor(_chatArea, theme::SAFE_AREA_LEFT, 0);
+#endif
     lv_obj_set_flex_flow(_chatArea, LV_FLEX_FLOW_COLUMN);
     lv_obj_add_flag(_chatArea, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_scroll_dir(_chatArea, LV_DIR_VER);
@@ -298,23 +281,20 @@ void ChatScreen::showKeyboard() {
     if (!_kbd) return;
     constexpr int KBD_H = 200;
     lv_obj_clear_flag(_kbd, LV_OBJ_FLAG_HIDDEN);
-    // Lift input bar above the keyboard so the textarea stays visible.
     lv_obj_align(_inputBar, LV_ALIGN_BOTTOM_MID, 0, -KBD_H);
-    // Shrink chat area to fit between header and the now-raised input bar.
-    lv_obj_set_height(_chatArea,
+    lv_obj_set_height(_win,
         Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT
-        - theme::CHAT_HEADER_HEIGHT - theme::CHAT_INPUT_HEIGHT - KBD_H);
+        - theme::CHAT_INPUT_HEIGHT - KBD_H);
     scrollToBottom();
 }
 
 void ChatScreen::hideKeyboard() {
     if (!_kbd) return;
     lv_obj_add_flag(_kbd, LV_OBJ_FLAG_HIDDEN);
-    // Restore input bar to the bottom of _screen and chat area to full.
     lv_obj_align(_inputBar, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_obj_set_height(_chatArea,
+    lv_obj_set_height(_win,
         Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT
-        - theme::CHAT_HEADER_HEIGHT - theme::CHAT_INPUT_HEIGHT);
+        - theme::CHAT_INPUT_HEIGHT);
     scrollToBottom();
 }
 #endif
@@ -340,11 +320,10 @@ void ChatScreen::open(const ConvoId& id) {
     // Hide or show input bar based on read-only flag
     if (ro) {
         lv_obj_add_flag(_inputBar, LV_OBJ_FLAG_HIDDEN);
-        // Expand chat area to fill the space
-        lv_obj_set_height(_chatArea, Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT - theme::CHAT_HEADER_HEIGHT);
+        lv_obj_set_height(_win, Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT);
     } else {
         lv_obj_clear_flag(_inputBar, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_set_height(_chatArea, Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT - theme::CHAT_HEADER_HEIGHT - theme::CHAT_INPUT_HEIGHT);
+        lv_obj_set_height(_win, Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT - theme::CHAT_INPUT_HEIGHT);
     }
 
     // Mark as read

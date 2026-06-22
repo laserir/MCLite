@@ -35,7 +35,7 @@ public:
 
 private:
     lv_obj_t* _screen    = nullptr;
-    lv_obj_t* _header    = nullptr;
+    lv_obj_t* _win       = nullptr;  // lv_win: owns header + scrollable content
     lv_obj_t* _chatArea  = nullptr;
     lv_obj_t* _inputBar  = nullptr;
     lv_obj_t* _textarea  = nullptr;
