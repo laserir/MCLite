@@ -12,6 +12,8 @@ using OnBackCallback  = std::function<void()>;
 using OnInfoCallback  = std::function<void(const ConvoId& id)>;
 using OnRetryCallback = std::function<void(const ConvoId& id, const String& text, uint32_t oldPacketId)>;
 using OnMuteCallback  = std::function<void(const ConvoId& id, bool muted)>;
+using OnMapCallback   = std::function<void(const ConvoId& id)>;
+using OnTelemCallback = std::function<void(const ConvoId& id)>;
 
 class ChatScreen {
 public:
@@ -28,7 +30,9 @@ public:
     void onBack(OnBackCallback cb)   { _onBack = cb; }
     void onInfo(OnInfoCallback cb)   { _onInfo = cb; }
     void onRetry(OnRetryCallback cb) { _onRetry = cb; }
-    void onMute(OnMuteCallback cb)  { _onMute = cb; }
+    void onMute(OnMuteCallback cb)   { _onMute = cb; }
+    void onMap(OnMapCallback cb)     { _onMap = cb; }
+    void onTelem(OnTelemCallback cb) { _onTelem = cb; }
 
     const ConvoId* currentConvo() const { return _currentConvo.get(); }
     lv_obj_t* obj() { return _screen; }
@@ -48,6 +52,9 @@ private:
     lv_obj_t* _emojiBtnm     = nullptr;  // emoji grid picker overlay
     lv_obj_t* _emojiOverlay  = nullptr;
     lv_obj_t* _headerName = nullptr;
+    lv_obj_t* _mapBtn   = nullptr;  // Map button (DM only)
+    lv_obj_t* _telemBtn = nullptr;  // Telemetry button (DM only)
+    lv_obj_t* _infoBtn  = nullptr;  // Contact info button (DM only)
     lv_obj_t* _muteIcon = nullptr;  // Mute indicator in header
 #ifdef PLATFORM_TWATCH
     lv_obj_t* _kbd        = nullptr;  // T-Watch only: on-screen keyboard
@@ -61,6 +68,8 @@ private:
     OnInfoCallback  _onInfo;
     OnRetryCallback _onRetry;
     OnMuteCallback  _onMute;
+    OnMapCallback   _onMap;
+    OnTelemCallback _onTelem;
 
     void createHeader();
     void createChatArea();
@@ -95,6 +104,8 @@ private:
     static void emojiBtnCb(lv_event_t* e);
     static void emojiBtnmCb(lv_event_t* e);
     static void muteIconCb(lv_event_t* e);
+    static void mapBtnCb(lv_event_t* e);
+    static void telemBtnCb(lv_event_t* e);
 };
 
 }  // namespace mclite

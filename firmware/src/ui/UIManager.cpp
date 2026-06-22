@@ -83,6 +83,22 @@ bool UIManager::init() {
         showTelemetryModal(id);
     });
 
+    _chatScreen.onMap([this](const ConvoId& id) {
+        auto& contacts = ContactStore::instance();
+        for (size_t i = 0; i < contacts.count(); i++) {
+            const Contact* c = contacts.findByIndex(i);
+            if (c && c->shortId() == id.id) {
+                ContactLocation loc = bestKnownLocation(c->publicKey);
+                if (loc.valid) openMapAt(c->publicKey, loc.lat, loc.lon, c->name);
+                break;
+            }
+        }
+    });
+
+    _chatScreen.onTelem([this](const ConvoId& id) {
+        showTelemetryModal(id);
+    });
+
     _convoList.onMute([this](const ConvoId& id, bool muted) {
         showToast(muted ? t("toast_muted") : t("toast_unmuted"));
         // If currently viewing this chat, refresh the header mute indicator
