@@ -279,5 +279,10 @@
     "err_save_failed": "Speichern fehlgeschlagen (SD)",
     "btn_delete": "Loeschen",
     "convo_del_title": "Eintrag entfernen",
-    "convo_del_confirm": "%s entfernen? Wirksam nach Neustart."
+    "convo_del_confirm": "%s entfernen? Wirksam nach Neustart.",
+
+    "sec_canned_messages_t": "Schnellantworten",
+    "sec_canned_messages": "Schnellantworten (%d)",
+    "canned_add_msg": "Nachricht hinzufuegen",
+    "canned_enter_msg": "Nachrichtentext"
 }

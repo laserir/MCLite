@@ -11,7 +11,7 @@ namespace mclite {
 // Arduino/board macros.
 enum class SettingsSection {
     Device, Radio, Display, Messaging, Sound, Gps, Battery, Security,
-    Contacts, Channels, Rooms
+    Contacts, Channels, Rooms, CannedMessages
 };
 
 // Generic enum/string choice fields rendered by the shared btnmatrix picker.
@@ -252,6 +252,23 @@ private:
 
     // Pending PIN during two-step confirmation
     String _pendingPin;
+
+    // Canned messages editor overlay
+    lv_obj_t* _cannedOverlay  = nullptr;
+    lv_obj_t* _cannedTextarea = nullptr;
+    lv_obj_t* _cannedDelBtn   = nullptr;
+    int        _cannedEditIdx  = -1;
+#ifdef PLATFORM_TWATCH
+    lv_obj_t* _cannedKbd      = nullptr;
+#endif
+    void buildCannedList();
+    void openCannedEditor(int idx, const String& text);
+    void hideCannedEditor();
+    static void cannedSectionRowCb(lv_event_t* e);
+    static void cannedRowCb(lv_event_t* e);
+    static void cannedAddRowCb(lv_event_t* e);
+    static void cannedSaveCb(lv_event_t* e);
+    static void cannedDeleteCb(lv_event_t* e);
 
     static void backBtnCb(lv_event_t* e);
     static void themeRowCb(lv_event_t* e);   // opens the theme picker (reboots to apply)

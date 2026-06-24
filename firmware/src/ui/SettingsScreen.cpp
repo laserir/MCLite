@@ -44,9 +44,10 @@ const char* sectionTitleKey(SettingsSection s) {
         case SettingsSection::Gps:       return "sec_gps";
         case SettingsSection::Battery:   return "sec_battery";
         case SettingsSection::Security:  return "sec_security";
-        case SettingsSection::Contacts:  return "sec_contacts_t";
-        case SettingsSection::Channels:  return "sec_channels_t";
-        case SettingsSection::Rooms:     return "sec_rooms_t";
+        case SettingsSection::Contacts:      return "sec_contacts_t";
+        case SettingsSection::Channels:      return "sec_channels_t";
+        case SettingsSection::Rooms:         return "sec_rooms_t";
+        case SettingsSection::CannedMessages:return "sec_canned_messages_t";
     }
     return "sec_device";
 }
@@ -345,7 +346,8 @@ void SettingsScreen::show() {
         case SettingsSection::Security:  buildSecurity();  break;
         case SettingsSection::Contacts:
         case SettingsSection::Channels:
-        case SettingsSection::Rooms:     buildConvoList(); break;
+        case SettingsSection::Rooms:         buildConvoList();   break;
+        case SettingsSection::CannedMessages:buildCannedList();  break;
     }
 
     // Add content to input group so trackball can scroll
@@ -540,6 +542,10 @@ void SettingsScreen::buildMessaging() {
                       (void*)BoolField::AutoTelemetry, false);
     addSwitchRowGated(t("lbl_canned"), cfg.messaging.cannedMessages, boolToggleCb,
                       (void*)BoolField::CannedMessages, false);
+    if (cfg.messaging.cannedMessages) {
+        int cnt = cfg.messaging.cannedCustom.empty() ? 8 : (int)cfg.messaging.cannedCustom.size();
+        addNavRow(t("sec_canned_messages_t"), String(cnt), cannedSectionRowCb);
+    }
     addSwitchRowGated(t("lbl_allow_mute"), cfg.messaging.allowMute, boolToggleCb,
                       (void*)BoolField::AllowMute, false);
 }
@@ -686,6 +692,178 @@ void SettingsScreen::buildSecurity() {
     if (cfg.security.autoLock == "key") autoLockValue = t("lock_key");
     else if (cfg.security.autoLock == "pin") autoLockValue = t("lock_pin");
     addNavRowGated(t("lbl_auto_lock"), autoLockValue, autoLockRowCb, false);
+}
+
+// ─────────────────────────── Canned messages section ───────────────────────────
+
+void SettingsScreen::cannedSectionRowCb(lv_event_t*) {
+    UIManager::instance().showSettings(SettingsSection::CannedMessages);
+}
+
+void SettingsScreen::buildCannedList() {
+    const bool edit = canEdit(false);
+    const auto& cfg = ConfigManager::instance().config();
+
+    // Effective list: custom when set, built-in defaults otherwise.
+    std::vector<String> messages;
+    if (!cfg.messaging.cannedCustom.empty()) {
+        messages = cfg.messaging.cannedCustom;
+    } else {
+        for (int i = 1; i <= 8; i++) {
+            char key[12];
+            snprintf(key, sizeof(key), "canned_%d", i);
+            messages.push_back(t(key));
+        }
+    }
+
+    char hdr[48];
+    snprintf(hdr, sizeof(hdr), t("sec_canned_messages"), (int)messages.size());
+    addSectionHeader(hdr);
+
+    if (edit && (int)messages.size() < 8)
+        addNavRow((String(LV_SYMBOL_PLUS " ") + t("canned_add_msg")).c_str(), "", cannedAddRowCb);
+
+    for (size_t i = 0; i < messages.size(); i++) {
+        if (edit) {
+            lv_obj_t* row = addNavRow(("  " + String((int)(i + 1))).c_str(), messages[i], cannedRowCb);
+            lv_obj_set_user_data(row, (void*)(intptr_t)i);
+        } else {
+            addReadOnlyRow(("  " + String((int)(i + 1))).c_str(), messages[i]);
+        }
+    }
+}
+
+void SettingsScreen::cannedAddRowCb(lv_event_t* e) {
+    SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
+    if (!self) return;
+    self->openCannedEditor(-1, "");
+}
+
+void SettingsScreen::cannedRowCb(lv_event_t* e) {
+    SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
+    if (!self) return;
+    int idx = (int)(intptr_t)lv_obj_get_user_data(lv_event_get_target(e));
+    const auto& cfg = ConfigManager::instance().config();
+    String text;
+    if (!cfg.messaging.cannedCustom.empty() && (size_t)idx < cfg.messaging.cannedCustom.size()) {
+        text = cfg.messaging.cannedCustom[idx];
+    } else {
+        char key[12];
+        snprintf(key, sizeof(key), "canned_%d", idx + 1);
+        text = t(key);
+    }
+    self->openCannedEditor(idx, text);
+}
+
+void SettingsScreen::openCannedEditor(int idx, const String& text) {
+    if (_cannedTextarea) return;
+    _cannedEditIdx = idx;
+
+    _cannedOverlay = lv_obj_create(lv_layer_top());
+    lv_obj_set_size(_cannedOverlay, Display::width(), Display::height());
+    lv_obj_set_pos(_cannedOverlay, 0, 0);
+    lv_obj_set_style_bg_color(_cannedOverlay, theme::BG_PRIMARY(), 0);
+    lv_obj_set_style_bg_opa(_cannedOverlay, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(_cannedOverlay, 0, 0);
+    lv_obj_clear_flag(_cannedOverlay, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t* titleLbl = lv_label_create(_cannedOverlay);
+    lv_obj_set_style_text_font(titleLbl, FONT_HEADING, 0);
+    lv_obj_set_style_text_color(titleLbl, theme::TEXT_PRIMARY(), 0);
+    lv_label_set_text(titleLbl, t("canned_enter_msg"));
+    lv_obj_align(titleLbl, LV_ALIGN_TOP_MID, 0, theme::STATUS_BAR_HEIGHT);
+
+    _cannedTextarea = lv_textarea_create(_cannedOverlay);
+    lv_textarea_set_one_line(_cannedTextarea, true);
+    lv_obj_set_width(_cannedTextarea, theme::CONTENT_WIDTH);
+    lv_obj_align(_cannedTextarea, LV_ALIGN_TOP_MID, 0, theme::STATUS_BAR_HEIGHT + 44);
+    lv_obj_set_style_border_color(_cannedTextarea, theme::ACCENT(), LV_STATE_FOCUSED);
+    lv_textarea_set_max_length(_cannedTextarea, 80);
+    lv_textarea_set_text(_cannedTextarea, text.c_str());
+    lv_textarea_set_placeholder_text(_cannedTextarea, t("canned_enter_msg"));
+
+    lv_obj_t* btnRow = lv_obj_create(_cannedOverlay);
+    lv_obj_set_size(btnRow, theme::CONTENT_WIDTH, LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_opa(btnRow, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(btnRow, 0, 0);
+    lv_obj_set_style_pad_all(btnRow, 0, 0);
+    lv_obj_set_flex_flow(btnRow, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(btnRow, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(btnRow, theme::PAD_SMALL, 0);
+    lv_obj_align(btnRow, LV_ALIGN_TOP_MID, 0, theme::STATUS_BAR_HEIGHT + 44 + 52);
+    lv_obj_clear_flag(btnRow, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t* save = lv_btn_create(btnRow);
+    lv_obj_set_width(save, LV_PCT(100));
+    lv_obj_set_style_bg_color(save, theme::ACCENT(), 0);
+    lv_obj_set_style_bg_color(save, theme::BG_SECONDARY(), LV_STATE_FOCUSED);
+    lv_obj_add_event_cb(save, cannedSaveCb, LV_EVENT_CLICKED, this);
+    lv_obj_t* saveLbl = lv_label_create(save);
+    lv_label_set_text(saveLbl, t("btn_save"));
+    lv_obj_center(saveLbl);
+
+    _cannedDelBtn = lv_btn_create(btnRow);
+    lv_obj_set_width(_cannedDelBtn, LV_PCT(100));
+    lv_obj_set_style_bg_color(_cannedDelBtn, theme::BG_SECONDARY(), 0);
+    lv_obj_set_style_bg_color(_cannedDelBtn, theme::ACCENT(), LV_STATE_FOCUSED);
+    lv_obj_add_event_cb(_cannedDelBtn, cannedDeleteCb, LV_EVENT_CLICKED, this);
+    lv_obj_t* delLbl = lv_label_create(_cannedDelBtn);
+    lv_label_set_text(delLbl, t("btn_delete"));
+    lv_obj_center(delLbl);
+    if (idx < 0) lv_obj_add_flag(_cannedDelBtn, LV_OBJ_FLAG_HIDDEN);
+
+    lv_obj_t* cancel = lv_btn_create(btnRow);
+    lv_obj_set_width(cancel, LV_PCT(100));
+    lv_obj_set_style_bg_color(cancel, theme::BG_SECONDARY(), 0);
+    lv_obj_set_style_bg_color(cancel, theme::ACCENT(), LV_STATE_FOCUSED);
+    lv_obj_add_event_cb(cancel, [](lv_event_t* ev) {
+        auto* s = static_cast<SettingsScreen*>(lv_event_get_user_data(ev));
+        if (s) lv_async_call([](void* p) { ((SettingsScreen*)p)->hideCannedEditor(); }, s);
+    }, LV_EVENT_CLICKED, this);
+    lv_obj_t* cxlLbl = lv_label_create(cancel);
+    lv_label_set_text(cxlLbl, t("btn_cancel"));
+    lv_obj_center(cxlLbl);
+
+    lv_group_t* g = lv_group_create();
+    _editorGroup = g;
+    lv_group_add_obj(g, _cannedTextarea);
+    lv_group_add_obj(g, save);
+    lv_group_add_obj(g, _cannedDelBtn);
+    lv_group_add_obj(g, cancel);
+    lv_group_focus_obj(_cannedTextarea);
+    UIManager::instance().switchToModalGroup(_cannedOverlay);
+    IInput::instance().attachToGroup(g);
+    lv_obj_add_event_cb(_cannedTextarea, cannedSaveCb, LV_EVENT_READY, this);
+
+#ifdef PLATFORM_TWATCH
+    _cannedKbd = lv_keyboard_create(_cannedOverlay);
+    lv_keyboard_set_textarea(_cannedKbd, _cannedTextarea);
+    lv_keyboard_set_popovers(_cannedKbd, true);
+    lv_btnmatrix_set_btn_ctrl_all(_cannedKbd, LV_BTNMATRIX_CTRL_NO_REPEAT);
+    lv_obj_add_event_cb(_cannedKbd, [](lv_event_t* ev) {
+        auto* self = static_cast<SettingsScreen*>(lv_event_get_user_data(ev));
+        if (!self) return;
+        lv_event_code_t code = lv_event_get_code(ev);
+        if (code == LV_EVENT_VALUE_CHANGED)
+            lv_btnmatrix_set_btn_ctrl_all(self->_cannedKbd, LV_BTNMATRIX_CTRL_NO_REPEAT);
+        else if (code == LV_EVENT_CANCEL)
+            lv_async_call([](void* p) { ((SettingsScreen*)p)->hideCannedEditor(); }, self);
+    }, LV_EVENT_ALL, this);
+#endif
+}
+
+void SettingsScreen::hideCannedEditor() {
+    if (!_cannedTextarea) return;
+    UIManager::instance().restoreFromModalGroup();
+    if (_editorGroup) { lv_group_del(_editorGroup); _editorGroup = nullptr; }
+#ifdef PLATFORM_TWATCH
+    _cannedKbd = nullptr;
+#endif
+    _cannedTextarea = nullptr;
+    _cannedDelBtn   = nullptr;
+    lv_obj_del_async(_cannedOverlay);
+    _cannedOverlay  = nullptr;
+    if (_screen) show();
 }
 
 bool SettingsScreen::convoManageEnabled() const {
@@ -1130,6 +1308,51 @@ bool isHexN(const String& s, int n) {
     return true;
 }
 }  // namespace
+
+void SettingsScreen::cannedSaveCb(lv_event_t* e) {
+    SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
+    if (!self || !self->_cannedTextarea) return;
+    String text = convoTrim(String(lv_textarea_get_text(self->_cannedTextarea)));
+    if (text.length() == 0) { UIManager::instance().showToast(t("chan_name_invalid")); return; }
+
+    auto& cfg = ConfigManager::instance().config();
+    int idx = self->_cannedEditIdx;
+
+    if (cfg.messaging.cannedCustom.empty()) {
+        for (int i = 1; i <= 8; i++) {
+            char key[12]; snprintf(key, sizeof(key), "canned_%d", i);
+            cfg.messaging.cannedCustom.push_back(t(key));
+        }
+    }
+    if (idx < 0) {
+        if (cfg.messaging.cannedCustom.size() < 8)
+            cfg.messaging.cannedCustom.push_back(text);
+    } else if ((size_t)idx < cfg.messaging.cannedCustom.size()) {
+        cfg.messaging.cannedCustom[(size_t)idx] = text;
+    }
+    g_dsDirty = true;
+    lv_async_call([](void* p) { ((SettingsScreen*)p)->hideCannedEditor(); }, self);
+}
+
+void SettingsScreen::cannedDeleteCb(lv_event_t* e) {
+    SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
+    if (!self || !self->_cannedTextarea) return;
+    int idx = self->_cannedEditIdx;
+    if (idx < 0) return;
+
+    auto& cfg = ConfigManager::instance().config();
+    if (cfg.messaging.cannedCustom.empty()) {
+        for (int i = 1; i <= 8; i++) {
+            if (i - 1 == idx) continue;
+            char key[12]; snprintf(key, sizeof(key), "canned_%d", i);
+            cfg.messaging.cannedCustom.push_back(t(key));
+        }
+    } else if ((size_t)idx < cfg.messaging.cannedCustom.size()) {
+        cfg.messaging.cannedCustom.erase(cfg.messaging.cannedCustom.begin() + idx);
+    }
+    g_dsDirty = true;
+    lv_async_call([](void* p) { ((SettingsScreen*)p)->hideCannedEditor(); }, self);
+}
 
 void SettingsScreen::convoEditorReadyCb(lv_event_t* e) {
     SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);

@@ -279,5 +279,10 @@
     "err_save_failed": "Echec sauvegarde (SD)",
     "btn_delete": "Supprimer",
     "convo_del_title": "Supprimer entree",
-    "convo_del_confirm": "Supprimer %s ? Effet apres redemarrage."
+    "convo_del_confirm": "Supprimer %s ? Effet apres redemarrage.",
+
+    "sec_canned_messages_t": "Reponses rapides",
+    "sec_canned_messages": "Reponses rapides (%d)",
+    "canned_add_msg": "Ajouter message",
+    "canned_enter_msg": "Texte du message"
 }

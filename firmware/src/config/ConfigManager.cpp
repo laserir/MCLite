@@ -494,7 +494,15 @@ String ConfigManager::toJson() const {
     msg["max_retries"]          = _config.messaging.maxRetries;
     msg["request_telemetry"]    = _config.messaging.requestTelemetry;
     msg["show_telemetry"]       = _config.messaging.showTelemetry;
-    msg["canned_messages"]      = _config.messaging.cannedMessages;
+    if (_config.messaging.cannedCustom.empty()) {
+        msg["canned_messages"] = _config.messaging.cannedMessages;
+    } else {
+        JsonArray cannedArr = msg["canned_messages"].to<JsonArray>();
+        for (size_t i = 0; i < _config.messaging.cannedCustom.size() && i < 8; i++) {
+            if (_config.messaging.cannedCustom[i].length() > 0)
+                cannedArr.add(_config.messaging.cannedCustom[i]);
+        }
+    }
     msg["allow_mute"]           = _config.messaging.allowMute;
     msg["auto_telemetry"]       = _config.messaging.autoTelemetry;
     msg["share_contact"]        = _config.messaging.shareContact;

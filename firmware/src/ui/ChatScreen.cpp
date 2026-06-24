@@ -814,15 +814,15 @@ void ChatScreen::showCannedPicker() {
             labels[count] = stored[count].c_str();
             count++;
         }
-    } else if (isEnglish && !custom.empty()) {
-        // English + custom array: use ONLY the custom entries
+    } else if (!custom.empty()) {
+        // Global custom array wins over i18n defaults regardless of language
         for (size_t i = 0; i < custom.size() && i < 8; i++) {
             stored[count] = custom[i];
             labels[count] = stored[count].c_str();
             count++;
         }
     } else {
-        // Non-English (lang file wins) or English with no custom array (defaults)
+        // No custom array: use i18n strings (language-sensitive)
         for (int i = 1; i <= 8; i++) {
             char key[12];
             snprintf(key, sizeof(key), "canned_%d", i);

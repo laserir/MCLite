@@ -127,6 +127,9 @@ void AdminScreen::show() {
     addLink(ICON_DM,      t("sec_contacts_t"), [](lv_event_t*) { UIManager::instance().showSettings(SettingsSection::Contacts); });
     addLink(ICON_CHANNEL, t("sec_channels_t"), [](lv_event_t*) { UIManager::instance().showSettings(SettingsSection::Channels); });
     addLink(ICON_ROOM,    t("sec_rooms_t"),    [](lv_event_t*) { UIManager::instance().showSettings(SettingsSection::Rooms); });
+    if (ConfigManager::instance().config().messaging.cannedMessages) {
+        addLink(LV_SYMBOL_LIST, t("sec_canned_messages_t"), [](lv_event_t*) { UIManager::instance().showSettings(SettingsSection::CannedMessages); });
+    }
 
     // ─── Settings (gear icon on each) ───
     addHeader(t("grp_settings"));
