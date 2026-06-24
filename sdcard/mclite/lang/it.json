@@ -297,5 +297,10 @@
     "convo_del_confirm": "Rimuovere %s? Attivo dopo il riavvio.",
     "convo_reset_path": "Reimposta percorso",
     "convo_reset_done": "Percorso reimpostato",
-    "convo_set_scope": "Imposta portata"
+    "convo_set_scope": "Imposta portata",
+
+    "sec_canned_messages_t": "Risposte rapide",
+    "sec_canned_messages": "Risposte rapide (%d)",
+    "canned_add_msg": "Aggiungi messaggio",
+    "canned_enter_msg": "Testo del messaggio"
 }

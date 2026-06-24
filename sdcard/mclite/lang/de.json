@@ -297,5 +297,10 @@
     "convo_del_confirm": "%s entfernen? Wirksam nach Neustart.",
     "convo_reset_path": "Pfad zuruecksetzen",
     "convo_reset_done": "Pfad zurueckgesetzt",
-    "convo_set_scope": "Reichweite setzen"
+    "convo_set_scope": "Reichweite setzen",
+
+    "sec_canned_messages_t": "Schnellantworten",
+    "sec_canned_messages": "Schnellantworten (%d)",
+    "canned_add_msg": "Nachricht hinzufuegen",
+    "canned_enter_msg": "Nachrichtentext"
 }
