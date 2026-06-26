@@ -14,11 +14,13 @@ class MCLiteMesh;  // Forward declaration
 using OnMessageCallback  = std::function<void(const String& senderName,
                                                const uint8_t* senderKey,
                                                const String& text,
-                                               uint32_t timestamp)>;
+                                               uint32_t timestamp,
+                                               uint8_t hops)>;
 using OnGroupMsgCallback = std::function<void(uint8_t channelIdx,
                                                const String& senderName,
                                                const String& text,
-                                               uint32_t timestamp)>;
+                                               uint32_t timestamp,
+                                               uint8_t hops)>;
 using OnAckCallback      = std::function<void(uint32_t packetId)>;
 using OnFailCallback     = std::function<void(uint32_t packetId)>;
 using OnAdvertCallback     = std::function<void(const uint8_t* senderKey)>;

@@ -883,7 +883,7 @@ void MCLiteMesh::onContactPathUpdated(const ContactInfo& contact) {
 void MCLiteMesh::onMessageRecv(const ContactInfo& contact, mesh::Packet* pkt,
                                 uint32_t sender_timestamp, const char* text) {
     LOGF("[MCLiteMesh] DM from %s: %s\n", contact.name, text);
-    if (_onMessage) _onMessage(contact, sender_timestamp, text);
+    if (_onMessage) _onMessage(contact, sender_timestamp, text, pkt->getPathHashCount());
 }
 
 void MCLiteMesh::onCommandDataRecv(const ContactInfo& contact, mesh::Packet* pkt,
@@ -906,14 +906,14 @@ void MCLiteMesh::onSignedMessageRecv(const ContactInfo& contact, mesh::Packet* p
     // Signed DM fallback (no current MCLite path produces these, but BaseChatMesh
     // requires the override)
     LOGF("[MCLiteMesh] Signed DM from %s: %s\n", contact.name, text);
-    if (_onMessage) _onMessage(contact, sender_timestamp, text);
+    if (_onMessage) _onMessage(contact, sender_timestamp, text, pkt->getPathHashCount());
 }
 
 void MCLiteMesh::onChannelMessageRecv(const mesh::GroupChannel& channel,
                                        mesh::Packet* pkt,
                                        uint32_t timestamp, const char* text) {
     LOGF("[MCLiteMesh] Group msg on channel: %s\n", text);
-    if (_onGroupMsg) _onGroupMsg(channel, timestamp, text);
+    if (_onGroupMsg) _onGroupMsg(channel, timestamp, text, pkt->getPathHashCount());
 }
 
 uint32_t MCLiteMesh::calcFloodTimeoutMillisFor(uint32_t pkt_airtime_millis) const {

@@ -337,7 +337,7 @@ static void setupMeshCallbacks() {
     auto& mesh = MeshManager::instance();
 
     mesh.onMessage([](const String& senderName, const uint8_t* senderKey,
-                       const String& text, uint32_t timestamp) {
+                       const String& text, uint32_t timestamp, uint8_t hops) {
         Contact* contact = ContactStore::instance().findByPublicKey(senderKey);
         if (!contact) return;
         ConvoId id{ConvoId::DM, contact->shortId()};
@@ -347,12 +347,13 @@ static void setupMeshCallbacks() {
         msg.timestamp = timestamp;
         msg.senderName = senderName;
         msg.status = MessageStatus::DELIVERED;
+        msg.hops = hops;
         UIManager::instance().onIncomingMessage(id, msg);
         ContactStore::instance().updateLastSeen(senderKey);
     });
 
     mesh.onGroupMessage([](uint8_t channelIdx, const String& senderName,
-                            const String& text, uint32_t timestamp) {
+                            const String& text, uint32_t timestamp, uint8_t hops) {
         Channel* ch = ChannelStore::instance().findByIndex(channelIdx);
         if (!ch) return;
         ConvoId id{ConvoId::CHANNEL, ch->name};
@@ -362,6 +363,7 @@ static void setupMeshCallbacks() {
         msg.timestamp = timestamp;
         msg.senderName = senderName;
         msg.status = MessageStatus::DELIVERED;
+        msg.hops = hops;
         UIManager::instance().onIncomingMessage(id, msg);
     });
 

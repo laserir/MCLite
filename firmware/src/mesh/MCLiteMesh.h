@@ -25,9 +25,11 @@ static constexpr uint8_t TELEM_CHANNEL_SELF      = 1;
 
 // Callback types for incoming events
 using MeshMessageCb  = std::function<void(const ContactInfo& contact,
-                                           uint32_t timestamp, const char* text)>;
+                                           uint32_t timestamp, const char* text,
+                                           uint8_t hops)>;
 using MeshGroupMsgCb = std::function<void(const mesh::GroupChannel& channel,
-                                           uint32_t timestamp, const char* text)>;
+                                           uint32_t timestamp, const char* text,
+                                           uint8_t hops)>;
 using MeshAckCb      = std::function<void(uint32_t packetId)>;
 using MeshFailCb     = std::function<void(uint32_t packetId)>;
 using MeshAdvertCb   = std::function<void(const ContactInfo& contact, bool isNew)>;

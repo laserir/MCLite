@@ -107,6 +107,7 @@ void MessageStore::loadHistory(const ConvoId& id) {
         msg.text      = obj["text"] | "";
         msg.timestamp = obj["time"] | 0;
         msg.senderName = obj["sender"] | "";
+        msg.hops       = obj["hops"] | 0;
         const char* status = obj["status"] | "sent";
         if (strcmp(status, "delivered") == 0)    msg.status = MessageStatus::DELIVERED;
         else if (strcmp(status, "repeated") == 0) msg.status = MessageStatus::REPEATED;
@@ -149,9 +150,8 @@ void MessageStore::saveHistory(const ConvoId& id) {
         else if (msg.status == MessageStatus::FAILED)  statusStr = "failed";
         else if (msg.status == MessageStatus::SENDING) statusStr = "sending";
         obj["status"] = statusStr;
-        if (msg.senderName.length() > 0) {
-            obj["sender"] = msg.senderName;
-        }
+        if (msg.senderName.length() > 0) obj["sender"] = msg.senderName;
+        if (msg.hops > 0)               obj["hops"]   = msg.hops;
     }
 
     String json;

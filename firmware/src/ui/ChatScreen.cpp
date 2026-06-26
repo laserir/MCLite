@@ -529,6 +529,16 @@ void ChatScreen::addBubble(const Message& msg) {
         lv_label_set_text(ts, timeStr);
     }
 
+    // Hop count (incoming only, when > 0)
+    if (!msg.fromSelf && msg.hops > 0) {
+        lv_obj_t* hopsLbl = lv_label_create(meta);
+        lv_obj_set_style_text_font(hopsLbl, FONT_BODY, 0);
+        lv_obj_set_style_text_color(hopsLbl, theme::TEXT_TIMESTAMP(), 0);
+        char hopStr[6];
+        snprintf(hopStr, sizeof(hopStr), "x%u", (unsigned)msg.hops);
+        lv_label_set_text(hopsLbl, hopStr);
+    }
+
     // Delivery status (outgoing only)
     if (msg.fromSelf) {
         lv_obj_t* status = lv_label_create(meta);
