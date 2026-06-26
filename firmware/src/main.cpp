@@ -375,6 +375,10 @@ static void setupMeshCallbacks() {
         CompanionService::instance().onSendFailed(packetId);
     });
 
+    mesh.onEchoDetected([](uint32_t packetId) {
+        UIManager::instance().onEchoDetected(packetId);
+    });
+
     mesh.onAdvert([](const uint8_t* senderKey) {
         ContactStore::instance().updateLastSeen(senderKey);
     });

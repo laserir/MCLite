@@ -109,6 +109,7 @@ void MessageStore::loadHistory(const ConvoId& id) {
         msg.senderName = obj["sender"] | "";
         const char* status = obj["status"] | "sent";
         if (strcmp(status, "delivered") == 0)    msg.status = MessageStatus::DELIVERED;
+        else if (strcmp(status, "repeated") == 0) msg.status = MessageStatus::REPEATED;
         else if (strcmp(status, "failed") == 0)  msg.status = MessageStatus::FAILED;
         else if (strcmp(status, "sending") == 0) msg.status = MessageStatus::FAILED;  // Can't ACK after reboot
         else                                     msg.status = MessageStatus::SENT;
@@ -144,6 +145,7 @@ void MessageStore::saveHistory(const ConvoId& id) {
         obj["time"]   = msg.timestamp;
         const char* statusStr = "sent";
         if (msg.status == MessageStatus::DELIVERED)    statusStr = "delivered";
+        else if (msg.status == MessageStatus::REPEATED) statusStr = "repeated";
         else if (msg.status == MessageStatus::FAILED)  statusStr = "failed";
         else if (msg.status == MessageStatus::SENDING) statusStr = "sending";
         obj["status"] = statusStr;
@@ -185,6 +187,20 @@ void MessageStore::updateStatus(uint32_t packetId, MessageStatus status) {
         for (auto& msg : convo.messages) {
             if (msg.packetId == packetId && msg.fromSelf) {
                 msg.status = status;
+                saveHistory(convo.convoId);
+                return;
+            }
+        }
+    }
+}
+
+void MessageStore::updateStatusToRepeated(uint32_t packetId) {
+    if (packetId == 0) return;
+    for (auto& convo : _convos) {
+        for (auto& msg : convo.messages) {
+            if (msg.packetId == packetId && msg.fromSelf &&
+                msg.status == MessageStatus::SENT) {
+                msg.status = MessageStatus::REPEATED;
                 saveHistory(convo.convoId);
                 return;
             }

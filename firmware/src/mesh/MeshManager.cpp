@@ -192,6 +192,11 @@ void MeshManager::wireCallbacks() {
                    String(text), timestamp);
     });
 
+    // Echo detected — a repeater re-broadcast one of our sent messages
+    _mesh->onEchoDetected([this](uint32_t packetId) {
+        if (_onEchoDetected) _onEchoDetected(packetId);
+    });
+
     // Room login response (from sendLogin handshake)
     _mesh->onRoomLogin([this, findRoomIdx](const ContactInfo& contact,
                                             uint8_t status, uint8_t permissions,
@@ -345,16 +350,8 @@ uint32_t MeshManager::sendGroupMessage(uint8_t channelIndex, const String& text)
     }
     if (meshIdx < 0) return 0;
 
-    bool ok = _mesh->sendGroup(meshIdx, cfg.deviceName.c_str(),
-                                text.c_str(), timestamp);
-    if (!ok) return 0;
-
-    // Group messages are fire-and-forget — return a nonzero ID for the caller
-    // to create a message with SENT status
-    static uint32_t groupMsgId = 0x80000000;  // High bit set to distinguish from DM IDs
-    uint32_t id = ++groupMsgId;
-    if (id == 0) id = ++groupMsgId;
-    return id;
+    return _mesh->sendGroup(meshIdx, cfg.deviceName.c_str(),
+                             text.c_str(), timestamp);
 }
 
 bool MeshManager::requestTelemetry(size_t contactIndex, uint32_t& estTimeout) {

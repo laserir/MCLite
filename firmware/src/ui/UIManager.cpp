@@ -674,6 +674,13 @@ void UIManager::onMessageFailed(uint32_t packetId) {
     }
 }
 
+void UIManager::onEchoDetected(uint32_t packetId) {
+    MessageStore::instance().updateStatusToRepeated(packetId);
+    if (_currentScreen == Screen::CHAT) {
+        _chatScreen.refresh();
+    }
+}
+
 void UIManager::refreshConvoList() {
     if (_currentScreen == Screen::CONVO_LIST) _convoList.refresh();
 }

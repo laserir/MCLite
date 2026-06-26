@@ -9,6 +9,7 @@ namespace mclite {
 enum class MessageStatus : uint8_t {
     SENDING,    // Queued for transmission
     SENT,       // Transmitted (single tick)
+    REPEATED,   // Heard re-broadcast by a repeater (↺)
     DELIVERED,  // ACK received (double tick)
     FAILED      // Send failed
 };
@@ -67,6 +68,9 @@ public:
 
     // Update message status by packetId
     void updateStatus(uint32_t packetId, MessageStatus status);
+
+    // Upgrade SENT → REPEATED; won't downgrade DELIVERED or overwrite FAILED.
+    void updateStatusToRepeated(uint32_t packetId);
 
     // Get conversation by ID
     Conversation* getConversation(const ConvoId& id);

@@ -542,6 +542,10 @@ void ChatScreen::addBubble(const Message& msg) {
                 lv_label_set_text(status, LV_SYMBOL_OK);
                 lv_obj_set_style_text_color(status, theme::BUBBLE_SELF_META(), 0);
                 break;
+            case MessageStatus::REPEATED:
+                lv_label_set_text(status, LV_SYMBOL_OK LV_SYMBOL_OK);
+                lv_obj_set_style_text_color(status, theme::BUBBLE_SELF_META(), 0);
+                break;
             case MessageStatus::DELIVERED:
                 lv_label_set_text(status, LV_SYMBOL_OK LV_SYMBOL_OK);
                 lv_obj_set_style_text_color(status, theme::ACCENT(), 0);

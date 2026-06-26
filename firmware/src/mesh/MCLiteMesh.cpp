@@ -34,6 +34,16 @@ static ESP32RTCClock sRtcClock;
 static StaticPoolPacketManager sPktMgr(PACKET_POOL_SIZE);
 static MCLiteBoard sBoard;
 
+// FNV-1a 32-bit hash.
+static uint32_t fnv1a32(const uint8_t* d, int n) {
+    uint32_t h = 2166136261u;
+    for (int i = 0; i < n; i++) { h ^= d[i]; h *= 16777619u; }
+    return h ? h : 1;   // 0 is our "empty" sentinel
+}
+static bool isMsgFloodType(uint8_t ptype) {
+    return ptype == PAYLOAD_TYPE_TXT_MSG || ptype == PAYLOAD_TYPE_GRP_TXT;
+}
+
 // Derive a TransportKey from a scope string ("*"/empty → null key, "#name" → SHA256)
 static TransportKey scopeToTransportKey(const String& scope) {
     TransportKey tk;
@@ -386,6 +396,9 @@ void MCLiteMesh::sendWithScope(const TransportKey& scope, mesh::Packet* pkt, uin
 }
 
 void MCLiteMesh::sendFloodScoped(const ContactInfo& recipient, mesh::Packet* pkt, uint32_t delay_millis) {
+    if (_pendingSentPacketId != 0 && isMsgFloodType(pkt->getPayloadType())) {
+        trackSentFp(fnv1a32(pkt->payload, pkt->payload_len), _pendingSentPacketId);
+    }
     // Room contacts may have a per-room scope override (mirrors channel-scope behavior).
     // DMs always inherit the global scope today (no per-contact override exposed).
     if (recipient.type == ADV_TYPE_ROOM) {
@@ -405,6 +418,9 @@ void MCLiteMesh::sendFloodScoped(const ContactInfo& recipient, mesh::Packet* pkt
 }
 
 void MCLiteMesh::sendFloodScoped(const mesh::GroupChannel& channel, mesh::Packet* pkt, uint32_t delay_millis) {
+    if (_pendingSentPacketId != 0 && isMsgFloodType(pkt->getPayloadType())) {
+        trackSentFp(fnv1a32(pkt->payload, pkt->payload_len), _pendingSentPacketId);
+    }
     // Look up per-channel scope override via MeshCore channel index → ChannelStore
     int idx = findChannelIdx(channel);
     if (idx >= 0) {
@@ -432,7 +448,9 @@ uint32_t MCLiteMesh::sendDM(size_t contactIdx, const char* text, uint32_t timest
     uint32_t expectedAck = 0;
     uint32_t estTimeout = 0;
 
+    _pendingSentPacketId = packetId;
     int result = sendMessage(*ci, timestamp, 1, text, expectedAck, estTimeout);
+    _pendingSentPacketId = 0;
 
     if (result == MSG_SEND_FAILED) {
         LOGF("[MCLiteMesh] DM send failed to %s\n", ci->name);
@@ -497,7 +515,9 @@ uint32_t MCLiteMesh::sendRoomPost(size_t roomIdx, const char* text, uint32_t tim
     uint32_t expectedAck = 0;
     uint32_t estTimeout = 0;
 
+    _pendingSentPacketId = packetId;
     int result = sendMessage(*ci, timestamp, 1, text, expectedAck, estTimeout);
+    _pendingSentPacketId = 0;
 
     if (result == MSG_SEND_FAILED) {
         LOGF("[MCLiteMesh] Room post failed to '%s'\n", ci->name);
@@ -528,21 +548,26 @@ uint32_t MCLiteMesh::sendRoomPost(size_t roomIdx, const char* text, uint32_t tim
     return packetId;
 }
 
-bool MCLiteMesh::sendGroup(int channelIdx, const char* senderName, const char* text,
-                            uint32_t timestamp) {
-    if (!_ready) return false;
+uint32_t MCLiteMesh::sendGroup(int channelIdx, const char* senderName, const char* text,
+                               uint32_t timestamp) {
+    if (!_ready) return 0;
 
     ChannelDetails cd;
     if (!getChannel(channelIdx, cd)) {
         LOGF("[MCLiteMesh] Invalid channel index %d\n", channelIdx);
-        return false;
+        return 0;
     }
 
+    uint32_t packetId = allocPacketId();
+    _pendingSentPacketId = packetId;
     bool ok = sendGroupMessage(timestamp, cd.channel, senderName, text, strlen(text));
+    _pendingSentPacketId = 0;
+
     if (ok) {
-        LOGF("[MCLiteMesh] Group msg sent to %s\n", cd.name);
+        LOGF("[MCLiteMesh] Group msg sent to %s (packetId=%u)\n", cd.name, packetId);
+        return packetId;
     }
-    return ok;
+    return 0;
 }
 
 ContactInfo* MCLiteMesh::getContactByIdx(int idx) {
@@ -787,6 +812,46 @@ bool MCLiteMesh::shareContact(const uint8_t* pubKey) {
     ContactInfo* ci = lookupContactByPubKey(pubKey, PUB_KEY_SIZE);
     if (!ci) return false;
     return shareContactZeroHop(*ci);
+}
+
+void MCLiteMesh::trackSentFp(uint32_t fp, uint32_t packetId) {
+    if (fp == 0 || packetId == 0) return;
+    for (int i = 0; i < ECHO_SLOTS; i++) {
+        if (_echoSlots[i].active && _echoSlots[i].fp == fp) return;  // already tracked
+    }
+    auto& s = _echoSlots[_echoIdx];
+    s.fp = fp; s.packetId = packetId; s.active = true; s.fired = false;
+    _echoIdx = (_echoIdx + 1) % ECHO_SLOTS;
+}
+
+void MCLiteMesh::logRxRaw(float /*snr*/, float /*rssi*/, const uint8_t raw[], int len) {
+    if (len < 2) return;
+    const uint8_t ptype = (raw[0] >> 2) & 0x0F;
+    if (!isMsgFloodType(ptype)) return;
+
+    const uint8_t rt    = raw[0] & 0x03;
+    const bool    has_xp = (rt == ROUTE_TYPE_TRANSPORT_FLOOD || rt == ROUTE_TYPE_TRANSPORT_DIRECT);
+    const int     ps    = 1 + (has_xp ? 4 : 0);
+    if (ps >= len) return;
+
+    const uint8_t pb    = raw[ps];
+    const uint8_t cnt_p = pb & 0x3F;
+    const uint8_t hsz_p = (uint8_t)(((pb >> 6) & 0x03) + 1);
+    const int     poff  = ps + 1 + cnt_p * hsz_p;
+    if (poff >= len) return;
+
+    // Only match packets that have passed through at least one repeater.
+    if (cnt_p < 1) return;
+
+    uint32_t fp = fnv1a32(raw + poff, len - poff);
+    for (int i = 0; i < ECHO_SLOTS; i++) {
+        if (_echoSlots[i].active && !_echoSlots[i].fired && _echoSlots[i].fp == fp) {
+            _echoSlots[i].fired = true;
+            LOGF("[MCLiteMesh] Echo detected for packet %u\n", _echoSlots[i].packetId);
+            if (_onEchoDetected) _onEchoDetected(_echoSlots[i].packetId);
+            return;
+        }
+    }
 }
 
 ContactInfo* MCLiteMesh::processAck(const uint8_t* data) {

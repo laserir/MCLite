@@ -58,6 +58,9 @@ public:
     // Called when all retries exhausted (DM failed)
     void onMessageFailed(uint32_t packetId);
 
+    // Called when a repeater is heard re-broadcasting one of our sent messages
+    void onEchoDetected(uint32_t packetId);
+
     // Send a message (from the chat UI or the WiFi companion). Sends over the
     // mesh AND records it in the store/UI, so companion-originated messages show
     // on-device too. Returns the packet ID (0 on failure).

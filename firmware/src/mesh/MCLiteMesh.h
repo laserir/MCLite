@@ -52,6 +52,8 @@ using MeshRoomMsgCb   = std::function<void(const ContactInfo& contact,
 using MeshRoomLoginCb = std::function<void(const ContactInfo& contact,
                                             uint8_t status, uint8_t permissions,
                                             uint8_t aclPerms, uint8_t fwLevel)>;
+// Fired when a repeater is heard re-broadcasting one of our sent messages.
+using MeshEchoDetectedCb = std::function<void(uint32_t packetId)>;
 
 // Pending ACK entry
 struct AckEntry {
@@ -116,9 +118,9 @@ public:
     uint32_t sendDM(size_t contactIdx, const char* text, uint32_t timestamp,
                     uint8_t maxRetries);
 
-    // Send group message — returns true on success
-    bool sendGroup(int channelIdx, const char* senderName, const char* text,
-                   uint32_t timestamp);
+    // Send group message — returns internal packetId (0 on failure)
+    uint32_t sendGroup(int channelIdx, const char* senderName, const char* text,
+                       uint32_t timestamp);
 
     // Send room post — returns internal packetId, 0 on failure (mirrors sendDM)
     uint32_t sendRoomPost(size_t roomIdx, const char* text, uint32_t timestamp,
@@ -141,8 +143,9 @@ public:
     void onAnonResponse(MeshAnonRespCb cb) { _onAnonResponse = cb; }
     void onStatusResponse(MeshStatusRespCb cb) { _onStatusResponse = cb; }
     void onTrace(MeshTraceCb cb) { _onTrace = cb; }
-    void onRoomMsg(MeshRoomMsgCb cb)     { _onRoomMsg = cb; }
-    void onRoomLogin(MeshRoomLoginCb cb) { _onRoomLogin = cb; }
+    void onRoomMsg(MeshRoomMsgCb cb)           { _onRoomMsg = cb; }
+    void onRoomLogin(MeshRoomLoginCb cb)       { _onRoomLogin = cb; }
+    void onEchoDetected(MeshEchoDetectedCb cb) { _onEchoDetected = cb; }
 
     // Request telemetry from a contact — returns true on success
     bool requestTelemetry(size_t contactIdx, uint32_t& estTimeout);
@@ -260,6 +263,7 @@ protected:
 
     void sendFloodScoped(const ContactInfo& recipient, mesh::Packet* pkt, uint32_t delay_millis=0) override;
     void sendFloodScoped(const mesh::GroupChannel& channel, mesh::Packet* pkt, uint32_t delay_millis=0) override;
+    void logRxRaw(float snr, float rssi, const uint8_t raw[], int len) override;
 
     // ---- Optional overrides ----
     bool shouldAutoAddContactType(uint8_t type) const override { return false; }  // MCLite uses config-defined contacts only
@@ -322,8 +326,26 @@ private:
     MeshAnonRespCb  _onAnonResponse;
     MeshStatusRespCb _onStatusResponse;
     MeshTraceCb     _onTrace;
-    MeshRoomMsgCb   _onRoomMsg;
-    MeshRoomLoginCb _onRoomLogin;
+    MeshRoomMsgCb      _onRoomMsg;
+    MeshRoomLoginCb    _onRoomLogin;
+    MeshEchoDetectedCb _onEchoDetected;
+
+    // Echo-fingerprint ring: track recently-sent TXT/GRP_TXT payloads so logRxRaw
+    // can recognise when a repeater re-broadcasts one of our messages.
+    static constexpr int ECHO_SLOTS = 8;
+    struct EchoSlot {
+        uint32_t fp       = 0;
+        uint32_t packetId = 0;
+        bool     active   = false;
+        bool     fired    = false;  // suppress duplicate callbacks for the same send
+    };
+    EchoSlot _echoSlots[ECHO_SLOTS] = {};
+    uint8_t  _echoIdx = 0;
+    // Set by sendDM/sendGroup/sendRoomPost before they call into the base class so
+    // sendFloodScoped can associate the payload fingerprint with the right packetId.
+    uint32_t _pendingSentPacketId = 0;
+
+    void trackSentFp(uint32_t fp, uint32_t packetId);
     uint32_t        _pendingTelemTag = 0;
     uint8_t         _pendingTelemKey[PUB_KEY_SIZE] = {};
     TelemRetry      _telemRetry;

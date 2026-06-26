@@ -41,6 +41,7 @@ using OnRoomLoginCallback   = std::function<void(size_t roomIdx,
                                                   uint8_t permissions,
                                                   uint8_t aclPerms,
                                                   uint8_t fwLevel)>;
+using OnEchoDetectedCallback = std::function<void(uint32_t packetId)>;
 
 class MeshManager {
 public:
@@ -65,8 +66,9 @@ public:
     void onAnonResponse(OnAnonResponseCallback cb) { _onAnonResponse = cb; }
     void onStatusResponse(OnStatusResponseCallback cb) { _onStatusResponse = cb; }
     void onTrace(OnTraceCallback cb) { _onTrace = cb; }
-    void onRoomMessage(OnRoomMessageCallback cb) { _onRoomMsg = cb; }
-    void onRoomLogin(OnRoomLoginCallback cb)     { _onRoomLogin = cb; }
+    void onRoomMessage(OnRoomMessageCallback cb)   { _onRoomMsg = cb; }
+    void onRoomLogin(OnRoomLoginCallback cb)       { _onRoomLogin = cb; }
+    void onEchoDetected(OnEchoDetectedCallback cb) { _onEchoDetected = cb; }
 
     // Login to a configured room server (by config index 0..7). Returns true on
     // a successful send; the actual login outcome arrives asynchronously via
@@ -163,8 +165,9 @@ private:
     OnAnonResponseCallback _onAnonResponse;
     OnStatusResponseCallback _onStatusResponse;
     OnTraceCallback _onTrace;
-    OnRoomMessageCallback _onRoomMsg;
-    OnRoomLoginCallback   _onRoomLogin;
+    OnRoomMessageCallback  _onRoomMsg;
+    OnRoomLoginCallback    _onRoomLogin;
+    OnEchoDetectedCallback _onEchoDetected;
 
     // Advertisement
     uint32_t _advertIntervalMs = 0;  // Periodic flood-advert interval (ms). 0 = off (default; boot advert
