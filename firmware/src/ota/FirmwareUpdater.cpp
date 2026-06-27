@@ -5,6 +5,7 @@
 #include <Update.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <mbedtls/sha256.h>
 
 #include "../storage/SDCard.h"
 #include "../config/defaults.h"
@@ -98,6 +99,47 @@ bool FirmwareUpdater::flashFromSd(const char* path, ProgressCb cb, void* user) {
         LOGF("[OTA] bad image magic 0x%02X at 0x%X\n", magic, (unsigned)APP_OFFSET);
         f.close();
         return false;
+    }
+
+    // --- SHA-256 integrity check: require a <path>.sha256 sidecar file ---
+    {
+        String hashPath = String(path) + ".sha256";
+        File hf = SD.open(hashPath.c_str());
+        if (!hf) {
+            LOGF("[OTA] SHA-256 sidecar missing: %s\n", hashPath.c_str());
+            f.close();
+            return false;
+        }
+        char expectedHex[65] = {};
+        hf.readBytes(expectedHex, 64);
+        hf.close();
+        for (char* p = expectedHex + 63; p >= expectedHex && (*p == '\n' || *p == '\r' || *p == ' '); --p)
+            *p = '\0';
+        if (strlen(expectedHex) != 64) {
+            LOGLN("[OTA] SHA-256 sidecar format invalid");
+            f.close();
+            return false;
+        }
+        mbedtls_sha256_context ctx;
+        mbedtls_sha256_init(&ctx);
+        mbedtls_sha256_starts_ret(&ctx, 0 /* SHA-256 */);
+        f.seek(0);
+        uint8_t tmp[256];
+        while (f.available()) {
+            int n = f.read(tmp, sizeof(tmp));
+            if (n > 0) mbedtls_sha256_update_ret(&ctx, tmp, n);
+        }
+        uint8_t digest[32];
+        mbedtls_sha256_finish_ret(&ctx, digest);
+        mbedtls_sha256_free(&ctx);
+        char actualHex[65] = {};
+        for (int i = 0; i < 32; ++i) snprintf(actualHex + i * 2, 3, "%02x", digest[i]);
+        if (strncasecmp(actualHex, expectedHex, 64) != 0) {
+            LOGF("[OTA] SHA-256 mismatch: got %s, expected %s\n", actualHex, expectedHex);
+            f.close();
+            return false;
+        }
+        LOGLN("[OTA] SHA-256 verified");
     }
 
     size_t appSize = total - APP_OFFSET;
