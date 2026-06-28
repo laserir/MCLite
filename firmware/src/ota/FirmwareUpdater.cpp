@@ -122,15 +122,15 @@ bool FirmwareUpdater::flashFromSd(const char* path, ProgressCb cb, void* user) {
         }
         mbedtls_sha256_context ctx;
         mbedtls_sha256_init(&ctx);
-        mbedtls_sha256_starts_ret(&ctx, 0 /* SHA-256 */);
+        mbedtls_sha256_starts(&ctx, 0 /* SHA-256 */);
         f.seek(0);
-        uint8_t tmp[256];
+        uint8_t tmp[4096];
         while (f.available()) {
             int n = f.read(tmp, sizeof(tmp));
-            if (n > 0) mbedtls_sha256_update_ret(&ctx, tmp, n);
+            if (n > 0) mbedtls_sha256_update(&ctx, tmp, n);
         }
         uint8_t digest[32];
-        mbedtls_sha256_finish_ret(&ctx, digest);
+        mbedtls_sha256_finish(&ctx, digest);
         mbedtls_sha256_free(&ctx);
         char actualHex[65] = {};
         for (int i = 0; i < 32; ++i) snprintf(actualHex + i * 2, 3, "%02x", digest[i]);

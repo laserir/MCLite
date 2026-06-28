@@ -80,7 +80,7 @@ That's it. Full walkthrough — including updates and companion mode — in [Get
 - **Region scope** -- tag outgoing packets with MeshCore transport codes so repeaters can filter by region. Set a global scope or override per channel/room
 - **Path hash mode** -- configurable repeater path fingerprint size (1/2/3 bytes per hop). Larger sizes reduce path collisions in dense meshes at the cost of a few extra bytes per hop. Defaults to 1 byte for compatibility with pre-v1.15 peers
 - **Offgrid mode** -- one-flag toggle that switches to the community offgrid frequency (433/869/918 MHz, auto-picked from your normal frequency) and relays packets for other offgrid nodes. Camping / hiking / SAR scenarios where no repeaters exist. Toggle on-device from the admin screen or via config tool, reboot to apply. While offgrid, only other offgrid peers receive your messages, SOS, and battery alerts.
-- **Update from SD card** -- drop a firmware `.bin` on the SD card and the device offers to install it on boot (or from the admin screen) -- no USB needed
+- **Update from SD card** -- drop a firmware `.bin` and matching `.sha256` sidecar on the SD card and the device offers to install it on boot (or from the admin screen) -- no USB needed
 - **Update over WiFi** -- optionally connect to WiFi on-device (scan + enter password) and check GitHub for newer firmware; download and install with one tap. Off by default
 - **Companion mode (WiFi / USB / BLE)** -- bridge the radio to a phone/desktop/CLI using the standard MeshCore companion protocol, *in parallel* with normal on-device use (received and app-sent messages appear in both — but messages typed *on the device* don't sync to the app; see the limitation note under Companion mode). BLE pairs with the **official MeshCore mobile apps** (6-digit PIN); WiFi/USB work with `meshcore-cli`/`meshcore.js`/`meshcore_py`. One transport at a time; messaging is read-only for config (no remote edits). See note below
 - **Zero-config for end users** -- all settings live in one JSON file on the SD card. Set it up once, copy to every device in your group
@@ -108,7 +108,7 @@ The T-Watch Ultra has no power switch -- if esptool can't connect, put it in dow
 
 Once MCLite is installed you can update it without a computer:
 
-- **From SD card** -- copy a newer merged binary (`mclite-v*.bin` for the T-Deck Plus, `mclite-watch-v*.bin` for the T-Watch Ultra) to the SD card. On the next boot the device detects it and offers **Install / Cancel**, then flashes and reboots. The file is renamed afterwards so it won't re-prompt.
+- **From SD card** -- copy a newer merged binary (`mclite-v*.bin` for the T-Deck Plus, `mclite-watch-v*.bin` for the T-Watch Ultra) **and its matching `.sha256` sidecar** to the SD card. On the next boot the device detects it and offers **Install / Cancel**, then flashes and reboots. The file is renamed afterwards so it won't re-prompt. Both files are provided alongside each release binary; the sidecar is required for integrity checking.
 - **Over WiFi** -- on the device go to **Admin → WiFi**, switch WiFi on, pick your network and enter the password (saved for next time), then tap **Check for updates**. If a newer release exists on GitHub it downloads and installs. Enable **auto-update** (config tool → WiFi, or it checks on boot when on) to be prompted automatically.
 
 ### Companion mode
