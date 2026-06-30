@@ -16,8 +16,9 @@
 namespace mclite {
 
 namespace {
-struct RetryData { String text; uint32_t packetId; };
-struct MapCoord  { double lat; double lon; };
+struct RetryData     { String text; uint32_t packetId; };
+struct MapCoord      { double lat; double lon; };
+struct BubbleReactData { String hash; String senderName; };
 }  // namespace
 
 void ChatScreen::create(lv_obj_t* parent) {
@@ -621,6 +622,28 @@ void ChatScreen::addBubble(const Message& msg) {
             }
         }
     }
+
+    // Long-press on any bubble with a known hash → reaction picker.
+    // Read-only convos still allow reactions (they can send reaction wire messages).
+    if (!msg.msgHash.isEmpty()) {
+        String senderName = msg.fromSelf
+            ? ConfigManager::instance().config().deviceName
+            : msg.senderName;
+        lv_obj_add_flag(bubble, LV_OBJ_FLAG_CLICKABLE);
+        auto* brd = new BubbleReactData{msg.msgHash, senderName};
+        lv_obj_set_user_data(bubble, brd);
+        lv_obj_add_event_cb(bubble, [](lv_event_t* e) {
+            delete static_cast<BubbleReactData*>(lv_obj_get_user_data(lv_event_get_target(e)));
+        }, LV_EVENT_DELETE, nullptr);
+        lv_obj_add_event_cb(bubble, [](lv_event_t* e) {
+            auto* self = static_cast<ChatScreen*>(lv_event_get_user_data(e));
+            auto* brd  = static_cast<BubbleReactData*>(lv_obj_get_user_data(lv_event_get_target(e)));
+            if (!self || !brd || !self->_currentConvo || !self->_onReact) return;
+            self->_reactHash       = brd->hash;
+            self->_reactSenderName = brd->senderName;
+            self->showReactionPicker();
+        }, LV_EVENT_LONG_PRESSED, this);
+    }
 }
 
 void ChatScreen::addMessageToView(const Message& msg) {
@@ -667,6 +690,7 @@ void ChatScreen::hide() {
             if (_cannedBtn) lv_group_remove_obj(_cannedBtn);
         }
     }
+    if (_reactBtnm) hideReactionPicker();
     lv_obj_clean(_chatArea);
     lv_obj_add_flag(_screen, LV_OBJ_FLAG_HIDDEN);
 }
@@ -1115,6 +1139,105 @@ void ChatScreen::hideEmojiPicker() {
     _emojiBtnm = nullptr;
     lv_obj_del_async(_emojiOverlay);
     _emojiOverlay = nullptr;
+}
+
+// ─────────────────── Reaction picker (long-press on bubble) ───────────────────
+// Six common reaction emoji in a compact single-row picker, mirroring the
+// overlay+btnmatrix+modal-group pattern used by the canned and emoji pickers.
+void ChatScreen::showReactionPicker() {
+    if (_reactBtnm) hideReactionPicker();
+
+    // 😂  👍  ❤  😮  👎  😢
+    static const char* reactMap[] = {
+        "\xF0\x9F\x98\x82",  // 😂 laughing
+        "\xF0\x9F\x91\x8D",  // 👍 thumbs up
+        "\xE2\x9D\xA4",      // ❤  heart
+        "\xF0\x9F\x98\xAE",  // 😮 shocked
+        "\xF0\x9F\x91\x8E",  // 👎 thumbs down
+        "\xF0\x9F\x98\xA2",  // 😢 crying
+        ""
+    };
+
+    _reactOverlay = lv_obj_create(_screen);
+    lv_obj_set_size(_reactOverlay, Display::width(),
+                    Display::height() - theme::STATUS_BAR_HEIGHT - theme::FOOTER_HEIGHT);
+    lv_obj_set_pos(_reactOverlay, 0, 0);
+    lv_obj_set_style_bg_color(_reactOverlay, theme::SCRIM(), 0);
+    lv_obj_set_style_bg_opa(_reactOverlay, LV_OPA_50, 0);
+    lv_obj_set_style_border_width(_reactOverlay, 0, 0);
+    lv_obj_clear_flag(_reactOverlay, LV_OBJ_FLAG_SCROLLABLE);
+
+    _reactBtnm = lv_btnmatrix_create(_screen);
+    lv_btnmatrix_set_map(_reactBtnm, reactMap);
+#ifdef PLATFORM_TWATCH
+    lv_coord_t pickerH = 64;
+#else
+    lv_coord_t pickerH = 40;
+#endif
+    lv_obj_set_size(_reactBtnm, theme::MODAL_TEXT_WIDTH, pickerH);
+    lv_obj_align(_reactBtnm, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_style_text_font(_reactBtnm, FONT_HEADING, 0);
+    lv_obj_set_style_bg_color(_reactBtnm, theme::BG_SECONDARY(), 0);
+    lv_obj_set_style_bg_opa(_reactBtnm, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_color(_reactBtnm, theme::ACCENT(), 0);
+    lv_obj_set_style_border_width(_reactBtnm, 1, 0);
+    lv_obj_set_style_radius(_reactBtnm, 8, 0);
+    lv_obj_set_style_bg_color(_reactBtnm, theme::BG_INPUT(), LV_PART_ITEMS);
+    lv_obj_set_style_text_color(_reactBtnm, theme::TEXT_PRIMARY(), LV_PART_ITEMS);
+    lv_obj_set_style_radius(_reactBtnm, 4, LV_PART_ITEMS);
+    lv_obj_set_style_bg_color(_reactBtnm, theme::ACCENT(), LV_PART_ITEMS | LV_STATE_FOCUSED);
+    lv_obj_set_style_text_color(_reactBtnm, theme::TEXT_ON_ACCENT(), LV_PART_ITEMS | LV_STATE_FOCUSED);
+
+    lv_obj_add_event_cb(_reactBtnm, reactBtnmCb, LV_EVENT_VALUE_CHANGED, this);
+    lv_obj_add_event_cb(_reactBtnm, [](lv_event_t* ev) {
+        if (lv_event_get_key(ev) != LV_KEY_ESC) return;
+        static_cast<ChatScreen*>(lv_event_get_user_data(ev))->hideReactionPicker();
+    }, LV_EVENT_KEY, this);
+
+    lv_obj_add_flag(_reactOverlay, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(_reactOverlay, [](lv_event_t* ev) {
+        ChatScreen* cs = (ChatScreen*)lv_event_get_user_data(ev);
+        lv_async_call([](void* ctx) {
+            static_cast<ChatScreen*>(ctx)->hideReactionPicker();
+        }, cs);
+    }, LV_EVENT_CLICKED, this);
+
+    UIManager::instance().switchToModalGroup(_reactBtnm);
+}
+
+void ChatScreen::reactBtnmCb(lv_event_t* e) {
+    auto* self = static_cast<ChatScreen*>(lv_event_get_user_data(e));
+    if (!self || !self->_reactBtnm || !self->_currentConvo || !self->_onReact) return;
+
+    uint16_t idx = lv_btnmatrix_get_selected_btn(self->_reactBtnm);
+    if (idx == LV_BTNMATRIX_BTN_NONE) return;
+    const char* emoji = lv_btnmatrix_get_btn_text(self->_reactBtnm, idx);
+    if (!emoji) return;
+
+    bool isChannel = (self->_currentConvo->type == ConvoId::CHANNEL ||
+                      self->_currentConvo->type == ConvoId::ROOM);
+    String wireText;
+    if (isChannel && self->_reactSenderName.length() > 0) {
+        wireText = String(emoji) + "@[" + self->_reactSenderName + "]\n" + self->_reactHash;
+    } else {
+        wireText = String(emoji) + "\n" + self->_reactHash;
+    }
+
+    ConvoId id = *self->_currentConvo;
+    self->_onReact(id, wireText);
+
+    lv_async_call([](void* ctx) {
+        static_cast<ChatScreen*>(ctx)->hideReactionPicker();
+    }, self);
+}
+
+void ChatScreen::hideReactionPicker() {
+    if (!_reactBtnm) return;
+    UIManager::instance().restoreFromModalGroup();
+    lv_obj_del_async(_reactBtnm);
+    _reactBtnm = nullptr;
+    lv_obj_del_async(_reactOverlay);
+    _reactOverlay = nullptr;
 }
 
 void ChatScreen::updateMuteIndicator() {

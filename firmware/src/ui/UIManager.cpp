@@ -104,6 +104,10 @@ bool UIManager::init() {
         handleSend(id, text);
     });
 
+    _chatScreen.onReact([this](const ConvoId& id, const String& wireText) {
+        handleReaction(id, wireText);
+    });
+
     _chatScreen.onRetry([this](const ConvoId& id, const String& text, uint32_t oldPacketId) {
         handleRetry(id, text, oldPacketId);
     });
@@ -816,6 +820,35 @@ uint32_t UIManager::handleSend(const ConvoId& id, const String& text) {
 
     _lastActivity = millis();
     return packetId;
+}
+
+void UIManager::handleReaction(const ConvoId& id, const String& wireText) {
+    bool isDM   = (id.type == ConvoId::DM);
+    bool isRoom = (id.type == ConvoId::ROOM);
+
+    if (isDM) {
+        auto& contacts = ContactStore::instance();
+        for (size_t i = 0; i < contacts.count(); i++) {
+            const auto* c = contacts.findByIndex(i);
+            if (c && c->shortId() == id.id) {
+                MeshManager::instance().sendMessage(i, wireText);
+                break;
+            }
+        }
+    } else if (isRoom) {
+        const auto& rooms = ConfigManager::instance().config().roomServers;
+        for (size_t i = 0; i < rooms.size() && i < MAX_ROOMS; i++) {
+            if (rooms[i].publicKey.length() != 64) continue;
+            if (rooms[i].publicKey.substring(0, 16) == id.id) {
+                MeshManager::instance().sendRoomPost(i, wireText);
+                break;
+            }
+        }
+    } else {
+        auto* ch = ChannelStore::instance().findByName(id.id);
+        if (ch) MeshManager::instance().sendGroupMessage(ch->index, wireText);
+    }
+    _lastActivity = millis();
 }
 
 // ─── Room callbacks (wired from main.cpp setupMeshCallbacks) ───

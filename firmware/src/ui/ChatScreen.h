@@ -14,6 +14,7 @@ using OnMuteCallback  = std::function<void(const ConvoId& id, bool muted)>;
 using OnMapCallback   = std::function<void(const ConvoId& id)>;
 using OnTelemCallback = std::function<void(const ConvoId& id)>;
 using OnShareCallback = std::function<void(const ConvoId& id)>;
+using OnReactCallback = std::function<void(const ConvoId& id, const String& wireText)>;
 
 class ChatScreen {
 public:
@@ -33,6 +34,7 @@ public:
     void onMap(OnMapCallback cb)     { _onMap = cb; }
     void onTelem(OnTelemCallback cb) { _onTelem = cb; }
     void onShare(OnShareCallback cb) { _onShare = cb; }
+    void onReact(OnReactCallback cb) { _onReact = cb; }
 
     // Show/hide the header map button (DM only) — driven by UIManager when a
     // contact's position is known, so the map never opens without a centre.
@@ -59,6 +61,8 @@ private:
     lv_obj_t* _emojiBtn      = nullptr;  // emoji picker button (only when display.emoji on)
     lv_obj_t* _emojiBtnm     = nullptr;  // emoji grid picker overlay
     lv_obj_t* _emojiOverlay  = nullptr;
+    lv_obj_t* _reactBtnm     = nullptr;  // reaction picker (long-press on bubble)
+    lv_obj_t* _reactOverlay  = nullptr;
     lv_obj_t* _headerName = nullptr;
     lv_obj_t* _mapBtn   = nullptr;  // Map button (DM only)
     lv_obj_t* _telemBtn = nullptr;  // Telemetry button (DM only)
@@ -70,6 +74,8 @@ private:
 
     std::unique_ptr<ConvoId> _currentConvo;
     String _lastLocInsert;   // last "@ <coords>" appended via the GPS button (anti-double-insert)
+    String _reactHash;       // target message hash for the open reaction picker
+    String _reactSenderName; // sender name for channel reaction wire format
 
     OnSendCallback  _onSend;
     OnBackCallback  _onBack;
@@ -78,6 +84,7 @@ private:
     OnMapCallback   _onMap;
     OnTelemCallback _onTelem;
     OnShareCallback _onShare;
+    OnReactCallback _onReact;
 
     void createHeader();
     void createChatArea();
@@ -91,6 +98,8 @@ private:
     void hideCannedPicker();
     void showEmojiPicker();
     void hideEmojiPicker();
+    void showReactionPicker();
+    void hideReactionPicker();
     void updateMuteIndicator();
     // Read the textarea and send it — but only if it fits the byte budget.
     // Over-budget (e.g. emoji/accents push past MAX_MSG_BYTES) → toast + keep text.
@@ -110,6 +119,7 @@ private:
     static void cannedBtnmCb(lv_event_t* e);
     static void emojiBtnCb(lv_event_t* e);
     static void emojiBtnmCb(lv_event_t* e);
+    static void reactBtnmCb(lv_event_t* e);
     static void muteIconCb(lv_event_t* e);
     static void mapBtnCb(lv_event_t* e);
     static void telemBtnCb(lv_event_t* e);
