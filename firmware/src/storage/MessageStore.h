@@ -13,6 +13,12 @@ enum class MessageStatus : uint8_t {
     FAILED      // Send failed
 };
 
+// A reaction to a message (emoji + who reacted).
+struct Reaction {
+    String emoji;
+    String senderName;
+};
+
 struct Message {
     bool     fromSelf;      // true = we sent it, false = received
     String   text;
@@ -22,6 +28,8 @@ struct Message {
     uint32_t packetId = 0;  // For ACK tracking
     uint8_t  hops = 0;      // Received hop count (path_hash_count); 0 = direct / self
     uint8_t  repeaterCount = 0;  // Sent channel msg: distinct repeaters heard echoing it (#39)
+    String   msgHash;            // 8-char Crockford B32 hash; empty for legacy messages
+    std::vector<Reaction> reactions;  // Reactions received for this message
 };
 
 // Identifies a conversation (DM, channel, or room)
@@ -102,6 +110,13 @@ public:
     // can't inherit stale history. No-op if neither exists.
     void removeConversation(const ConvoId& id);
 
+    // Apply a reaction to the message with the given hash in the conversation.
+    // Returns true if the target message was found (and the reaction applied or
+    // was a duplicate). Returns false and queues the reaction for later if the
+    // target hasn't arrived yet.
+    bool applyReaction(const ConvoId& id, const String& targetHash,
+                       const String& emoji, const String& senderName);
+
     static MessageStore& instance();
 
 private:
@@ -115,10 +130,23 @@ private:
     std::vector<Conversation> _convos;
     uint32_t _activityCounter = 0;  // Monotonic counter for conversation ordering
 
+    // Out-of-order reactions: queued when the target message hasn't arrived yet.
+    struct PendingReaction {
+        ConvoId convoId;
+        String  targetHash;
+        String  emoji;
+        String  senderName;
+    };
+    static constexpr size_t MAX_PENDING_REACTIONS = 32;
+    std::vector<PendingReaction> _pendingReactions;
+
     Conversation& getOrCreate(const ConvoId& id, const String& displayName,
                               bool isPrivate, bool readOnly = false);
     String historyPath(const ConvoId& id) const;
     void pruneIfNeeded(Conversation& convo);
+    // Called after a new message is stored: matches and applies any queued reactions
+    // whose targetHash equals msgHash. Does NOT call saveHistory (caller does).
+    void resolvePendingReactionsInternal(Conversation& convo, const String& msgHash);
 };
 
 }  // namespace mclite

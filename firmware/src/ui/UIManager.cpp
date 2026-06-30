@@ -2,6 +2,7 @@
 #include "util/log.h"
 #include "theme.h"
 #include "ModalDialog.h"
+#include "../util/MsgHash.h"
 #include "../mesh/MeshManager.h"
 #include "../mesh/ContactStore.h"
 #include "../mesh/ChannelStore.h"
@@ -36,6 +37,37 @@ namespace mclite {
 // Defined below; forward-declared so the telemetry-timeout path (in update())
 // can rebuild the modal body with any fallback (advert/heard) position.
 static String buildTelemText(const Contact* contact, const TelemetryData* td);
+
+// Parse a MeshCore-format reaction from incoming message text.
+// Channel/Room format: {emoji}@[{targetSenderName}]\n{8-char-crockford}
+// DM format:           {emoji}\n{8-char-crockford}
+// Returns true and fills out_emoji / out_hash if it matches. Emoji must start
+// with a non-ASCII byte so plain "text\n12345678" messages are never misidentified.
+static bool parseIncomingReaction(const String& text, bool isChannel,
+                                   String& out_emoji, String& out_hash) {
+    int nl = text.lastIndexOf('\n');
+    if (nl < 0) return false;
+    if ((int)text.length() != nl + 1 + 8) return false;
+
+    String hash = text.substring(nl + 1);
+    if (!isCrockfordB32(hash)) return false;
+
+    String prefix = text.substring(0, nl);
+    String emoji;
+    if (isChannel) {
+        int atBracket = prefix.indexOf("@[");
+        if (atBracket < 0 || !prefix.endsWith("]")) return false;
+        emoji = prefix.substring(0, atBracket);
+    } else {
+        emoji = prefix;
+    }
+    // Emoji must start with a non-ASCII byte (all real emoji are non-ASCII in UTF-8)
+    if (emoji.length() == 0 || (uint8_t)emoji[0] < 0x80) return false;
+
+    out_emoji = emoji;
+    out_hash  = normalizeCrockford(hash);
+    return true;
+}
 
 UIManager& UIManager::instance() {
     static UIManager inst;
@@ -424,6 +456,21 @@ void UIManager::goHome() {
 }
 
 void UIManager::onIncomingMessage(const ConvoId& id, const Message& msg) {
+    // Detect MeshCore reaction messages before treating as regular messages.
+    // Reactions are silently applied to their target (no bubble, no notification).
+    if (!msg.fromSelf) {
+        bool isChannel = (id.type == ConvoId::CHANNEL || id.type == ConvoId::ROOM);
+        String rxEmoji, rxHash;
+        if (parseIncomingReaction(msg.text, isChannel, rxEmoji, rxHash)) {
+            bool applied = MessageStore::instance().applyReaction(id, rxHash, rxEmoji, msg.senderName);
+            if (applied && _currentScreen == Screen::CHAT &&
+                _chatScreen.currentConvo() && *_chatScreen.currentConvo() == id) {
+                _chatScreen.refresh();
+            }
+            return;
+        }
+    }
+
     // Check if currently viewing this conversation
     bool viewingThis = (_currentScreen == Screen::CHAT && _chatScreen.currentConvo() &&
                         *_chatScreen.currentConvo() == id);

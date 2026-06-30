@@ -3,6 +3,7 @@
 #include "SDCard.h"
 #include "../config/ConfigManager.h"
 #include "../config/defaults.h"
+#include "../util/MsgHash.h"
 #include <ArduinoJson.h>
 #include <algorithm>
 
@@ -114,6 +115,14 @@ void MessageStore::loadHistory(const ConvoId& id) {
         else                                     msg.status = MessageStatus::SENT;
         msg.hops = obj["hops"] | 0;
         msg.repeaterCount = obj["rpt"] | 0;
+        msg.msgHash = obj["hash"] | "";
+        JsonArray rxns = obj["rxn"].as<JsonArray>();
+        for (JsonObject r : rxns) {
+            Reaction rx;
+            rx.emoji      = r["e"] | "";
+            rx.senderName = r["s"] | "";
+            if (rx.emoji.length() > 0) msg.reactions.push_back(rx);
+        }
 
         convo->messages.push_back(msg);
     }
@@ -154,6 +163,15 @@ void MessageStore::saveHistory(const ConvoId& id) {
         }
         if (msg.hops > 0) obj["hops"] = msg.hops;   // received hop count (omit when 0/direct)
         if (msg.repeaterCount > 0) obj["rpt"] = msg.repeaterCount;   // heard-by-N-repeaters (#39)
+        if (msg.msgHash.length() > 0) obj["hash"] = msg.msgHash;
+        if (!msg.reactions.empty()) {
+            JsonArray rxns = obj["rxn"].to<JsonArray>();
+            for (const auto& r : msg.reactions) {
+                JsonObject ro = rxns.add<JsonObject>();
+                ro["e"] = r.emoji;
+                ro["s"] = r.senderName;
+            }
+        }
     }
 
     String json;
@@ -173,12 +191,20 @@ Conversation& MessageStore::ensureConversation(const ConvoId& id, const String& 
 Conversation& MessageStore::addMessage(const ConvoId& id, const String& displayName,
                                         bool isPrivate, const Message& msg, bool readOnly) {
     Conversation& convo = getOrCreate(id, displayName, isPrivate, readOnly);
-    convo.messages.push_back(msg);
+    Message stored = msg;
+    // Compute hash on first storage so future reactions can target this message.
+    if (stored.msgHash.isEmpty() && stored.timestamp > 0) {
+        stored.msgHash = computeMsgHash(stored.text, stored.timestamp);
+    }
+    convo.messages.push_back(stored);
     convo.lastActivity = ++_activityCounter;  // Monotonic: always above loaded values
-    if (!msg.fromSelf) {
+    if (!stored.fromSelf) {
         convo.hasUnread = true;
     }
     pruneIfNeeded(convo);
+    if (!stored.msgHash.isEmpty()) {
+        resolvePendingReactionsInternal(convo, stored.msgHash);
+    }
     saveHistory(id);
     return convo;
 }
@@ -264,6 +290,53 @@ void MessageStore::pruneIfNeeded(Conversation& convo) {
     if (maxHist > 0 && convo.messages.size() > maxHist) {  // 0 = unlimited (matches loadHistory)
         size_t excess = convo.messages.size() - maxHist;
         convo.messages.erase(convo.messages.begin(), convo.messages.begin() + excess);
+    }
+}
+
+bool MessageStore::applyReaction(const ConvoId& id, const String& targetHash,
+                                  const String& emoji, const String& senderName) {
+    Conversation* convo = getConversation(id);
+    if (convo) {
+        for (auto& msg : convo->messages) {
+            if (msg.msgHash == targetHash) {
+                // Dedup: (hash, sender, emoji) triple must be unique
+                for (const auto& r : msg.reactions) {
+                    if (r.emoji == emoji && r.senderName == senderName) return true;
+                }
+                msg.reactions.push_back({emoji, senderName});
+                saveHistory(id);
+                return true;
+            }
+        }
+    }
+    // Target not yet received — queue for out-of-order resolution
+    if (_pendingReactions.size() >= MAX_PENDING_REACTIONS) {
+        _pendingReactions.erase(_pendingReactions.begin());  // evict oldest
+    }
+    _pendingReactions.push_back({id, targetHash, emoji, senderName});
+    return false;
+}
+
+void MessageStore::resolvePendingReactionsInternal(Conversation& convo, const String& msgHash) {
+    auto it = _pendingReactions.begin();
+    while (it != _pendingReactions.end()) {
+        if (it->convoId == convo.convoId && it->targetHash == msgHash) {
+            for (auto& msg : convo.messages) {
+                if (msg.msgHash == msgHash) {
+                    bool dup = false;
+                    for (const auto& r : msg.reactions) {
+                        if (r.emoji == it->emoji && r.senderName == it->senderName) {
+                            dup = true; break;
+                        }
+                    }
+                    if (!dup) msg.reactions.push_back({it->emoji, it->senderName});
+                    break;
+                }
+            }
+            it = _pendingReactions.erase(it);
+        } else {
+            ++it;
+        }
     }
 }
 

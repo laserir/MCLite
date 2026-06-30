@@ -581,6 +581,46 @@ void ChatScreen::addBubble(const Message& msg) {
         lv_obj_set_style_text_color(rep, theme::BUBBLE_SELF_META(), 0);   // match the ✓ tick colour
         lv_label_set_text_fmt(rep, LV_SYMBOL_REFRESH " %u", (unsigned)msg.repeaterCount);
     }
+
+    // Reaction chips: aggregate emoji by type, show "👍 2" or just "👍" if count=1.
+    if (!msg.reactions.empty()) {
+        struct EmojiCount { String emoji; uint8_t count = 0; };
+        static constexpr uint8_t MAX_EMOJI_TYPES = 8;
+        EmojiCount agg[MAX_EMOJI_TYPES];
+        uint8_t aggLen = 0;
+        for (const auto& r : msg.reactions) {
+            bool found = false;
+            for (uint8_t i = 0; i < aggLen; i++) {
+                if (agg[i].emoji == r.emoji) { agg[i].count++; found = true; break; }
+            }
+            if (!found && aggLen < MAX_EMOJI_TYPES) {
+                agg[aggLen].emoji = r.emoji;
+                agg[aggLen].count = 1;
+                aggLen++;
+            }
+        }
+
+        lv_obj_t* reactRow = lv_obj_create(bubble);
+        lv_obj_set_size(reactRow, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+        lv_obj_set_style_bg_opa(reactRow, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_width(reactRow, 0, 0);
+        lv_obj_set_style_pad_all(reactRow, 0, 0);
+        lv_obj_clear_flag(reactRow, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_flex_flow(reactRow, LV_FLEX_FLOW_ROW);
+        lv_obj_set_style_pad_column(reactRow, 4, 0);
+
+        for (uint8_t i = 0; i < aggLen; i++) {
+            lv_obj_t* chip = lv_label_create(reactRow);
+            lv_obj_set_style_text_font(chip, FONT_BODY, 0);
+            lv_obj_set_style_text_color(chip,
+                msg.fromSelf ? theme::BUBBLE_SELF_META() : theme::TEXT_SECONDARY(), 0);
+            if (agg[i].count > 1) {
+                lv_label_set_text_fmt(chip, "%s %u", agg[i].emoji.c_str(), (unsigned)agg[i].count);
+            } else {
+                lv_label_set_text(chip, agg[i].emoji.c_str());
+            }
+        }
+    }
 }
 
 void ChatScreen::addMessageToView(const Message& msg) {
