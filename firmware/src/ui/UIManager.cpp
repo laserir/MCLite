@@ -848,6 +848,19 @@ void UIManager::handleReaction(const ConvoId& id, const String& wireText) {
         auto* ch = ChannelStore::instance().findByName(id.id);
         if (ch) MeshManager::instance().sendGroupMessage(ch->index, wireText);
     }
+
+    // Apply the reaction locally — our own outgoing packets never loop back
+    // through onIncomingMessage, so we must update MessageStore ourselves.
+    String rxEmoji, rxHash;
+    if (parseIncomingReaction(wireText, !isDM, rxEmoji, rxHash)) {
+        const String& myName = ConfigManager::instance().config().deviceName;
+        bool applied = MessageStore::instance().applyReaction(id, rxHash, rxEmoji, myName);
+        if (applied && _currentScreen == Screen::CHAT &&
+            _chatScreen.currentConvo() && *_chatScreen.currentConvo() == id) {
+            _chatScreen.refresh();
+        }
+    }
+
     _lastActivity = millis();
 }
 
