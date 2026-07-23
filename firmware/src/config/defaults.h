@@ -5,7 +5,7 @@
 // All three are #ifndef-guarded so a fork can override them with -D build flags
 // (e.g. -DMCLITE_REPO_OWNER=\"someone\") to self-update from its own GitHub repo.
 #ifndef MCLITE_VERSION
-#define MCLITE_VERSION "0.4.1"
+#define MCLITE_VERSION "0.4.2"
 #endif
 #ifndef MCLITE_REPO_OWNER
 #define MCLITE_REPO_OWNER "laserir"   // GitHub owner for OTA update checks

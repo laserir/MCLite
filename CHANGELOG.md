@@ -7,6 +7,8 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 
 ## [Unreleased]
 
+## [0.4.2] — 2026-07-23
+
 ### Added
 - **Pick a scope from a nearby repeater.** When setting a region scope — global (**Settings → Radio → Scope**) or
   a per-channel/room override — a new **From repeater** button asks a heard repeater for the list of regions it

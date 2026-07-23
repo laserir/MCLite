@@ -103,7 +103,6 @@
     "scope_pick_scope": "Choisir portee",
     "scope_no_repeaters": "Aucun repeteur entendu",
     "scope_unnamed_repeater": "(sans nom)",
-    "scope_far_repeater": "(lointain)",
     "scope_requesting": "Demande des portees...",
     "scope_req_busy": "Radio occupee",
     "scope_req_failed": "Echec de la demande",

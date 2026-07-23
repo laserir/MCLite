@@ -129,7 +129,6 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"scope_pick_scope",    "Pick scope"},
     {"scope_no_repeaters",  "No repeaters heard yet"},
     {"scope_unnamed_repeater", "(unnamed)"},
-    {"scope_far_repeater",  "(far)"},
     {"scope_requesting",    "Requesting scopes..."},
     {"scope_req_busy",      "Radio busy, try again"},
     {"scope_req_failed",    "Request failed"},
