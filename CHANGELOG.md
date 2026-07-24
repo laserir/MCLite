@@ -7,6 +7,15 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 
 ## [Unreleased]
 
+### Added
+- **OTA also refreshes SD translations.** A WiFi firmware update (**Admin → WiFi → Check for updates**) now, right
+  after flashing, re-downloads the language files you already have on the SD card (`/mclite/lang/*.json`) from the
+  release it just installed — so strings added in a new version show up translated instead of falling back to
+  English until you next re-copy the files by hand. It only refreshes languages already present (never adds new
+  ones), validates each download before replacing the file (a failed or corrupt fetch leaves the existing one
+  untouched), and never blocks or fails the firmware update itself. English-only devices are unaffected. Also
+  clears the "lang file is older than firmware" serial warning after an update.
+
 ## [0.4.2] — 2026-07-23
 
 ### Added

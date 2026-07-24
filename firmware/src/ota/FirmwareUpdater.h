@@ -40,6 +40,15 @@ public:
     static bool downloadToSd(const char* url, const char* destPath,
                              ProgressCb cb = nullptr, void* user = nullptr);
 
+    // Refresh the SD-card translation files (/mclite/lang/<code>.json) to match the
+    // firmware `version` just installed, fetching each language ALREADY PRESENT on the
+    // SD from raw.githubusercontent.com pinned to the "v<version>" tag. This closes the
+    // gap where a firmware OTA adds i18n keys but the SD lang files stay stale (falling
+    // back to English). Best-effort and non-fatal: a failed HTTP GET or an invalid JSON
+    // body leaves the existing file untouched; new languages are never added. Requires an
+    // active WiFi connection. Blocking; returns the number of files updated.
+    static int refreshLangFiles(const String& version);
+
 private:
     static bool matchName(const String& base, String& versionOut);
 };

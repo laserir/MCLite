@@ -1915,6 +1915,10 @@ void UIManager::doFirmwareInstall() {
         const char* dest = "/firmware/_ota.bin";
         bool dok = FirmwareUpdater::downloadToSd(_fwUrl.c_str(), dest, fwDownloadProgressCb, this);
         ok = dok && FirmwareUpdater::flashFromSd(dest, fwProgressCb, this);
+        // While WiFi is still up, refresh the SD translations to match the new firmware, so
+        // languages the user already has pick up any strings added this release instead of
+        // falling back to English. Best-effort — never blocks or fails the firmware update.
+        if (ok && _fwVersion.length() > 0) FirmwareUpdater::refreshLangFiles(_fwVersion);
         WiFiManager::instance().disconnect();
     } else {
         ok = FirmwareUpdater::flashFromSd(_fwPath.c_str(), fwProgressCb, this);

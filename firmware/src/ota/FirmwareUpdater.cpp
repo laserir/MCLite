@@ -5,6 +5,8 @@
 #include <Update.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <vector>
 
 #include "../storage/SDCard.h"
 #include "../config/defaults.h"
@@ -221,6 +223,70 @@ bool FirmwareUpdater::downloadToSd(const char* url, const char* destPath,
     }
     LOGF("[OTA] downloaded %d bytes -> %s\n", written, destPath);
     return true;
+}
+
+int FirmwareUpdater::refreshLangFiles(const String& version) {
+    auto& sd = SDCard::instance();
+    if (!sd.isMounted() || version.length() == 0) return 0;
+
+    // Enumerate the languages ALREADY on the SD (respect the user's setup — never add new
+    // ones). Collect the codes and close every handle first: the network + writeAtomic work
+    // below opens more files, and the ESP32 SD driver has few handles.
+    std::vector<String> codes;
+    File dir = SD.open("/mclite/lang");
+    if (dir && dir.isDirectory()) {
+        for (File f = dir.openNextFile(); f; f = dir.openNextFile()) {
+            String name = f.name();
+            f.close();
+            int slash = name.lastIndexOf('/');
+            if (slash >= 0) name = name.substring(slash + 1);   // f.name() may be a full path
+            if (name.startsWith("._") || !name.endsWith(".json")) continue;  // skip macOS forks
+            codes.push_back(name.substring(0, name.length() - 5));
+        }
+        dir.close();
+    }
+    if (codes.empty()) return 0;
+
+    int updated = 0;
+    for (const String& code : codes) {
+        // Pin to the installed version's tag so translations match the firmware exactly.
+        String url = String("https://raw.githubusercontent.com/")
+                   + MCLITE_REPO_OWNER + "/" + MCLITE_REPO_NAME
+                   + "/v" + version + "/sdcard/mclite/lang/" + code + ".json";
+
+        WiFiClientSecure client;
+        client.setCACertBundle(rootca_crt_bundle_start);
+        HTTPClient http;
+        http.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+        http.setUserAgent("MCLite");   // GitHub 403s without a UA
+        if (!http.begin(client, url.c_str())) continue;
+
+        int rc = http.GET();
+        if (rc != HTTP_CODE_OK) {   // 404 = language not present at this tag → keep local
+            LOGF("[OTA] lang %s HTTP %d\n", code.c_str(), rc);
+            http.end();
+            continue;
+        }
+        String body = http.getString();
+        http.end();
+        if (body.length() == 0 || body.length() > 32768) continue;   // matches I18n's read cap
+
+        // Validate the download parses before overwriting a working translation — guards
+        // against a truncated/corrupt body. writeAtomic then swaps it in crash-safely.
+        JsonDocument doc;
+        if (deserializeJson(doc, body)) {
+            LOGF("[OTA] lang %s invalid JSON — kept existing\n", code.c_str());
+            continue;
+        }
+
+        String path = String("/mclite/lang/") + code + ".json";
+        if (sd.writeAtomic(path.c_str(), body)) {
+            updated++;
+            LOGF("[OTA] lang updated: %s\n", code.c_str());
+        }
+    }
+    LOGF("[OTA] lang refresh: %d/%d updated\n", updated, (int)codes.size());
+    return updated;
 }
 
 }  // namespace mclite
