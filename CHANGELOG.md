@@ -8,6 +8,13 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Added
+- **Status-bar menu button (T-Deck).** Optionally show a gear at the left of the status bar that opens Admin, and
+  tapping it again returns home — a touch alternative to the **0** key shortcut, which nothing on screen advertised.
+  It works from any screen, and is suppressed while the keypad is locked, while the map is open, or when
+  `security.admin_enabled` is off. Off by default — enable in **Settings → Display → Menu Button** or set
+  `display.menu_button` in `config.json`; the change applies without a reboot. T-Watch is unaffected: it already
+  reaches Admin via the side (PEK) button. Idea from the [MCLite-RPW](https://github.com/WaarlandIT/MCLite-RPW)
+  fork by PA3RPW.
 - **OTA also refreshes SD translations.** A WiFi firmware update (**Admin → WiFi → Check for updates**) now, right
   after flashing, re-downloads the language files you already have on the SD card (`/mclite/lang/*.json`) from the
   release it just installed — so strings added in a new version show up translated instead of falling back to

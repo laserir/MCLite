@@ -141,6 +141,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"lbl_dim_brightness",  "Dim Brightness"},
     {"lbl_kbd_backlight",   "Kbd Brightness"},
     {"lbl_emoji",           "Emoji Picker"},
+    {"lbl_menu_button",     "Menu Button"},
     {"lbl_pin_code",        "PIN Code"},
     {"lbl_lock_mode",       "Lock Mode"},
     {"lbl_auto_lock",       "Auto-Lock"},

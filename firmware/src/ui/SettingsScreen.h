@@ -307,6 +307,7 @@ private:
     static void emojiToggleCb(lv_event_t* e);
     static void screenshotsToggleCb(lv_event_t* e);
     static void showMemoryToggleCb(lv_event_t* e);
+    static void menuButtonToggleCb(lv_event_t* e);  // T-Deck status-bar gear
 };
 
 }  // namespace mclite

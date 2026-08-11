@@ -510,6 +510,26 @@ void test_emoji_round_trips() {
     TEST_ASSERT_FALSE(cfg->config().display.emoji);
 }
 
+// ═══ Display menu button (T-Deck status-bar gear) ═══
+
+void test_menu_button_defaults_false() {
+    parse("{\"display\":{}}");
+    TEST_ASSERT_FALSE(cfg->config().display.menuButton);
+}
+
+void test_menu_button_explicit_true() {
+    parse("{\"display\":{\"menu_button\": true}}");
+    TEST_ASSERT_TRUE(cfg->config().display.menuButton);
+}
+
+void test_menu_button_round_trips() {
+    parse("{\"display\":{\"menu_button\": true}}");
+    String json = cfg->toJson();
+    cfg->config() = AppConfig{};
+    cfg->parseJson(json);
+    TEST_ASSERT_TRUE(cfg->config().display.menuButton);
+}
+
 // ═══ Debug: screenshots ═══
 
 void test_debug_screenshots_defaults_false() {
@@ -1217,6 +1237,9 @@ int main() {
     RUN_TEST(test_emoji_defaults_true);
     RUN_TEST(test_emoji_explicit_false);
     RUN_TEST(test_emoji_round_trips);
+    RUN_TEST(test_menu_button_defaults_false);
+    RUN_TEST(test_menu_button_explicit_true);
+    RUN_TEST(test_menu_button_round_trips);
     RUN_TEST(test_debug_screenshots_defaults_false);
     RUN_TEST(test_debug_screenshots_explicit_true);
     RUN_TEST(test_debug_screenshots_round_trips);

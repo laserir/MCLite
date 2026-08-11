@@ -124,6 +124,11 @@ public:
     // Open the general map (own location + heard-node markers). From the GPS icon.
     void showGeneralMap();
 
+    // Toggle Admin <-> home from the T-Deck status-bar gear (display.menu_button).
+    // Re-checks admin_enabled / lock state / map here rather than trusting the
+    // button's visibility, and defers the screen switch. See the .cpp for why.
+    void toggleAdminFromStatusBar();
+
     // Open the map centered on an arbitrary coordinate (no contact). Used by the
     // tap-to-map link on a GPS coordinate in a chat message. Deferred via async.
     void openMapAt(double lat, double lon, const String& name);
@@ -256,6 +261,7 @@ private:
     bool      _pendingMapHasKey = false;  // false = center on coord only (no contact marker)
     static void openMapAsync(void* user);
     static void openGeneralMapAsync(void* user);
+    static void toggleAdminAsync(void* user);
 
     // ─── Room state (decisions #14, #15 from room-server-plan.md) ───
     static constexpr size_t MAX_ROOMS = 8;

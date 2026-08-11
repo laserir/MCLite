@@ -510,6 +510,11 @@ void SettingsScreen::buildDisplay() {
     addSliderRowGated(t("lbl_kbd_backlight"), &_kbdBrightnessSlider, &_kbdBrightnessValLbl,
                       1, 255, cfg.display.kbdBrightness, String(cfg.display.kbdBrightness), true);
     addSwitchRowGated(t("lbl_emoji"), cfg.display.emoji, emojiToggleCb, nullptr, false);
+#ifndef PLATFORM_TWATCH
+    // T-Deck only — T-Watch reaches Admin via the PEK short-press and has no
+    // room for the gear in its two-row status bar.
+    addSwitchRowGated(t("lbl_menu_button"), cfg.display.menuButton, menuButtonToggleCb, nullptr, false);
+#endif
 
     // Screenshots and debug overlays fold into Display (no separate Debug screen / header).
     addSwitchRowGated(t("lbl_screenshots"),  cfg.debug.screenshots, screenshotsToggleCb,  nullptr, false);
@@ -3183,6 +3188,15 @@ void SettingsScreen::showMemoryToggleCb(lv_event_t* e) {
     auto& mgr = ConfigManager::instance();
     lv_obj_t* sw = lv_event_get_target(e);
     mgr.config().debug.showMemory = lv_obj_has_state(sw, LV_STATE_CHECKED);
+    g_dsDirty = true;
+}
+
+// No reboot needed — StatusBar::update() re-reads config every tick, so the
+// gear appears/disappears on its own within a second.
+void SettingsScreen::menuButtonToggleCb(lv_event_t* e) {
+    auto& mgr = ConfigManager::instance();
+    lv_obj_t* sw = lv_event_get_target(e);
+    mgr.config().display.menuButton = lv_obj_has_state(sw, LV_STATE_CHECKED);
     g_dsDirty = true;
 }
 

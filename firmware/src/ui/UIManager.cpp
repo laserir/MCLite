@@ -1662,6 +1662,37 @@ void UIManager::showGeneralMap() {
     lv_async_call(&UIManager::openGeneralMapAsync, this);
 }
 
+void UIManager::toggleAdminAsync(void* user) {
+    UIManager* self = static_cast<UIManager*>(user);
+    if (!self) return;
+    if (self->_currentScreen == Screen::ADMIN) self->goHome();
+    else                                       self->showScreen(Screen::ADMIN);
+}
+
+void UIManager::toggleAdminFromStatusBar() {
+    // The gear's visibility already encodes most of this, but re-check at the
+    // action site — same as the '0' shortcut (main.cpp) and the T-Watch PEK path.
+    // admin_enabled is toggled from *inside* Admin, so the button can stay visible
+    // for up to one status-bar tick (1 Hz) after it is turned off.
+    if (!ConfigManager::instance().config().security.adminEnabled) return;
+
+    // Lock guard. On T-Deck the key-lock overlay is only a centred card, not a
+    // click-catching scrim — the sole barrier is Touch.cpp suppressing pointer
+    // events. Don't let one line in another subsystem be all that guards Admin.
+    if (_keyLocked || _isLocked) return;
+
+    // The map is an lv_win over the content area, not a Screen — the status bar
+    // stays visible and tappable above it, and showScreen() would not close it.
+    // Switching underneath would strand Admin behind an opaque map that still
+    // owns the input group, breaking the refocus chain when the map closes.
+    if (_mapScreen.isOpen()) return;
+
+    // Defer: showScreen() tears down the current screen (lv_obj_clean,
+    // lv_group_remove_obj, and from Settings a config save + possible restart),
+    // which must not run from inside this tap event.
+    lv_async_call(&UIManager::toggleAdminAsync, this);
+}
+
 bool UIManager::evalCanMap(const uint8_t* pubKey) const {
     if (!pubKey) return false;
     // Any known position (telemetry, advert, or heard) — the map renders them all.

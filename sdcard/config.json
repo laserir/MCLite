@@ -44,7 +44,8 @@
     "dim_brightness": 20,
     "kbd_backlight": true,
     "kbd_brightness": 127,
-    "emoji": true
+    "emoji": true,
+    "menu_button": false
   },
   "messaging": {
     "save_history": true,

@@ -242,7 +242,8 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
     "boot_text": "",                   // Optional text shown on boot screen (e.g. team name)
     "kbd_backlight": true,             // Keyboard backlight on/off with auto-dim
     "kbd_brightness": 127,             // Keyboard backlight brightness (1-255)
-    "emoji": true,                    // Show the chat emoji picker (received emoji always render). Default on.
+    "emoji": true,                     // Show the chat emoji picker (received emoji always render). Default on.
+    "menu_button": false,              // T-Deck only: status-bar gear that opens Admin. Default off (use the "0" key). Hidden when security.admin_enabled is false.
 
     // Optional custom palettes. Select one by putting its "name" in "theme" above.
     // Each entry starts from "base" (a built-in) and overrides any of the color

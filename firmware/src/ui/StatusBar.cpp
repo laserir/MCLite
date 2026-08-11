@@ -133,7 +133,23 @@ void StatusBar::create(lv_obj_t* parent) {
     lv_obj_set_flex_align(_bar, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(_bar, theme::PAD_SMALL, 0);
 
-    // OFFGRID indicator — created FIRST so flex order places it leftmost.
+    // Menu gear — created FIRST so flex order places it leftmost. Opt-in
+    // (display.menu_button, off by default): a touch path to Admin for people
+    // who don't know the QWERTY '0' shortcut. Always created so the Settings
+    // toggle applies live; update() drives visibility. A hidden flex child contributes
+    // no width and no pad_column, so the bar is unchanged when it's off.
+    // Touch-only — deliberately NOT added to the encoder group (that would break
+    // the trackball refocus chain).
+    _menuBtn = lv_label_create(_bar);
+    lv_obj_set_style_text_font(_menuBtn, FONT_NORMAL, 0);   // matches _soundIcon's tap target
+    lv_obj_set_style_text_color(_menuBtn, theme::TEXT_PRIMARY(), 0);
+    lv_label_set_text(_menuBtn, LV_SYMBOL_SETTINGS);
+    lv_obj_add_flag(_menuBtn, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_ext_click_area(_menuBtn, 8);
+    lv_obj_add_event_cb(_menuBtn, menuClickCb, LV_EVENT_CLICKED, this);
+    lv_obj_add_flag(_menuBtn, LV_OBJ_FLAG_HIDDEN);
+
+    // OFFGRID indicator — created next so it sits just right of the gear.
     // Hidden by default; update() toggles visibility from cfg.offgrid.enabled.
     _lblOffgrid = lv_label_create(_bar);
     lv_label_set_text(_lblOffgrid, "OFFGRID");
@@ -214,6 +230,12 @@ void StatusBar::gpsClickCb(lv_event_t* e) {
     UIManager::instance().showGeneralMap();
 }
 
+void StatusBar::menuClickCb(lv_event_t* e) {
+    // All gating (admin_enabled, lock state, map open) and the deferred screen
+    // switch live in UIManager — same split as gpsClickCb/showGeneralMap.
+    UIManager::instance().toggleAdminFromStatusBar();
+}
+
 void StatusBar::updateSoundIcon() {
     if (!_soundIcon) return;
     // Master switch off → hide the bell entirely (no per-session volume toggle).
@@ -236,6 +258,15 @@ void StatusBar::updateSoundIcon() {
 
 void StatusBar::update() {
     const auto& cfg = ConfigManager::instance().config();
+
+    // Menu gear (T-Deck) — opt-in, and pointless if Admin can't open at all.
+    // Driven here so toggling it in Settings takes effect without a reboot.
+    if (_menuBtn) {
+        if (cfg.display.menuButton && cfg.security.adminEnabled)
+            lv_obj_clear_flag(_menuBtn, LV_OBJ_FLAG_HIDDEN);
+        else
+            lv_obj_add_flag(_menuBtn, LV_OBJ_FLAG_HIDDEN);
+    }
 
     // OFFGRID indicator — show whenever offgrid mode is active on this boot
     if (_lblOffgrid) {

@@ -51,8 +51,9 @@ void ConvoListScreen::create(lv_obj_t* parent) {
     lv_obj_align(_emptyHint, LV_ALIGN_CENTER, 0, 0);
     lv_obj_add_flag(_emptyHint, LV_OBJ_FLAG_HIDDEN);
     // On T-Watch admin is reached via the upper power button (AXP2101 PEK
-    // short-press). On T-Deck via the QWERTY '0' shortcut. No on-screen
-    // gear button on either board.
+    // short-press). On T-Deck via the QWERTY '0' shortcut, plus an optional
+    // status-bar gear (display.menu_button, off by default) — see StatusBar.
+    // No gear button on the convo list itself on either board.
 }
 
 void ConvoListScreen::refresh() {
