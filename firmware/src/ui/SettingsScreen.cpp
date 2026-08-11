@@ -375,6 +375,14 @@ void SettingsScreen::buildDevice() {
     addNavRowGated(t("lbl_boot_text"),
                    cfg.display.bootText.length() > 0 ? cfg.display.bootText : String(t("off")),
                    bootTextRowCb, false);
+#ifndef PLATFORM_TWATCH
+    // Also offered in Display. Duplicated on purpose: this is the switch that
+    // makes Admin reachable without knowing the '0' shortcut, so it should be
+    // findable in the first section people open. Shares menuButtonToggleCb with
+    // the Display row, and every section rebuilds from config on show(), so the
+    // two stay in sync.
+    addSwitchRowGated(t("lbl_menu_button"), cfg.display.menuButton, menuButtonToggleCb, nullptr, false);
+#endif
 
     // Read-only diagnostics (moved off Admin).
     addReadOnlyRow(t("lbl_firmware"), String("MCLite v") + defaults::FIRMWARE_VERSION);
