@@ -378,7 +378,9 @@ The T-Deck Plus is keyboard + trackball driven; the T-Watch Ultra is touch drive
 
 | Action | T-Deck Plus | T-Watch Ultra |
 |--------|-------------|---------------|
-| Admin / device info | Sym + 0 | Short-press upper (PWR) button |
+| Admin / device info | Sym + 0, or tap the gear in the status bar (see `display.menu_button`) | Short-press upper (PWR) button |
+| Back to the conversation list | Esc | Swipe right |
+| Open the Nth conversation | Sym + 1 ... 9, from the conversation list | Tap the conversation |
 | Lock / unlock | Hold trackball 1s | Hold lower (BOOT) button 1s |
 | SOS broadcast | Hold trackball 6s | Hold lower (BOOT) button 6s |
 | Power off | Slide the power switch | Long-press upper (PWR) button |
