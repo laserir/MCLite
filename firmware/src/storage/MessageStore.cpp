@@ -116,6 +116,14 @@ void MessageStore::loadHistory(const ConvoId& id) {
         msg.hops = obj["hops"] | 0;
         msg.repeaterCount = obj["rpt"] | 0;
         msg.msgHash = obj["hash"] | "";
+        // History written before reactions existed has no "hash" field, and
+        // addMessage() only computes one for newly stored messages — so without
+        // this every pre-existing bubble stays un-reactable forever. The hash is
+        // a pure function of (text, timestamp), so it reconstructs exactly. The
+        // next saveHistory() persists it, making this a one-time cost per message.
+        if (msg.msgHash.isEmpty() && msg.timestamp > 0) {
+            msg.msgHash = computeMsgHash(msg.text, msg.timestamp);
+        }
         JsonArray rxns = obj["rxn"].as<JsonArray>();
         for (JsonObject r : rxns) {
             Reaction rx;
