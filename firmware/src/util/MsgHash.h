@@ -8,7 +8,13 @@ namespace mclite {
 //   SHA-256( UTF-8(text) || LE32(senderTimestamp) ) → first 5 bytes → Crockford B32
 // Use the sender's original timestamp, not local receive time, so all nodes agree.
 inline String computeMsgHash(const String& text, uint32_t senderTimestamp) {
-    static constexpr const char CROCKFORD[] = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    // Lowercase is the canonical form here: it is what the MeshCore One spec's
+    // examples emit ("...\nb45pc4ek"), so a peer comparing hashes case-sensitively
+    // still matches us. Crockford decoding is case-insensitive either way, but we
+    // cannot know that the other end normalizes. This MUST stay in step with
+    // normalizeCrockford() below — the stored hash is compared against a
+    // normalized inbound one in MessageStore::applyReaction.
+    static constexpr const char CROCKFORD[] = "0123456789abcdefghjkmnpqrstvwxyz";
 
     // Build input: text bytes + 4-byte little-endian timestamp.
     // Messages are capped at MAX_MSG_BYTES (160), so 164 bytes is a safe stack bound.
@@ -58,17 +64,19 @@ inline bool isCrockfordB32(const String& s) {
     return true;
 }
 
-// Normalize to canonical uppercase Crockford form.
+// Normalize to canonical lowercase Crockford form — must match computeMsgHash()'s
+// alphabet, since applyReaction() compares a normalized inbound hash against the
+// stored one with ==. Accepts either case on input; maps O->0 and I/L->1 per spec.
 inline String normalizeCrockford(const String& s) {
-    String up = s;
-    up.toUpperCase();
+    String lo = s;
+    lo.toLowerCase();
     char buf[9];
-    size_t len = up.length() < 8 ? up.length() : 8;
-    memcpy(buf, up.c_str(), len);
+    size_t len = lo.length() < 8 ? lo.length() : 8;
+    memcpy(buf, lo.c_str(), len);
     buf[len] = '\0';
     for (size_t i = 0; i < len; i++) {
-        if (buf[i] == 'O') buf[i] = '0';
-        else if (buf[i] == 'I' || buf[i] == 'L') buf[i] = '1';
+        if (buf[i] == 'o') buf[i] = '0';
+        else if (buf[i] == 'i' || buf[i] == 'l') buf[i] = '1';
     }
     return String(buf);
 }

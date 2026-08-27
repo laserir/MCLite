@@ -22,7 +22,7 @@ enum class ChoiceField { LocationFormat, ShowTelemetry, LocationPrecision, Regio
 // stashed in the switch's user_data so one callback maps to the right field.
 enum class BoolField {
     SaveHistory = 1, RequestTelemetry, AutoTelemetry, CannedMessages, AllowMute, ShowHopCount,
-    ShareContact, GpsEnabled
+    ShareContact, Reactions, GpsEnabled
 };
 
 // Steps in the on-device conversation-add flows (one shared text editor, walked

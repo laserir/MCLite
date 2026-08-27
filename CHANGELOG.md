@@ -8,6 +8,14 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Added
+- **Message reactions.** Long-press a chat bubble to react with an emoji (👍 👎 ❤ 😂 😮 😢); reactions appear as
+  chips under the message and aggregate when several people pick the same one. Implements the
+  [MeshCore One reactions spec](https://github.com/Avi0n/MeshCoreOne/blob/main/docs/Reactions.md), so reactions
+  sent from that app attach to the right message here and vice versa. **Compatibility is limited to MeshCore One
+  and MCLite for now** — the spec rides inside ordinary message text, so on any other MeshCore client a reaction
+  arrives as a plain message showing the emoji and an 8-character code. That is why it is **off by default**:
+  enable in **Settings → Messaging → Reactions** or set `messaging.reactions` in `config.json`. Reactions you
+  receive are always recognised and never shown as junk text, even with the setting off. Thanks @jason-s13r (#41).
 - **Edit canned messages on the device.** The quick-reply list is no longer config-tool-only: **Admin → Canned
   Messages** (also reachable from **Settings → Messaging**) lists the current replies and lets you add, edit or
   delete them, up to 8. Starting from the built-in defaults materialises them into your config the first time you

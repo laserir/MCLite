@@ -65,6 +65,7 @@ That's it. Full walkthrough in [Getting Started](#getting-started) below, plus [
 - **Room servers** -- join community message boards (up to 8), with auto-login and reconnect
 - **Quick replies** -- optional canned-message picker; per-chat lists can double as a command menu (e.g. a Home Assistant bridge)
 - **Emoji** -- inline emoji rendering plus an on-device picker, with graceful plain-text fallback
+- **Reactions** -- long-press a message to react with an emoji, interoperable with the MeshCore One app (off by default; other clients see a plain text message)
 - **Message history** -- conversations saved to SD and restored on reboot
 
 **Location & awareness**
@@ -272,9 +273,13 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
                                        //   Editable on-device: Admin -> Canned Messages (or Settings -> Messaging).
                                        //   This is the GLOBAL list; individual contacts/channels/rooms can override
                                        //   it with their own "canned" array (see above). Per-conversation lists win.
-    "share_contact": true              // Share button in a DM chat header re-broadcasts that contact's advert so
+    "share_contact": true,             // Share button in a DM chat header re-broadcasts that contact's advert so
                                        //   a nearby device can add them from Heard Adverts (no key typing). On by default.
                                        //   Also on-device: Settings -> Messaging -> Share Contact.
+    "reactions": false                 // Long-press a chat bubble to react with an emoji (MeshCore One spec).
+                                       //   ONLY MeshCore One and MCLite understand reactions -- on any other MeshCore
+                                       //   client a reaction arrives as a plain text message (emoji + 8-char code).
+                                       //   Off by default. On-device: Settings -> Messaging -> Reactions.
   },
 
   "sound": {

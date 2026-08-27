@@ -562,6 +562,10 @@ void SettingsScreen::buildMessaging() {
     // when deciding which header buttons to show.
     addSwitchRowGated(t("lbl_share_contact"), cfg.messaging.shareContact, boolToggleCb,
                       (void*)BoolField::ShareContact, false);
+    // Emoji reactions. Only MeshCore One and MCLite understand these; on other
+    // clients a reaction arrives as a plain text message (emoji + 8-char hash).
+    addSwitchRowGated(t("lbl_reactions"), cfg.messaging.reactions, boolToggleCb,
+                      (void*)BoolField::Reactions, false);
 }
 
 void SettingsScreen::buildSound() {
@@ -1564,6 +1568,7 @@ void SettingsScreen::boolToggleCb(lv_event_t* e) {
         case BoolField::AllowMute:        c.messaging.allowMute = v; break;
         case BoolField::ShowHopCount:     c.messaging.showHopCount = v; break;
         case BoolField::ShareContact:     c.messaging.shareContact = v; break;
+        case BoolField::Reactions:        c.messaging.reactions = v; break;
         case BoolField::GpsEnabled:       c.gpsEnabled = v; break;  // unused (see gpsToggleCb)
     }
     g_dsDirty = true;

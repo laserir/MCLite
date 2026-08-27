@@ -584,7 +584,7 @@ void ChatScreen::addBubble(const Message& msg) {
     }
 
     // Reaction chips: aggregate emoji by type, show "👍 2" or just "👍" if count=1.
-    if (!msg.reactions.empty()) {
+    if (!msg.reactions.empty() && ConfigManager::instance().config().messaging.reactions) {
         struct EmojiCount { String emoji; uint8_t count = 0; };
         static constexpr uint8_t MAX_EMOJI_TYPES = 8;
         EmojiCount agg[MAX_EMOJI_TYPES];
@@ -625,7 +625,10 @@ void ChatScreen::addBubble(const Message& msg) {
 
     // Long-press on any bubble with a known hash → reaction picker.
     // Read-only convos still allow reactions (they can send reaction wire messages).
-    if (!msg.msgHash.isEmpty()) {
+    // Gated on messaging.reactions: only the *UI* is gated. Inbound reactions are
+    // always parsed and swallowed (UIManager::onIncomingMessage), otherwise a peer's
+    // reaction would render as a junk text bubble on a device with this turned off.
+    if (!msg.msgHash.isEmpty() && ConfigManager::instance().config().messaging.reactions) {
         String senderName = msg.fromSelf
             ? ConfigManager::instance().config().deviceName
             : msg.senderName;

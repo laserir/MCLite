@@ -1,5 +1,5 @@
 {
-    "version": 45,
+    "version": 46,
     "no_sd_title": "Nessuna scheda SD",
     "no_sd_msg": "Inserire una scheda SD con config.json\ne riavviare.\n\nUsare il MCLite Config Tool\nper creare la configurazione.",
     "setup_title": "Configurazione necessaria",
@@ -263,6 +263,7 @@
     "lbl_allow_mute": "Muta chat",
     "lbl_show_hops": "Mostra hop",
     "lbl_share_contact": "Condividi contatto",
+    "lbl_reactions": "Reazioni",
     "lbl_hop_direct": "diretto",
     "preset_custom": "Personalizzato",
     "loc_decimal": "Decimale",

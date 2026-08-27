@@ -1,5 +1,5 @@
 {
-    "version": 45,
+    "version": 46,
     "no_sd_title": "Pas de carte SD",
     "no_sd_msg": "Inserer une carte SD avec config.json\net redemarrer.\n\nUtilisez l'outil MCLite Config Tool\npour creer votre configuration.",
     "setup_title": "Configuration requise",
@@ -263,6 +263,7 @@
     "lbl_allow_mute": "Muet chats",
     "lbl_show_hops": "Afficher sauts",
     "lbl_share_contact": "Partager contact",
+    "lbl_reactions": "Reactions",
     "lbl_hop_direct": "direct",
     "preset_custom": "Personnalise",
     "loc_decimal": "Decimal",

@@ -197,6 +197,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"lbl_allow_mute",      "Mute Chats"},
     {"lbl_show_hops",       "Show Hop Count"},
     {"lbl_share_contact",   "Share Contact"},
+    {"lbl_reactions",       "Reactions"},
     {"lbl_hop_direct",      "direct"},
     {"preset_custom",       "Custom"},
     {"loc_decimal",         "Decimal"},
