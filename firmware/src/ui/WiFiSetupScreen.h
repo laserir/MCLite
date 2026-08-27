@@ -28,6 +28,8 @@ private:
     lv_obj_t* _companionRow    = nullptr;   // "WiFi Companion Mode" row (enabled when connected)
     lv_obj_t* _companionSwitch = nullptr;
     lv_obj_t* _companionLabel  = nullptr;   // "WiFi Companion" / "Companion: <ip>:5000 (connected)"
+    lv_obj_t* _autoUpdateRow    = nullptr;  // "Auto Update" row (wifi.auto_update)
+    lv_obj_t* _autoUpdateSwitch = nullptr;
 
     // Password-entry overlay
     lv_obj_t*   _pwOverlay  = nullptr;
@@ -58,6 +60,7 @@ private:
     static void backBtnCb(lv_event_t* e);
     static void switchCb(lv_event_t* e);
     static void companionSwitchCb(lv_event_t* e);
+    static void autoUpdateSwitchCb(lv_event_t* e);
     static void checkBtnCb(lv_event_t* e);
     static void rebootBtnCb(lv_event_t* e);
     static void rowClickCb(lv_event_t* e);

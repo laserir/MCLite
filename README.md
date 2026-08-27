@@ -269,10 +269,12 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
                                        //   markers fresh. Throttled + self-limiting (backs off non-responders). Opt-in, off by default.
     "canned_messages": true,           // Quick-reply picker: true = on (default messages, default), false = off,
                                        //   or ["Reply 1", "Reply 2"] = on with custom messages (max 8).
+                                       //   Editable on-device: Admin -> Canned Messages (or Settings -> Messaging).
                                        //   This is the GLOBAL list; individual contacts/channels/rooms can override
                                        //   it with their own "canned" array (see above). Per-conversation lists win.
     "share_contact": true              // Share button in a DM chat header re-broadcasts that contact's advert so
                                        //   a nearby device can add them from Heard Adverts (no key typing). On by default.
+                                       //   Also on-device: Settings -> Messaging -> Share Contact.
   },
 
   "sound": {
@@ -299,6 +301,15 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
     "pin_code": "",                    // PIN code (4-8 alphanumeric characters, only for "pin" mode)
     "auto_lock": "key",                // Lock on display dim: "none", "key", "pin" (falls back if unavailable)
     "admin_enabled": true              // Allow access to device info screen (press 0)
+  },
+
+  // Optional. Only written when an SSID is set, so it is absent on devices that
+  // never use WiFi. Also editable on-device: Admin -> WiFi.
+  "wifi": {
+    "ssid": "",                        // Network to auto-connect to on boot
+    "password": "",                    // Stored in plain text on the SD card
+    "auto_update": false               // Check GitHub for a newer release on boot and offer to install it.
+                                       //   Off by default. On-device: Admin -> WiFi -> Auto Update.
   }
 }
 ```

@@ -1,5 +1,5 @@
 {
-    "version": 44,
+    "version": 45,
     "no_sd_title": "Keine SD-Karte",
     "no_sd_msg": "SD-Karte mit config.json einlegen\nund neu starten.\n\nVerwenden Sie das MCLite Config Tool\num Ihre Konfiguration zu erstellen.",
     "setup_title": "Einrichtung erforderlich",
@@ -201,6 +201,7 @@
     "wifi_checking": "Pruefe...",
     "wifi_ssid_not_found": "Netzwerk nicht gefunden",
     "wifi_companion": "WiFi Begleiter",
+    "lbl_auto_update": "Auto-Update",
     "wifi_companion_addr": "Begleiter %s:5000",
     "wifi_companion_client": "verbunden",
     "usb_companion": "USB Begleiter",
@@ -261,6 +262,7 @@
     "lbl_canned": "Schnellantworten",
     "lbl_allow_mute": "Chats stumm",
     "lbl_show_hops": "Hops anzeigen",
+    "lbl_share_contact": "Kontakt teilen",
     "lbl_hop_direct": "direkt",
     "preset_custom": "Benutzerdefiniert",
     "loc_decimal": "Dezimal",

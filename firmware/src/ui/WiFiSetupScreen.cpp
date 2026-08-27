@@ -116,6 +116,32 @@ void WiFiSetupScreen::create(lv_obj_t* parent) {
     lv_obj_set_style_bg_color(_companionSwitch, theme::ACCENT(), LV_PART_INDICATOR | LV_STATE_CHECKED);
     lv_obj_add_event_cb(_companionSwitch, companionSwitchCb, LV_EVENT_VALUE_CHANGED, this);
 
+    // Auto-update row. Persistent preference (wifi.auto_update), so it stays
+    // visible and reachable whether or not WiFi is currently connected —
+    // UIManager checks it on boot, not here.
+    _autoUpdateRow = lv_obj_create(cont);
+    lv_obj_set_size(_autoUpdateRow, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_color(_autoUpdateRow, theme::BG_SECONDARY(), 0);
+    lv_obj_set_style_radius(_autoUpdateRow, 4, 0);
+    lv_obj_set_style_border_width(_autoUpdateRow, 0, 0);
+    lv_obj_set_style_pad_all(_autoUpdateRow, theme::PAD_SMALL, 0);
+    lv_obj_clear_flag(_autoUpdateRow, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_flex_flow(_autoUpdateRow, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(_autoUpdateRow, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    lv_obj_t* auLbl = lv_label_create(_autoUpdateRow);
+    lv_label_set_long_mode(auLbl, LV_LABEL_LONG_DOT);
+    lv_obj_set_flex_grow(auLbl, 1);
+    lv_obj_set_style_text_font(auLbl, FONT_BODY, 0);
+    lv_obj_set_style_text_color(auLbl, theme::TEXT_PRIMARY(), 0);
+    lv_label_set_text(auLbl, t("lbl_auto_update"));
+
+    _autoUpdateSwitch = lv_switch_create(_autoUpdateRow);
+    lv_obj_set_style_bg_color(_autoUpdateSwitch, theme::ACCENT(), LV_PART_INDICATOR | LV_STATE_CHECKED);
+    if (ConfigManager::instance().config().wifi.autoUpdate)
+        lv_obj_add_state(_autoUpdateSwitch, LV_STATE_CHECKED);
+    lv_obj_add_event_cb(_autoUpdateSwitch, autoUpdateSwitchCb, LV_EVENT_VALUE_CHANGED, this);
+
     // "Check for updates" button (shown only while connected)
     _checkBtn = lv_btn_create(cont);
     lv_obj_set_width(_checkBtn, LV_PCT(100));
@@ -265,6 +291,8 @@ void WiFiSetupScreen::updateStatusUi() {
             lv_group_add_obj(grp, _companionSwitch);
             lv_group_add_obj(grp, _checkBtn);
         }
+        // Always reachable — it is a stored preference, not a live-connection action.
+        lv_group_add_obj(grp, _autoUpdateSwitch);
         lv_group_add_obj(grp, _backBtn);
     }
 }
@@ -526,6 +554,17 @@ void WiFiSetupScreen::switchCb(lv_event_t* e) {
     } else {
         self->doDisconnect();
     }
+}
+
+// Persists immediately: unlike the companion switch (session state owned by
+// CompanionService) this is a stored config value that UIManager reads on boot,
+// and this screen has no on-leave save hook like SettingsScreen's g_dsDirty.
+void WiFiSetupScreen::autoUpdateSwitchCb(lv_event_t* e) {
+    auto* self = static_cast<WiFiSetupScreen*>(lv_event_get_user_data(e));
+    if (!self) return;
+    auto& mgr = ConfigManager::instance();
+    mgr.config().wifi.autoUpdate = lv_obj_has_state(self->_autoUpdateSwitch, LV_STATE_CHECKED);
+    mgr.save();
 }
 
 void WiFiSetupScreen::companionSwitchCb(lv_event_t* e) {

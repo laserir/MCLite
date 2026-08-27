@@ -558,6 +558,10 @@ void SettingsScreen::buildMessaging() {
                       (void*)BoolField::AllowMute, false);
     addSwitchRowGated(t("lbl_show_hops"), cfg.messaging.showHopCount, boolToggleCb,
                       (void*)BoolField::ShowHopCount, false);
+    // Controls the share (↑) button in a DM chat header — UIManager reads this
+    // when deciding which header buttons to show.
+    addSwitchRowGated(t("lbl_share_contact"), cfg.messaging.shareContact, boolToggleCb,
+                      (void*)BoolField::ShareContact, false);
 }
 
 void SettingsScreen::buildSound() {
@@ -1558,6 +1562,7 @@ void SettingsScreen::boolToggleCb(lv_event_t* e) {
         case BoolField::CannedMessages:   c.messaging.cannedMessages = v; break;
         case BoolField::AllowMute:        c.messaging.allowMute = v; break;
         case BoolField::ShowHopCount:     c.messaging.showHopCount = v; break;
+        case BoolField::ShareContact:     c.messaging.shareContact = v; break;
         case BoolField::GpsEnabled:       c.gpsEnabled = v; break;  // unused (see gpsToggleCb)
     }
     g_dsDirty = true;

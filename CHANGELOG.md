@@ -8,6 +8,15 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Added
+- **Edit canned messages on the device.** The quick-reply list is no longer config-tool-only: **Admin → Canned
+  Messages** (also reachable from **Settings → Messaging**) lists the current replies and lets you add, edit or
+  delete them, up to 8. Starting from the built-in defaults materialises them into your config the first time you
+  change one, so nothing is lost. Read-only when settings permissions are restricted. Thanks @jason-s13r.
+- **Two settings that were config-tool-only are now on-device.** **Settings → Messaging → Share Contact**
+  toggles the share button in a DM chat header, and **Admin → WiFi → Auto Update** controls whether the device
+  checks GitHub for a newer release on boot. Both already existed as `messaging.share_contact` and
+  `wifi.auto_update` in `config.json`; neither had a switch you could reach without a computer. The `wifi` block
+  is also documented in the README config reference for the first time.
 - **Status-bar menu button (T-Deck).** Optionally show a gear at the left of the status bar that opens Admin, and
   tapping it again returns home — a touch alternative to the **0** key shortcut, which nothing on screen advertised.
   It works from any screen, and is suppressed while the keypad is locked, while the map is open, or when
