@@ -193,6 +193,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"sec_canned_messages", "Canned Messages (%d)"},
     {"canned_add_msg",      "Add Message"},
     {"canned_enter_msg",    "Message text"},
+    {"canned_msg_empty",    "Message cannot be empty"},
     {"lbl_allow_mute",      "Mute Chats"},
     {"lbl_show_hops",       "Show Hop Count"},
     {"lbl_share_contact",   "Share Contact"},

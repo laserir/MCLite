@@ -304,5 +304,6 @@
     "sec_canned_messages_t": "Schnellantworten",
     "sec_canned_messages": "Schnellantworten (%d)",
     "canned_add_msg": "Nachricht hinzufuegen",
-    "canned_enter_msg": "Nachrichtentext"
+    "canned_enter_msg": "Nachrichtentext",
+    "canned_msg_empty": "Nachricht darf nicht leer sein"
 }

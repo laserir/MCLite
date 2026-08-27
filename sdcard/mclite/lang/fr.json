@@ -304,5 +304,6 @@
     "sec_canned_messages_t": "Reponses rapides",
     "sec_canned_messages": "Reponses rapides (%d)",
     "canned_add_msg": "Ajouter message",
-    "canned_enter_msg": "Texte du message"
+    "canned_enter_msg": "Texte du message",
+    "canned_msg_empty": "Le message ne peut etre vide"
 }

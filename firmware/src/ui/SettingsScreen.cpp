@@ -1359,7 +1359,7 @@ void SettingsScreen::cannedSaveCb(lv_event_t* e) {
     SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
     if (!self || !self->_cannedTextarea) return;
     String text = convoTrim(String(lv_textarea_get_text(self->_cannedTextarea)));
-    if (text.length() == 0) { UIManager::instance().showToast(t("chan_name_invalid")); return; }
+    if (text.length() == 0) { UIManager::instance().showToast(t("canned_msg_empty")); return; }
 
     auto& cfg = ConfigManager::instance().config();
     int idx = self->_cannedEditIdx;
