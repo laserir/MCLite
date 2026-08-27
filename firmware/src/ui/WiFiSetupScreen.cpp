@@ -286,13 +286,13 @@ void WiFiSetupScreen::updateStatusUi() {
 
     lv_group_t* grp = UIManager::instance().inputGroup();
     if (grp) {
+        // Order must match the on-screen order below the status label:
+        // WiFi switch, companion row, auto-update row, "Check for updates".
         lv_group_add_obj(grp, _switch);
-        if (connected) {
-            lv_group_add_obj(grp, _companionSwitch);
-            lv_group_add_obj(grp, _checkBtn);
-        }
-        // Always reachable — it is a stored preference, not a live-connection action.
+        if (connected) lv_group_add_obj(grp, _companionSwitch);
+        // Always reachable — a stored preference, not a live-connection action.
         lv_group_add_obj(grp, _autoUpdateSwitch);
+        if (connected) lv_group_add_obj(grp, _checkBtn);
         lv_group_add_obj(grp, _backBtn);
     }
 }

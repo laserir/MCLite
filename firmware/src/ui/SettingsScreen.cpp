@@ -1488,6 +1488,7 @@ void SettingsScreen::hide() {
         if (_choicePanel) hideChoicePicker();
         if (_timezoneTextarea) hideTimezoneEditor();
         if (_convoTextarea) hideConvoEditor();
+        if (_cannedTextarea) hideCannedEditor();
         if (_convoModalBtnm) hideButtonModal();
         lv_group_t* grp = lv_group_get_default();
         if (grp) {
