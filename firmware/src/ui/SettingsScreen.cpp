@@ -710,6 +710,18 @@ void SettingsScreen::buildSecurity() {
     if (cfg.security.autoLock == "key") autoLockValue = t("lock_key");
     else if (cfg.security.autoLock == "pin") autoLockValue = t("lock_pin");
     addNavRowGated(t("lbl_auto_lock"), autoLockValue, autoLockRowCb, false);
+
+    // Permissions. basic=false is load-bearing: it means these rows are only
+    // editable while settings=="full", so the device can tighten but never
+    // loosen itself. Recovery from a lockdown is editing config.json on the SD.
+    const String& ps = cfg.permissions.settings;
+    String psLabel = (ps == "none") ? t("perm_none")
+                   : (ps == "restricted") ? t("perm_restricted") : t("perm_full");
+    addNavRowGated(t("lbl_perm_settings"), psLabel, permSettingsRowCb, false);
+    addSwitchRowGated(t("lbl_perm_convmgmt"), cfg.permissions.conversationManagement,
+                      boolToggleCb, (void*)BoolField::PermConvMgmt, false);
+    addSwitchRowGated(t("lbl_perm_companion"), cfg.permissions.companion,
+                      boolToggleCb, (void*)BoolField::PermCompanion, false);
 }
 
 // ─────────────────────────── Canned messages section ───────────────────────────
@@ -1161,11 +1173,44 @@ void SettingsScreen::openButtonModal(ConvoModal purpose) {
             g_btnModalLabels = { t("reboot_now"), t("btn_cancel") };
             break;
         }
+        case ConvoModal::PermLockConfirm: {
+            title = t("perm_lock_title");
+            // Name what is actually lost. companion is UI-visibility only, so it
+            // must not claim to stop anything already running.
+            switch (_permPending) {
+                case PermField::Settings:  body = t("perm_lock_settings_body");  break;
+                case PermField::ConvMgmt:  body = t("perm_lock_convmgmt_body");  break;
+                case PermField::Companion: body = t("perm_lock_companion_body"); break;
+                default: return;
+            }
+            g_btnModalLabels = { t("perm_lock_confirm"), t("btn_cancel") };
+            break;
+        }
         default: return;
     }
 
     _convoModalBtnm = ModalDialog::show(title, body, g_btnModalLabels,
         [this](lv_obj_t* dlg, int idx) { onConvoModalChoice(dlg, idx); });
+}
+
+// Commit the confirmed tightening. Saves straight away rather than relying on
+// g_dsDirty: once settings goes to restricted/none the rows are read-only, and a
+// value the user explicitly confirmed should not depend on how they leave the
+// screen.
+void SettingsScreen::applyPendingPermission() {
+    auto& mgr = ConfigManager::instance();
+    auto& c   = mgr.config();
+    switch (_permPending) {
+        case PermField::Settings:
+            if (_permPendingValue.length()) c.permissions.settings = _permPendingValue;
+            break;
+        case PermField::ConvMgmt:  c.permissions.conversationManagement = false; break;
+        case PermField::Companion: c.permissions.companion             = false; break;
+        default: return;
+    }
+    _permPending = PermField::None;
+    _permPendingValue = "";
+    mgr.save();
 }
 
 void SettingsScreen::hideButtonModal() {
@@ -1283,6 +1328,13 @@ void SettingsScreen::onConvoModalChoice(lv_obj_t* dlg, int idxIn) {
         return;
     }
 
+    if (purpose == ConvoModal::PermLockConfirm) {
+        if (idx == 0) self->applyPendingPermission();
+        else          self->_permPending = PermField::None;   // Cancel: discard
+        // show() rebuilds from config either way, so a cancelled switch snaps back.
+        lv_async_call([](void* p){ ((SettingsScreen*)p)->show(); }, self);
+        return;
+    }
     if (purpose == ConvoModal::OffgridConfirm) {
         if (idx == 0) {  // Reboot now — flip offgrid, persist, restart
             auto& mgr = ConfigManager::instance();
@@ -1666,6 +1718,7 @@ void SettingsScreen::offgridRowCb(lv_event_t* e) {
 // ─────────────────────────── Generic bool toggles ───────────────────────────
 
 void SettingsScreen::boolToggleCb(lv_event_t* e) {
+    SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
     lv_obj_t* sw = lv_event_get_target(e);
     bool v = lv_obj_has_state(sw, LV_STATE_CHECKED);
     BoolField id = (BoolField)(intptr_t)lv_obj_get_user_data(sw);
@@ -1679,6 +1732,25 @@ void SettingsScreen::boolToggleCb(lv_event_t* e) {
         case BoolField::ShowHopCount:     c.messaging.showHopCount = v; break;
         case BoolField::ShareContact:     c.messaging.shareContact = v; break;
         case BoolField::Reactions:        c.messaging.reactions = v; break;
+        // Turning a permission off tightens the device and cannot be undone from
+        // it, so defer to the confirm dialog. Turning one back on is the safe
+        // direction and applies immediately.
+        case BoolField::PermConvMgmt:
+            if (!v) {
+                if (!self) return;
+                self->_permPending = PermField::ConvMgmt;
+                lv_async_call([](void* p){ ((SettingsScreen*)p)->openButtonModal(ConvoModal::PermLockConfirm); }, self);
+                return;   // nothing written yet; the dialog decides
+            }
+            c.permissions.conversationManagement = true; break;
+        case BoolField::PermCompanion:
+            if (!v) {
+                if (!self) return;
+                self->_permPending = PermField::Companion;
+                lv_async_call([](void* p){ ((SettingsScreen*)p)->openButtonModal(ConvoModal::PermLockConfirm); }, self);
+                return;
+            }
+            c.permissions.companion = true; break;
         case BoolField::GpsEnabled:       c.gpsEnabled = v; break;  // unused (see gpsToggleCb)
     }
     g_dsDirty = true;
@@ -1706,6 +1778,11 @@ std::vector<String> g_choiceNames;   // option codes (string fields)
 std::vector<int>    g_choiceVals;    // numeric values (precision/region idx)
 std::vector<String> g_choiceLabels;
 }  // namespace
+
+void SettingsScreen::permSettingsRowCb(lv_event_t* e) {
+    SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
+    if (self) self->openChoicePicker(ChoiceField::PermSettings);
+}
 
 void SettingsScreen::locFormatRowCb(lv_event_t* e) {
     SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
@@ -1739,6 +1816,11 @@ void SettingsScreen::openChoicePicker(ChoiceField f) {
     g_choiceNames.clear(); g_choiceVals.clear(); g_choiceLabels.clear();
 
     switch (f) {
+        case ChoiceField::PermSettings:
+            g_choiceNames.push_back("full");       g_choiceLabels.push_back(t("perm_full"));
+            g_choiceNames.push_back("restricted"); g_choiceLabels.push_back(t("perm_restricted"));
+            g_choiceNames.push_back("none");       g_choiceLabels.push_back(t("perm_none"));
+            break;
         case ChoiceField::LocationFormat:
             g_choiceNames.push_back("decimal"); g_choiceLabels.push_back(t("loc_decimal"));
             g_choiceNames.push_back("mgrs");    g_choiceLabels.push_back(t("loc_mgrs"));
@@ -1780,6 +1862,11 @@ void SettingsScreen::openChoicePicker(ChoiceField f) {
     uint16_t initSel = 0;
     const auto& cfg = ConfigManager::instance().config();
     switch (f) {
+        case ChoiceField::PermSettings:
+            for (size_t i = 0; i < g_choiceNames.size(); i++) {
+                if (g_choiceNames[i] == cfg.permissions.settings) { initSel = (uint16_t)i; break; }
+            }
+            break;
         case ChoiceField::LocationFormat:
             for (size_t i = 0; i < g_choiceNames.size(); i++) {
                 if (g_choiceNames[i] == cfg.messaging.locationFormat) { initSel = (uint16_t)i; break; }
@@ -1922,6 +2009,15 @@ void SettingsScreen::choiceChosenCb(lv_event_t* e) {
 
     auto& c = ConfigManager::instance().config();
     switch (self->_choiceField) {
+        case ChoiceField::PermSettings:
+            if (idx < g_choiceNames.size() && c.permissions.settings != g_choiceNames[idx]) {
+                // The row is only editable while "full", so any change here tightens.
+                // Confirm first: once applied these rows go read-only and the device
+                // cannot restore them itself.
+                self->_permPending      = PermField::Settings;
+                self->_permPendingValue = g_choiceNames[idx];
+            }
+            break;
         case ChoiceField::LocationFormat:
             if (idx < g_choiceNames.size() && c.messaging.locationFormat != g_choiceNames[idx]) {
                 c.messaging.locationFormat = g_choiceNames[idx]; g_dsDirty = true;
@@ -1980,6 +2076,10 @@ void SettingsScreen::hideChoicePicker() {
     lv_obj_del_async(_choicePanel);   _choicePanel   = nullptr;
     lv_obj_del_async(_choiceOverlay); _choiceOverlay = nullptr;
     if (_screen) show();
+    // A pending permission tightening waits until the picker is torn down, so the
+    // confirm dialog is not stacked on top of a modal that is being deleted.
+    if (_permPending != PermField::None)
+        lv_async_call([](void* p){ ((SettingsScreen*)p)->openButtonModal(ConvoModal::PermLockConfirm); }, this);
 }
 
 // ─────────────────────────── Timezone editor (GPS) ───────────────────────────

@@ -16,13 +16,14 @@ enum class SettingsSection {
 };
 
 // Generic enum/string choice fields rendered by the shared btnmatrix picker.
-enum class ChoiceField { LocationFormat, ShowTelemetry, LocationPrecision, RegionPreset, AdvertInterval, PathHashMode };
+enum class ChoiceField { LocationFormat, ShowTelemetry, LocationPrecision, RegionPreset, AdvertInterval, PathHashMode,
+                         PermSettings };
 
 // Simple bool config fields toggled by the shared lv_switch callback. The id is
 // stashed in the switch's user_data so one callback maps to the right field.
 enum class BoolField {
     SaveHistory = 1, RequestTelemetry, AutoTelemetry, CannedMessages, AllowMute, ShowHopCount,
-    ShareContact, Reactions, GpsEnabled
+    ShareContact, Reactions, PermConvMgmt, PermCompanion, GpsEnabled
 };
 
 // Steps in the on-device conversation-add flows (one shared text editor, walked
@@ -212,6 +213,7 @@ private:
     void openChoicePicker(ChoiceField f);
     void hideChoicePicker();
     static void choiceChosenCb(lv_event_t* e);
+    static void permSettingsRowCb(lv_event_t* e);
     static void locFormatRowCb(lv_event_t* e);
     static void showTelemetryRowCb(lv_event_t* e);
     static void locPrecisionRowCb(lv_event_t* e);
@@ -257,7 +259,17 @@ private:
 
     // Vertical button-list modal (picker styling: MODAL_TEXT_WIDTH btnmatrix,
     // one button per row) — replaces narrow side-by-side lv_msgbox dialogs.
-    enum class ConvoModal { None, AddChooser, DeleteConfirm, RebootConfirm, OffgridConfirm };
+    enum class ConvoModal { None, AddChooser, DeleteConfirm, RebootConfirm, OffgridConfirm, PermLockConfirm };
+
+    // A permission change the user has chosen but not yet confirmed. Tightening
+    // permissions cannot be undone from the device (the rows are gated at
+    // basic=false, so they go read-only the moment it applies), hence the
+    // confirm step. Because the rows are only editable while settings=="full",
+    // any change reachable here is a tightening one.
+    enum class PermField : uint8_t { None, Settings, ConvMgmt, Companion };
+    PermField _permPending      = PermField::None;
+    String    _permPendingValue;   // Settings only: the chosen "restricted"/"none"
+    void applyPendingPermission();
     ConvoModal _convoModal = ConvoModal::None;
     lv_obj_t*  _convoModalBtnm = nullptr;
     void openButtonModal(ConvoModal purpose);

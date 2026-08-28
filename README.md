@@ -310,6 +310,22 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
     "admin_enabled": true              // Allow access to device info screen (press 0)
   },
 
+  // What may be changed from the device, *within* the Admin gate above. Editable
+  // on-device at Settings -> Security, but only while "settings" is "full": the rows
+  // gate themselves, so a device can tighten its own permissions but never loosen
+  // them. To undo a lockdown, edit this file on the SD card. That makes this a guard
+  // against fiddling and misconfiguration, not against someone holding the card.
+  "permissions": {
+    "settings": "full",                // "full" = edit anything on-device; "restricted" = only
+                                       //   brightness family + theme; "none" = everything read-only.
+                                       //   A connected companion app may only write device settings
+                                       //   when this is "full".
+    "conversation_management": true,   // Add/remove contacts, channels and rooms on-device, and via
+                                       //   a companion app. Also requires "settings" to be "full".
+    "companion": true                  // Show the Companion group (WiFi/USB/Bluetooth) in Admin.
+                                       //   Visibility only -- services already enabled keep running.
+  },
+
   // Optional. Only written when an SSID is set, so it is absent on devices that
   // never use WiFi. Also editable on-device: Admin -> WiFi.
   "wifi": {

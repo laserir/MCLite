@@ -8,6 +8,13 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Added
+- **Permissions are editable on the device.** **Settings → Security** now carries **Settings Access**
+  (Full / Restricted / Read-only), **Manage Conversations** and **Show Companion**, so a device can be locked
+  down before handing it to someone without needing a computer and an SD reader. Tightening asks for
+  confirmation first and says what is lost, including that a connected companion app is affected too.
+  These rows are only editable while Settings Access is **Full**, so a device can tighten its own permissions
+  but never loosen them; to undo a lockdown, edit `config.json` on the SD card. The `permissions` block is also
+  documented in the README config reference for the first time.
 - **Per-conversation quick replies are editable on the device.** A contact, channel or room can carry its own
   quick-reply list that overrides the global one, but until now that list could only be set from the config tool.
   **Admin → Contacts / Channels / Rooms → pick one → Quick Replies** now edits it directly. An empty list means
