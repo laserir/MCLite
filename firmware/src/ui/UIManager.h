@@ -214,6 +214,16 @@ private:
     lv_obj_t*  _pinStatus   = nullptr;
     lv_group_t* _pinGroup   = nullptr;
     String    _pinBuffer;
+    // Failed-PIN backoff. Deliberately RAM-only: anyone who can power-cycle to
+    // clear it can equally pull the externally-accessible SD card and read
+    // security.pin_code, which is stored in plaintext. Persisting would defend
+    // against nobody while costing an SD write per wrong guess and risking a
+    // longer lockout on a device someone may need in an emergency. SOS is
+    // unaffected either way -- updateSOSHold() runs regardless of _isLocked.
+    uint8_t   _pinFails    = 0;   // consecutive wrong entries
+    uint32_t  _pinWaitUntil = 0;  // millis() before which ENTER is ignored (0 = free)
+    uint8_t   _pinWaitShown = 0;  // last countdown second rendered, to avoid relabel churn
+    uint32_t  pinWaitRemaining() const;   // seconds left, 0 if not waiting
     void onPinKey(uint32_t key);
     static void pinKeyCb(lv_event_t* e);
     void checkWake();  // Wake display on any input while dimmed

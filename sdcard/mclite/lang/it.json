@@ -1,5 +1,5 @@
 {
-    "version": 48,
+    "version": 49,
     "no_sd_title": "Nessuna scheda SD",
     "no_sd_msg": "Inserire una scheda SD con config.json\ne riavviare.\n\nUsare il MCLite Config Tool\nper creare la configurazione.",
     "setup_title": "Configurazione necessaria",
@@ -21,6 +21,7 @@
     "pin_title": "Inserire PIN",
     "pin_hint": "Inserire il codice PIN",
     "pin_wrong": "PIN errato",
+    "pin_wait": "PIN errato - attendi %ds",
 
     "key_locked": "Tasti bloccati",
     "key_lock_hint": "Tenere trackball 1s per sbloccare",

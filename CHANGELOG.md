@@ -8,6 +8,12 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Added
+- **Failed PIN entries now back off.** A wrong PIN could previously be retried instantly, so a 4-digit code was
+  guessable at machine speed. Three wrong tries are free (fat fingers), then each further miss waits 5s, 10s,
+  30s and 60s, with the countdown shown on the lock screen and typing ignored until it clears. A correct entry
+  resets it; re-locking on auto-dim does not hand out fresh free tries. The counter is deliberately not
+  persisted: anyone who can power-cycle to clear it can equally pull the SD card and read `security.pin_code`,
+  which is stored in plain text. **SOS is unaffected** and still works while the device is PIN-locked.
 - **Permissions are editable on the device.** **Settings → Security** now carries **Settings Access**
   (Full / Restricted / Read-only), **Manage Conversations** and **Show Companion**, so a device can be locked
   down before handing it to someone without needing a computer and an SD reader. Tightening asks for

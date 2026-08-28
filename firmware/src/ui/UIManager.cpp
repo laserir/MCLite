@@ -205,6 +205,23 @@ void UIManager::update() {
     }
 #endif
 
+    // Tick the failed-PIN countdown so the user sees it running down rather than a
+    // frozen number. Only relabels when the whole second changes.
+    if (_isLocked && _pinWaitUntil != 0 && _pinStatus) {
+        uint32_t left = pinWaitRemaining();
+        if (left == 0) {
+            _pinWaitUntil = 0;
+            _pinWaitShown = 0;
+            lv_obj_set_style_text_color(_pinStatus, theme::TEXT_SECONDARY(), 0);
+            lv_label_set_text(_pinStatus, "");
+        } else if ((uint8_t)left != _pinWaitShown) {
+            _pinWaitShown = (uint8_t)left;
+            char buf[32];
+            snprintf(buf, sizeof(buf), t("pin_wait"), (int)left);
+            lv_label_set_text(_pinStatus, buf);
+        }
+    }
+
     // Periodic status bar update
     if (now - _lastStatusUpdate >= STATUS_UPDATE_MS) {
         _statusBar.update();
@@ -1421,6 +1438,9 @@ void UIManager::showPinLock() {
 
     _isLocked = true;
     _pinBuffer = "";
+    // Do NOT clear _pinFails/_pinWaitUntil here: re-arming the lock (auto-dim)
+    // must not hand out a fresh set of free guesses. dismissPinLock() clears them
+    // on a correct entry, which is the only way they should reset.
 
     _pinOverlay = lv_obj_create(lv_layer_top());
     lv_obj_set_size(_pinOverlay, Display::width(), Display::height());
@@ -1476,6 +1496,14 @@ void UIManager::pinKeyCb(lv_event_t* e) {
     self->onPinKey(key);
 }
 
+// Seconds left on the failed-PIN backoff, 0 when free. Rollover-safe: compares
+// as a signed difference rather than millis() < _pinWaitUntil.
+uint32_t UIManager::pinWaitRemaining() const {
+    if (_pinWaitUntil == 0) return 0;
+    int32_t left = (int32_t)(_pinWaitUntil - millis());
+    return left > 0 ? (uint32_t)((left + 999) / 1000) : 0;
+}
+
 void UIManager::onPinKey(uint32_t key) {
     // Wake display on any keypress while locked and dimmed
     if (_dimmed) {
@@ -1495,21 +1523,55 @@ void UIManager::onPinKey(uint32_t key) {
             _pinBuffer.remove(_pinBuffer.length() - 1);
         }
     } else if (key == LV_KEY_ENTER) {
+        // Still cooling down from earlier wrong guesses: refuse to even compare,
+        // so guesses cannot be pipelined while the countdown runs.
+        uint32_t wait = pinWaitRemaining();
+        if (wait > 0) {
+            char buf[32];
+            snprintf(buf, sizeof(buf), t("pin_wait"), (int)wait);
+            lv_obj_set_style_text_color(_pinStatus, theme::BATTERY_LOW(), 0);
+            lv_label_set_text(_pinStatus, buf);
+            _pinBuffer = "";
+            if (_pinDots) lv_label_set_text(_pinDots, "");
+            return;
+        }
         // Case-insensitive comparison
         String inputLower = _pinBuffer;
         inputLower.toLowerCase();
         String codeLower = cfg.security.pinCode;
         codeLower.toLowerCase();
         if (inputLower == codeLower) {
+            _pinFails = 0;
+            _pinWaitUntil = 0;
             dismissPinLock();
             return;
         } else {
-            // Wrong PIN
+            // Wrong PIN. First PIN_FREE_TRIES are unpenalised (fat fingers); after
+            // that each further miss costs an escalating wait, capped so a
+            // legitimate user is never locked out for long. Capped at 60s a 4-digit
+            // PIN takes days to exhaust, which is enough: the SD card is the real
+            // shortcut for anyone holding the device.
+            static const uint16_t BACKOFF_S[] = { 5, 10, 30, 60 };
+            static constexpr uint8_t PIN_FREE_TRIES = 3;
+            if (_pinFails < 255) _pinFails++;
+            if (_pinFails > PIN_FREE_TRIES) {
+                uint8_t step = _pinFails - PIN_FREE_TRIES - 1;
+                if (step >= (uint8_t)(sizeof(BACKOFF_S) / sizeof(BACKOFF_S[0])))
+                    step = (uint8_t)(sizeof(BACKOFF_S) / sizeof(BACKOFF_S[0])) - 1;
+                _pinWaitUntil = millis() + (uint32_t)BACKOFF_S[step] * 1000UL;
+                if (_pinWaitUntil == 0) _pinWaitUntil = 1;   // never collide with "free"
+                _pinWaitShown = 0;
+                char buf[32];
+                snprintf(buf, sizeof(buf), t("pin_wait"), (int)BACKOFF_S[step]);
+                lv_label_set_text(_pinStatus, buf);
+            } else {
+                lv_label_set_text(_pinStatus, t("pin_wrong"));
+            }
             lv_obj_set_style_text_color(_pinStatus, theme::BATTERY_LOW(), 0);
-            lv_label_set_text(_pinStatus, t("pin_wrong"));
             _pinBuffer = "";
         }
     } else if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z')) {
+        if (pinWaitRemaining() > 0) return;   // ignore typing during the cooldown
         if (_pinBuffer.length() < 8) {
             _pinBuffer += (char)tolower(key);
             // Reset status to normal after typing

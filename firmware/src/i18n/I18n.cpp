@@ -33,6 +33,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"pin_title",           "Enter PIN"},
     {"pin_hint",            "Enter your PIN code"},
     {"pin_wrong",           "Incorrect PIN"},
+    {"pin_wait",            "Incorrect PIN - wait %ds"},
 
     // Key lock
     {"key_locked",          "Keys locked"},
