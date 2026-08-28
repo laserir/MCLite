@@ -119,6 +119,7 @@ struct SecurityConfig {
     String pinCode      = "";
     String autoLock     = "key";   // "none", "key", "pin"
     bool   adminEnabled = true;
+    String adminPin     = "";      // Separate from pinCode: that unlocks the screen, this unlocks Admin
 };
 
 // Step-wise on-device permissions, applied *within* the Admin gate

@@ -107,7 +107,13 @@ public:
     void checkBatteryAlert();
 
     // PIN lock
-    void showPinLock();
+    // What the PIN overlay is asking for. The widget, backoff maths and teardown
+    // are purpose-neutral; only the field compared against and the success action
+    // differ. admin_pin is deliberately NOT pin_code: that unlocks the screen,
+    // this unlocks the Admin hub, and one secret for both would collapse two
+    // different trust levels.
+    enum class PinPurpose : uint8_t { ScreenUnlock, AdminUnlock, ConfirmAdminLock };
+    void showPinLock(PinPurpose purpose = PinPurpose::ScreenUnlock);
     void dismissPinLock();
     bool isLocked() const { return _isLocked; }
 
@@ -223,6 +229,11 @@ private:
     uint8_t   _pinFails    = 0;   // consecutive wrong entries
     uint32_t  _pinWaitUntil = 0;  // millis() before which ENTER is ignored (0 = free)
     uint8_t   _pinWaitShown = 0;  // last countdown second rendered, to avoid relabel churn
+    // Admin-PIN failures are counted separately: someone fumbling the admin PIN
+    // must not delay the owner unlocking their own screen.
+    uint8_t   _adminFails    = 0;
+    uint32_t  _adminWaitUntil = 0;
+    PinPurpose _pinPurpose   = PinPurpose::ScreenUnlock;
     uint32_t  pinWaitRemaining() const;   // seconds left, 0 if not waiting
     void onPinKey(uint32_t key);
     static void pinKeyCb(lv_event_t* e);

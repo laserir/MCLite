@@ -307,7 +307,14 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
     "lock": "key",                     // "none" = no lock, "key" = key lock (1s hold), "pin" = PIN lock
     "pin_code": "",                    // PIN code (4-8 alphanumeric characters, only for "pin" mode)
     "auto_lock": "key",                // Lock on display dim: "none", "key", "pin" (falls back if unavailable)
-    "admin_enabled": true              // Allow access to device info screen (press 0)
+    "admin_enabled": true,             // Allow access to the Admin screen (press 0 on T-Deck, side button on
+                                       //   T-Watch). Lockable from the device: Settings -> Security -> Lock Admin.
+    "admin_pin": ""                    // 4-8 chars, SEPARATE from pin_code above (that unlocks the screen; this
+                                       //   unlocks Admin). With Admin locked, press 0 / the side button and enter
+                                       //   this PIN to re-enable Admin. Empty = no way back on-device; you would
+                                       //   have to set admin_enabled true in this file. Stored in plain text, so
+                                       //   this guards against someone holding the device, not someone holding
+                                       //   the SD card.
   },
 
   // What may be changed from the device, *within* the Admin gate above. Editable

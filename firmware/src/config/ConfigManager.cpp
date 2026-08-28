@@ -81,6 +81,7 @@ void ConfigManager::applyDefaults() {
     _config.security.pinCode      = defaults::PIN_CODE;
     _config.security.autoLock     = defaults::AUTO_LOCK;
     _config.security.adminEnabled = defaults::ADMIN_ENABLED;
+    _config.security.adminPin     = defaults::ADMIN_PIN;
     _config.permissions.settings              = defaults::PERM_SETTINGS;
     _config.permissions.conversationManagement = defaults::PERM_CONVERSATION_MGMT;
     _config.permissions.companion             = defaults::PERM_COMPANION;
@@ -362,6 +363,7 @@ bool ConfigManager::parseJson(const String& json) {
     }
     _config.security.pinCode      = doc["security"]["pin_code"] | defaults::PIN_CODE;
     _config.security.adminEnabled = doc["security"]["admin_enabled"] | defaults::ADMIN_ENABLED;
+    _config.security.adminPin     = doc["security"]["admin_pin"] | defaults::ADMIN_PIN;
 
     if (doc["security"]["auto_lock"].is<const char*>()) {
         String mode = doc["security"]["auto_lock"] | defaults::AUTO_LOCK;
@@ -553,6 +555,7 @@ String ConfigManager::toJson() const {
     doc["security"]["pin_code"]      = _config.security.pinCode;
     doc["security"]["auto_lock"]     = _config.security.autoLock;
     doc["security"]["admin_enabled"] = _config.security.adminEnabled;
+    if (_config.security.adminPin.length() > 0) doc["security"]["admin_pin"] = _config.security.adminPin;
 
     doc["permissions"]["settings"]                = _config.permissions.settings;
     doc["permissions"]["conversation_management"] = _config.permissions.conversationManagement;

@@ -26,7 +26,7 @@ constexpr const char* FIRMWARE_VENDOR  = MCLITE_REPO_OWNER "/" MCLITE_REPO_NAME;
 // set the SAME number in each sdcard/mclite/lang/*.json "version". On boot I18n
 // warns (serial) if a loaded lang file's version is older — i.e. it predates the
 // current string set, so some keys will fall back to English.
-constexpr uint16_t LANG_VERSION = 50;   // 0.4.x: + pin validation strings
+constexpr uint16_t LANG_VERSION = 51;   // 0.4.x: + admin lockout strings
 
 // Device
 constexpr const char* DEVICE_NAME = "MCLite";
@@ -109,6 +109,7 @@ constexpr const char* LOCK_MODE          = "key";   // "none", "key", "pin"
 constexpr const char* PIN_CODE           = "";
 constexpr const char* AUTO_LOCK          = "key";   // "none", "key", "pin"
 constexpr bool     ADMIN_ENABLED         = true;
+constexpr const char* ADMIN_PIN          = "";     // Re-enables Admin after a lockout; 4-8 chars, empty = unset
 constexpr bool     SCREENSHOTS_ENABLED   = false;  // debug.screenshots — save-screen-to-SD, off by default
 
 // Permissions (within the Admin gate). admin_enabled stays the global on/off.

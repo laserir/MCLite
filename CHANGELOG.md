@@ -8,6 +8,19 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Added
+- **Admin can be locked from the device, with a PIN to get back in.** **Settings → Security → Lock Admin** hides
+  the whole Admin hub; pressing **0** (T-Deck) or the **side button** (T-Watch) then asks for a new **Admin PIN**
+  and re-enables Admin when it is correct. The PIN is separate from the screen-lock PIN — that one unlocks the
+  screen, this one unlocks Admin — and locking is armed by typing it rather than tapping a second dialog, so you
+  cannot lock yourself out with a mis-tap. Set it in **Settings → Security → Admin PIN** or as
+  `security.admin_pin`. Wrong entries back off exactly like the screen PIN, on a separate counter.
+  Without an Admin PIN set, a locked device can only be recovered by editing `config.json` on the SD card.
+
+### Fixed
+- **`admin_enabled` is now actually enforced.** It was only checked on the T-Deck `0` key and the status-bar
+  gear, so on T-Watch it did nothing at all (the side button opened Admin regardless), and the Back buttons in
+  Settings, Heard Adverts and the WiFi/USB/Bluetooth screens could walk straight back into a disabled Admin.
+  All six routes are now gated in one place.
 - **A too-short PIN can no longer be saved.** Every lock path requires at least 4 characters, but the PIN editor
   only enforced the 8-character maximum — so a shorter PIN saved happily and then did nothing, leaving Lock Mode
   set to PIN while the trackball hold quietly engaged the key lock instead. The editor now rejects 1-3 characters

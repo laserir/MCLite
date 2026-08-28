@@ -469,9 +469,17 @@ static void handleKeyShortcuts() {
         IInput::instance().clearKey();
         return;
     }
-    if (key == '0' && ui.currentScreen() == Screen::CONVO_LIST &&
-        ConfigManager::instance().config().security.adminEnabled) {
-        ui.showScreen(Screen::ADMIN);
+    if (key == '0' && ui.currentScreen() == Screen::CONVO_LIST) {
+        const auto& sec = ConfigManager::instance().config().security;
+        if (sec.adminEnabled) {
+            ui.showScreen(Screen::ADMIN);
+        } else if (sec.adminPin.length() >= 4) {
+            // Admin is locked: '0' is the way back in. Deliberately unadvertised --
+            // the status-bar gear stays hidden - but it is the same key that opened
+            // Admin before, so there is nothing new to discover. With no admin PIN
+            // set there is no way back except editing config.json on the SD card.
+            ui.showPinLock(UIManager::PinPurpose::AdminUnlock);
+        }
         IInput::instance().clearKey();
         return;
     }

@@ -192,8 +192,13 @@ void UIManager::update() {
     // Suppressed while the screen is key-locked or PIN-locked so the lock
     // can't be bypassed to reach Admin.
     if (Pmu::instance().consumeShortPress() && !_keyLocked && !_isLocked) {
-        if (_currentScreen == Screen::ADMIN) goHome();
-        else                                  showScreen(Screen::ADMIN);
+        const auto& sec = ConfigManager::instance().config().security;
+        // The screenshot is handled below and must keep working even when Admin is
+        // locked -- it used to rely on "the two Admin toggles cancel out", which no
+        // longer happens once the Admin branch is gated.
+        if (_currentScreen == Screen::ADMIN)      goHome();
+        else if (sec.adminEnabled)                showScreen(Screen::ADMIN);
+        else if (sec.adminPin.length() >= 4)      showPinLock(PinPurpose::AdminUnlock);
         _lastActivity = now;
         // Double short-press → screenshot (gated by debug.screenshots). The two
         // Admin toggles cancel out, so you land back on the original screen and
@@ -207,10 +212,11 @@ void UIManager::update() {
 
     // Tick the failed-PIN countdown so the user sees it running down rather than a
     // frozen number. Only relabels when the whole second changes.
-    if (_isLocked && _pinWaitUntil != 0 && _pinStatus) {
+    if (_isLocked && _pinStatus &&
+        ((_pinPurpose == PinPurpose::ScreenUnlock) ? _pinWaitUntil : _adminWaitUntil) != 0) {
         uint32_t left = pinWaitRemaining();
         if (left == 0) {
-            _pinWaitUntil = 0;
+            if (_pinPurpose == PinPurpose::ScreenUnlock) _pinWaitUntil = 0; else _adminWaitUntil = 0;
             _pinWaitShown = 0;
             lv_obj_set_style_text_color(_pinStatus, theme::TEXT_SECONDARY(), 0);
             lv_label_set_text(_pinStatus, "");
@@ -374,6 +380,20 @@ void UIManager::showSettings(SettingsSection s) {
 }
 
 void UIManager::showScreen(Screen screen) {
+    // Central admin gate. Six routes reach Screen::ADMIN -- the '0' key, the
+    // status-bar gear, the T-Watch PEK short-press, and the Back buttons in
+    // Settings / Heard Adverts / WiFi / BLE / USB -- and historically only the
+    // first two checked admin_enabled. Gating here covers all of them and any
+    // future entry point, rather than relying on every caller to remember.
+    // Matters most for the Back buttons: with admin_enabled now toggleable at
+    // runtime, being inside a sub-screen when it flips would otherwise walk
+    // straight back into Admin.
+    if (screen == Screen::ADMIN &&
+        !ConfigManager::instance().config().security.adminEnabled) {
+        goHome();
+        return;
+    }
+
     // Dismiss telemetry modal if open (it's a top-level overlay)
     if (_telemMsgbox) dismissTelemetryModal();
 
@@ -1433,9 +1453,12 @@ void UIManager::checkBatteryAlert() {
     }
 }
 
-void UIManager::showPinLock() {
+void UIManager::showPinLock(PinPurpose purpose) {
     if (_pinOverlay) return;  // Already showing
 
+    _pinPurpose = purpose;
+    // _isLocked is set for every purpose on purpose: while any PIN prompt is up we
+    // want key shortcuts, the SD/WiFi update prompts and key-lock all suppressed.
     _isLocked = true;
     _pinBuffer = "";
     // Do NOT clear _pinFails/_pinWaitUntil here: re-arming the lock (auto-dim)
@@ -1465,7 +1488,10 @@ void UIManager::showPinLock() {
     lv_obj_t* title = lv_label_create(_pinOverlay);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_16, 0);
     lv_obj_set_style_text_color(title, theme::TEXT_PRIMARY(), 0);
-    lv_label_set_text(title, t("pin_title"));
+    // Say which PIN is being asked for -- the screen PIN and the admin PIN are
+    // different secrets, so an unlabelled prompt would be genuinely ambiguous.
+    lv_label_set_text(title, purpose == PinPurpose::ScreenUnlock ? t("pin_title")
+                                                                 : t("pin_title_admin"));
 
     // PIN dots display
     _pinDots = lv_label_create(_pinOverlay);
@@ -1499,8 +1525,9 @@ void UIManager::pinKeyCb(lv_event_t* e) {
 // Seconds left on the failed-PIN backoff, 0 when free. Rollover-safe: compares
 // as a signed difference rather than millis() < _pinWaitUntil.
 uint32_t UIManager::pinWaitRemaining() const {
-    if (_pinWaitUntil == 0) return 0;
-    int32_t left = (int32_t)(_pinWaitUntil - millis());
+    uint32_t until = (_pinPurpose == PinPurpose::ScreenUnlock) ? _pinWaitUntil : _adminWaitUntil;
+    if (until == 0) return 0;
+    int32_t left = (int32_t)(until - millis());
     return left > 0 ? (uint32_t)((left + 999) / 1000) : 0;
 }
 
@@ -1535,15 +1562,29 @@ void UIManager::onPinKey(uint32_t key) {
             if (_pinDots) lv_label_set_text(_pinDots, "");
             return;
         }
-        // Case-insensitive comparison
+        // Case-insensitive comparison against whichever secret this prompt is for.
         String inputLower = _pinBuffer;
         inputLower.toLowerCase();
-        String codeLower = cfg.security.pinCode;
+        String codeLower = (_pinPurpose == PinPurpose::ScreenUnlock)
+                             ? cfg.security.pinCode
+                             : cfg.security.adminPin;
         codeLower.toLowerCase();
-        if (inputLower == codeLower) {
-            _pinFails = 0;
-            _pinWaitUntil = 0;
+        if (codeLower.length() >= 4 && inputLower == codeLower) {
+            if (_pinPurpose == PinPurpose::ScreenUnlock) { _pinFails = 0; _pinWaitUntil = 0; }
+            else                                         { _adminFails = 0; _adminWaitUntil = 0; }
+            PinPurpose done = _pinPurpose;
             dismissPinLock();
+            auto& mgr = ConfigManager::instance();
+            if (done == PinPurpose::AdminUnlock) {
+                mgr.config().security.adminEnabled = true;   // permanent re-enable
+                mgr.save();
+                showScreen(Screen::ADMIN);
+            } else if (done == PinPurpose::ConfirmAdminLock) {
+                mgr.config().security.adminEnabled = false;  // typing the PIN is the confirmation
+                mgr.save();
+                showToast(t("admin_locked"));
+                goHome();
+            }
             return;
         } else {
             // Wrong PIN. First PIN_FREE_TRIES are unpenalised (fat fingers); after
@@ -1553,13 +1594,16 @@ void UIManager::onPinKey(uint32_t key) {
             // shortcut for anyone holding the device.
             static const uint16_t BACKOFF_S[] = { 5, 10, 30, 60 };
             static constexpr uint8_t PIN_FREE_TRIES = 3;
-            if (_pinFails < 255) _pinFails++;
-            if (_pinFails > PIN_FREE_TRIES) {
-                uint8_t step = _pinFails - PIN_FREE_TRIES - 1;
+            const bool screen = (_pinPurpose == PinPurpose::ScreenUnlock);
+            uint8_t&  fails   = screen ? _pinFails : _adminFails;
+            uint32_t& until   = screen ? _pinWaitUntil : _adminWaitUntil;
+            if (fails < 255) fails++;
+            if (fails > PIN_FREE_TRIES) {
+                uint8_t step = fails - PIN_FREE_TRIES - 1;
                 if (step >= (uint8_t)(sizeof(BACKOFF_S) / sizeof(BACKOFF_S[0])))
                     step = (uint8_t)(sizeof(BACKOFF_S) / sizeof(BACKOFF_S[0])) - 1;
-                _pinWaitUntil = millis() + (uint32_t)BACKOFF_S[step] * 1000UL;
-                if (_pinWaitUntil == 0) _pinWaitUntil = 1;   // never collide with "free"
+                until = millis() + (uint32_t)BACKOFF_S[step] * 1000UL;
+                if (until == 0) until = 1;   // never collide with "free"
                 _pinWaitShown = 0;
                 char buf[32];
                 snprintf(buf, sizeof(buf), t("pin_wait"), (int)BACKOFF_S[step]);
@@ -1830,7 +1874,8 @@ void UIManager::toggleAdminAsync(void* user) {
 
 void UIManager::toggleAdminFromStatusBar() {
     // The gear's visibility already encodes most of this, but re-check at the
-    // action site — same as the '0' shortcut (main.cpp) and the T-Watch PEK path.
+    // action site — same as the '0' shortcut (main.cpp) and, since the admin
+    // lockout work, the T-Watch PEK path too (it did not check adminEnabled before).
     // admin_enabled is toggled from *inside* Admin, so the button can stay visible
     // for up to one status-bar tick (1 Hz) after it is turned off.
     if (!ConfigManager::instance().config().security.adminEnabled) return;

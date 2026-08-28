@@ -154,8 +154,15 @@ private:
     void hidePinEditor();
     static void lockModeRowCb(lv_event_t* e);
     static void lockModeChosenCb(lv_event_t* e);
-    void openPinEditor();
+    // Which secret the PIN editor is setting. Same editor, two backing stores --
+    // the CannedTarget trick. security.pinCode unlocks the screen; security.adminPin
+    // unlocks the Admin hub, and they are deliberately different secrets.
+    enum class PinTarget : uint8_t { ScreenPin, AdminPin };
+    PinTarget _pinTarget = PinTarget::ScreenPin;
+    void openPinEditor(PinTarget target = PinTarget::ScreenPin);
     static void pinRowCb(lv_event_t* e);
+    static void adminLockRowCb(lv_event_t* e);
+    static void adminPinRowCb(lv_event_t* e);
     static void pinReadyCb(lv_event_t* e);
     static void autoLockRowCb(lv_event_t* e);
     static void autoLockChosenCb(lv_event_t* e);

@@ -97,6 +97,45 @@ void test_empty_json_accepted() {
 
 // ═══ Permissions ═══
 
+// ═══ Admin lockout + admin PIN ═══
+
+void test_admin_enabled_defaults_true() {
+    parse("{\"security\":{}}");
+    TEST_ASSERT_TRUE(cfg->config().security.adminEnabled);
+}
+
+void test_admin_pin_defaults_empty() {
+    parse("{\"security\":{}}");
+    TEST_ASSERT_EQUAL_STRING("", cfg->config().security.adminPin.c_str());
+}
+
+void test_admin_lockout_round_trips() {
+    parse("{\"security\":{\"admin_enabled\":false,\"admin_pin\":\"2468\"}}");
+    TEST_ASSERT_FALSE(cfg->config().security.adminEnabled);
+    TEST_ASSERT_EQUAL_STRING("2468", cfg->config().security.adminPin.c_str());
+    String json = cfg->toJson();
+    cfg->config() = AppConfig{};
+    cfg->parseJson(json);
+    TEST_ASSERT_FALSE(cfg->config().security.adminEnabled);
+    TEST_ASSERT_EQUAL_STRING("2468", cfg->config().security.adminPin.c_str());
+}
+
+// An empty admin PIN is omitted from the file rather than written as "", keeping
+// config.json clean on the devices that never lock Admin.
+void test_admin_pin_omitted_when_empty() {
+    parse("{\"security\":{}}");
+    String json = cfg->toJson();
+    TEST_ASSERT_NULL(strstr(json.c_str(), "admin_pin"));
+}
+
+// The screen PIN and the admin PIN are separate secrets; setting one must not
+// disturb the other.
+void test_admin_pin_independent_of_screen_pin() {
+    parse("{\"security\":{\"pin_code\":\"1234\",\"admin_pin\":\"9876\"}}");
+    TEST_ASSERT_EQUAL_STRING("1234", cfg->config().security.pinCode.c_str());
+    TEST_ASSERT_EQUAL_STRING("9876", cfg->config().security.adminPin.c_str());
+}
+
 void test_permissions_default_full() {
     TEST_ASSERT_TRUE(parse("{}"));
     TEST_ASSERT_EQUAL_STRING("full", cfg->config().permissions.settings.c_str());
@@ -1312,6 +1351,11 @@ int main() {
     RUN_TEST(test_save_calls_writeatomic);
 
     // permissions
+    RUN_TEST(test_admin_enabled_defaults_true);
+    RUN_TEST(test_admin_pin_defaults_empty);
+    RUN_TEST(test_admin_lockout_round_trips);
+    RUN_TEST(test_admin_pin_omitted_when_empty);
+    RUN_TEST(test_admin_pin_independent_of_screen_pin);
     RUN_TEST(test_permissions_default_full);
     RUN_TEST(test_permissions_round_trip);
     RUN_TEST(test_permissions_none_mode);

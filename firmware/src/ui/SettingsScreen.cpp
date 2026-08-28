@@ -711,6 +711,13 @@ void SettingsScreen::buildSecurity() {
     else if (cfg.security.autoLock == "pin") autoLockValue = t("lock_pin");
     addNavRowGated(t("lbl_auto_lock"), autoLockValue, autoLockRowCb, false);
 
+    // Admin lockout. Locking hides the whole Admin hub; the way back in is the '0'
+    // key (T-Deck) or the side button (T-Watch), which then asks for the admin PIN.
+    addNavRowGated(t("lbl_admin_pin"),
+                   cfg.security.adminPin.length() > 0 ? String("****") : String(t("off")),
+                   adminPinRowCb, false);
+    addNavRowGated(t("lbl_admin_lock"), t("admin_lock_action"), adminLockRowCb, false);
+
     // Permissions. basic=false is load-bearing: it means these rows are only
     // editable while settings=="full", so the device can tighten but never
     // loosen itself. Recovery from a lockdown is editing config.json on the SD.
@@ -1779,6 +1786,29 @@ std::vector<int>    g_choiceVals;    // numeric values (precision/region idx)
 std::vector<String> g_choiceLabels;
 }  // namespace
 
+void SettingsScreen::adminPinRowCb(lv_event_t* e) {
+    SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
+    if (self) self->openPinEditor(PinTarget::AdminPin);
+}
+
+// Locking Admin is confirmed by typing the admin PIN rather than tapping a second
+// dialog: a tap is easy to fat-finger, and typing proves the user actually knows
+// the PIN before they start depending on it to get back in.
+void SettingsScreen::adminLockRowCb(lv_event_t* e) {
+    SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
+    if (!self) return;
+    if (ConfigManager::instance().config().security.adminPin.length() < 4) {
+        // No usable admin PIN yet -> setting one is the prerequisite, so send the
+        // user there instead of arming a lockout they could not undo on-device.
+        UIManager::instance().showToast(t("admin_need_pin"));
+        lv_async_call([](void* p){ ((SettingsScreen*)p)->openPinEditor(PinTarget::AdminPin); }, self);
+        return;
+    }
+    lv_async_call([](void*){
+        UIManager::instance().showPinLock(UIManager::PinPurpose::ConfirmAdminLock);
+    }, nullptr);
+}
+
 void SettingsScreen::permSettingsRowCb(lv_event_t* e) {
     SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
     if (self) self->openChoicePicker(ChoiceField::PermSettings);
@@ -2321,8 +2351,9 @@ void SettingsScreen::pinRowCb(lv_event_t* e) {
 
 // Body split out of pinRowCb so the Lock Mode picker can open the editor too,
 // when "pin" is chosen without a usable PIN.
-void SettingsScreen::openPinEditor() {
+void SettingsScreen::openPinEditor(PinTarget target) {
     SettingsScreen* self = this;
+    self->_pinTarget = target;
     if (self->_pinTextarea) return;
     const auto& cfg = ConfigManager::instance().config();
 
@@ -2344,7 +2375,8 @@ void SettingsScreen::openPinEditor() {
     lv_textarea_set_one_line(self->_pinTextarea, true);
     lv_textarea_set_max_length(self->_pinTextarea, 8);
     lv_textarea_set_placeholder_text(self->_pinTextarea, t("lbl_pin_code"));
-    lv_textarea_set_text(self->_pinTextarea, cfg.security.pinCode.c_str());
+    lv_textarea_set_text(self->_pinTextarea,
+        (target == PinTarget::AdminPin ? cfg.security.adminPin : cfg.security.pinCode).c_str());
     lv_obj_set_width(self->_pinTextarea, theme::CONTENT_WIDTH);
     lv_obj_align(self->_pinTextarea, LV_ALIGN_TOP_MID, 0, theme::STATUS_BAR_HEIGHT + 44);
     lv_obj_set_style_border_color(self->_pinTextarea, theme::ACCENT(), LV_STATE_FOCUSED);
@@ -2446,8 +2478,11 @@ void SettingsScreen::pinReadyCb(lv_event_t* e) {
         return;
     }
     if (self->_pendingPin == newPin) {
-        if (mgr.config().security.pinCode != newPin) {
-            mgr.config().security.pinCode = newPin;
+        String& slot = (self->_pinTarget == PinTarget::AdminPin)
+                         ? mgr.config().security.adminPin
+                         : mgr.config().security.pinCode;
+        if (slot != newPin) {
+            slot = newPin;
             g_dsDirty = true;
         }
         self->_pendingPin = "";
@@ -2525,7 +2560,7 @@ void SettingsScreen::hidePinEditor() {
     if (!_pinTextarea) return;
     // Opened automatically by a Lock Mode change and still no usable PIN -> fall
     // back to key lock rather than leaving "pin" set but inert.
-    if (_pinModePending) {
+    if (_pinModePending && _pinTarget == PinTarget::ScreenPin) {
         _pinModePending = false;
         auto& mgr = ConfigManager::instance();
         if (mgr.config().security.pinCode.length() < 4 && mgr.config().security.lockMode == "pin") {
