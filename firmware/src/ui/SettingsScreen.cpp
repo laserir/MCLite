@@ -2510,9 +2510,22 @@ void SettingsScreen::pinReadyCb(lv_event_t* e) {
             slot = newPin;
             g_dsDirty = true;
         }
+        // Clearing the screen PIN while Lock Mode still says "pin" would recreate
+        // the state the Lock Mode guard exists to prevent: a mode that needs a PIN,
+        // with no PIN, silently degrading to key lock. Guard both directions. The
+        // admin PIN needs no equivalent -- Lock Admin refuses to arm without one,
+        // and once Admin is locked this screen is unreachable anyway.
+        bool reverted = false;
+        if (self->_pinTarget == PinTarget::ScreenPin && newPin.length() == 0) {
+            auto& sec = mgr.config().security;
+            if (sec.lockMode == "pin") { sec.lockMode = "key"; reverted = true; }
+            if (sec.autoLock == "pin") { sec.autoLock = "key"; reverted = true; }
+            if (reverted) g_dsDirty = true;
+        }
         self->_pendingPin     = "";
         self->_pinAwaitRepeat = false;
-        UIManager::instance().showToast(newPin.length() ? t("pin_saved") : t("pin_cleared"));
+        UIManager::instance().showToast(reverted ? t("pin_mode_reverted")
+                                                 : (newPin.length() ? t("pin_saved") : t("pin_cleared")));
         lv_async_call([](void* p) { ((SettingsScreen*)p)->hidePinEditor(); }, self);
         return;
     }
