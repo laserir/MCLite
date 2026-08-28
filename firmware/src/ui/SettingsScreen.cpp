@@ -2371,6 +2371,8 @@ void SettingsScreen::pinRowCb(lv_event_t* e) {
 void SettingsScreen::openPinEditor(PinTarget target) {
     SettingsScreen* self = this;
     self->_pinTarget = target;
+    self->_pendingPin = "";
+    self->_pinAwaitRepeat = false;
     if (self->_pinTextarea) return;
     const auto& cfg = ConfigManager::instance().config();
 
@@ -2383,9 +2385,10 @@ void SettingsScreen::openPinEditor(PinTarget target) {
     lv_obj_clear_flag(self->_pinOverlay, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t* lbl = lv_label_create(self->_pinOverlay);
+    self->_pinTitleLbl = lbl;
     lv_obj_set_style_text_font(lbl, FONT_HEADING, 0);
     lv_obj_set_style_text_color(lbl, theme::TEXT_PRIMARY(), 0);
-    lv_label_set_text(lbl, t("lbl_pin_code"));
+    lv_label_set_text(lbl, target == PinTarget::AdminPin ? t("lbl_admin_pin") : t("lbl_pin_code"));
     lv_obj_align(lbl, LV_ALIGN_TOP_MID, 0, theme::STATUS_BAR_HEIGHT);
 
     self->_pinTextarea = lv_textarea_create(self->_pinOverlay);
@@ -2488,10 +2491,15 @@ void SettingsScreen::pinReadyCb(lv_event_t* e) {
     }
 
     auto& mgr = ConfigManager::instance();
-    if (self->_pendingPin.length() == 0) {
-        self->_pendingPin = newPin;
+    if (!self->_pinAwaitRepeat) {
+        // First entry accepted -> ask for it again, and SAY that is what is
+        // happening. Previously both steps were captioned identically, so the
+        // second prompt looked like the first one had simply failed.
+        self->_pendingPin     = newPin;
+        self->_pinAwaitRepeat = true;
         lv_textarea_set_text(self->_pinTextarea, "");
-        lv_textarea_set_placeholder_text(self->_pinTextarea, t("lbl_pin_code"));
+        lv_textarea_set_placeholder_text(self->_pinTextarea, t("pin_repeat"));
+        if (self->_pinTitleLbl) lv_label_set_text(self->_pinTitleLbl, t("pin_repeat"));
         return;
     }
     if (self->_pendingPin == newPin) {
@@ -2502,13 +2510,23 @@ void SettingsScreen::pinReadyCb(lv_event_t* e) {
             slot = newPin;
             g_dsDirty = true;
         }
-        self->_pendingPin = "";
+        self->_pendingPin     = "";
+        self->_pinAwaitRepeat = false;
+        UIManager::instance().showToast(newPin.length() ? t("pin_saved") : t("pin_cleared"));
         lv_async_call([](void* p) { ((SettingsScreen*)p)->hidePinEditor(); }, self);
         return;
     }
-    self->_pendingPin = "";
+    // Mismatch. Say so -- this used to silently wipe the field and start over,
+    // which reads as the editor randomly refusing to accept anything.
+    UIManager::instance().showToast(t("pin_mismatch"));
+    self->_pendingPin     = "";
+    self->_pinAwaitRepeat = false;
     lv_textarea_set_text(self->_pinTextarea, "");
     lv_textarea_set_placeholder_text(self->_pinTextarea, t("lbl_pin_code"));
+    if (self->_pinTitleLbl) {
+        lv_label_set_text(self->_pinTitleLbl,
+            self->_pinTarget == PinTarget::AdminPin ? t("lbl_admin_pin") : t("lbl_pin_code"));
+    }
 }
 
 void SettingsScreen::lockModeChosenCb(lv_event_t* e) {
@@ -2591,7 +2609,8 @@ void SettingsScreen::hidePinEditor() {
 #ifdef PLATFORM_TWATCH
     _pinKbd = nullptr;
 #endif
-    _pinTextarea = nullptr;
+    _pinTextarea  = nullptr;
+    _pinTitleLbl  = nullptr;
     lv_obj_del_async(_pinOverlay);
     _pinOverlay = nullptr;
     if (_screen) show();

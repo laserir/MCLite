@@ -1,5 +1,5 @@
 {
-    "version": 52,
+    "version": 53,
     "no_sd_title": "Keine SD-Karte",
     "no_sd_msg": "SD-Karte mit config.json einlegen\nund neu starten.\n\nVerwenden Sie das MCLite Config Tool\num Ihre Konfiguration zu erstellen.",
     "setup_title": "Einrichtung erforderlich",
@@ -23,6 +23,10 @@
     "pin_wrong": "Falsche PIN",
     "pin_wait": "Falsche PIN - %ds warten",
     "pin_too_short": "PIN muss 4-8 Zeichen haben",
+    "pin_repeat": "PIN wiederholen",
+    "pin_mismatch": "PINs stimmen nicht ueberein - neu beginnen",
+    "pin_saved": "PIN gespeichert",
+    "pin_cleared": "PIN geloescht",
     "pin_mode_reverted": "Keine PIN gesetzt - Tastensperre aktiv",
 
     "key_locked": "Tasten gesperrt",

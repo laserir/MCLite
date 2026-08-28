@@ -35,6 +35,10 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"pin_wrong",           "Incorrect PIN"},
     {"pin_wait",            "Incorrect PIN - wait %ds"},
     {"pin_too_short",       "PIN must be 4-8 characters"},
+    {"pin_repeat",          "Repeat PIN"},
+    {"pin_mismatch",        "PINs did not match - start again"},
+    {"pin_saved",           "PIN saved"},
+    {"pin_cleared",         "PIN cleared"},
     {"pin_mode_reverted",   "No PIN set - using key lock"},
 
     // Key lock

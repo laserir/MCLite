@@ -17,6 +17,13 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   Without an Admin PIN set, a locked device can only be recovered by editing `config.json` on the SD card.
 
 ### Fixed
+- **The PIN editor now says what it wants.** Entering a PIN asks for it twice, but both prompts were captioned
+  identically and a mismatch silently cleared the field, so the second prompt looked like the first had been
+  rejected and a typo looked like the editor refusing everything. The second step is now captioned **Repeat PIN**,
+  a mismatch says so, and saving or clearing confirms with a toast. The title also names which PIN you are
+  setting, since there are now two.
+- **A PIN could not be cleared.** The editor used "nothing pending yet" to detect the first of the two entries,
+  which an empty PIN is indistinguishable from, so submitting an empty PIN looped forever instead of clearing it.
 - **`admin_enabled` is now actually enforced.** It was only checked on the T-Deck `0` key and the status-bar
   gear, so on T-Watch it did nothing at all (the side button opened Admin regardless), and the Back buttons in
   Settings, Heard Adverts and the WiFi/USB/Bluetooth screens could walk straight back into a disabled Admin.

@@ -330,6 +330,11 @@ private:
 
     // Pending PIN during two-step confirmation
     String _pendingPin;
+    // Explicit step flag rather than testing _pendingPin.length(): an empty PIN is
+    // a legitimate entry (it clears the PIN), and using the string's emptiness as
+    // the "already submitted once" marker made that case loop forever.
+    bool      _pinAwaitRepeat = false;
+    lv_obj_t* _pinTitleLbl    = nullptr;   // retitled "Repeat PIN" on the second step
     // Set when the PIN editor was opened automatically because Lock Mode was set
     // to "pin" without a usable PIN. If the user leaves without setting one, the
     // mode reverts rather than silently sitting at a setting that does nothing.
