@@ -34,6 +34,8 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"pin_hint",            "Enter your PIN code"},
     {"pin_wrong",           "Incorrect PIN"},
     {"pin_wait",            "Incorrect PIN - wait %ds"},
+    {"pin_too_short",       "PIN must be 4-8 characters"},
+    {"pin_mode_reverted",   "No PIN set - using key lock"},
 
     // Key lock
     {"key_locked",          "Keys locked"},

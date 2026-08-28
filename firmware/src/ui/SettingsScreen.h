@@ -154,6 +154,7 @@ private:
     void hidePinEditor();
     static void lockModeRowCb(lv_event_t* e);
     static void lockModeChosenCb(lv_event_t* e);
+    void openPinEditor();
     static void pinRowCb(lv_event_t* e);
     static void pinReadyCb(lv_event_t* e);
     static void autoLockRowCb(lv_event_t* e);
@@ -321,6 +322,10 @@ private:
 
     // Pending PIN during two-step confirmation
     String _pendingPin;
+    // Set when the PIN editor was opened automatically because Lock Mode was set
+    // to "pin" without a usable PIN. If the user leaves without setting one, the
+    // mode reverts rather than silently sitting at a setting that does nothing.
+    bool _pinModePending = false;
 
     // Canned messages editor overlay. The same editor serves the global list and
     // the per-conversation overrides; _cannedTarget says which. The distinction

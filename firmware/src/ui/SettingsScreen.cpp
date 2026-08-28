@@ -2316,7 +2316,14 @@ void SettingsScreen::autoLockRowCb(lv_event_t* e) {
 
 void SettingsScreen::pinRowCb(lv_event_t* e) {
     SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
-    if (!self || self->_pinTextarea) return;
+    if (self) self->openPinEditor();
+}
+
+// Body split out of pinRowCb so the Lock Mode picker can open the editor too,
+// when "pin" is chosen without a usable PIN.
+void SettingsScreen::openPinEditor() {
+    SettingsScreen* self = this;
+    if (self->_pinTextarea) return;
     const auto& cfg = ConfigManager::instance().config();
 
     self->_pinOverlay = lv_obj_create(lv_layer_top());
@@ -2418,6 +2425,19 @@ void SettingsScreen::pinReadyCb(lv_event_t* e) {
     }
     if (newPin.length() > 8) newPin = newPin.substring(0, 8);
 
+    // Every lock path requires >= 4 (UIManager::updateKeyLockToggle and the
+    // auto-lock branch), so a shorter PIN saves fine and then does nothing at
+    // all -- which is exactly how someone ends up with "PIN mode" that only ever
+    // engages the key lock. Refuse it here instead. Empty is still allowed: that
+    // is how the PIN is cleared.
+    if (newPin.length() > 0 && newPin.length() < 4) {
+        UIManager::instance().showToast(t("pin_too_short"));
+        self->_pendingPin = "";
+        lv_textarea_set_text(self->_pinTextarea, "");
+        lv_textarea_set_placeholder_text(self->_pinTextarea, t("lbl_pin_code"));
+        return;
+    }
+
     auto& mgr = ConfigManager::instance();
     if (self->_pendingPin.length() == 0) {
         self->_pendingPin = newPin;
@@ -2450,6 +2470,18 @@ void SettingsScreen::lockModeChosenCb(lv_event_t* e) {
         if (mgr.config().security.lockMode != newMode) {
             mgr.config().security.lockMode = newMode;
             g_dsDirty = true;
+        }
+        // Picking PIN without a usable PIN would silently behave as key lock.
+        // Send the user straight to the PIN editor; hidePinEditor() reverts the
+        // mode if they leave without setting one.
+        if (newMode == "pin" && mgr.config().security.pinCode.length() < 4) {
+            self->_pinModePending = true;
+            lv_async_call([](void* p) {
+                auto* sc = (SettingsScreen*)p;
+                sc->hideLockModePicker();
+                sc->openPinEditor();
+            }, self);
+            return;
         }
     }
     lv_async_call([](void* p) { ((SettingsScreen*)p)->hideLockModePicker(); }, self);
@@ -2491,6 +2523,17 @@ void SettingsScreen::hideAutoLockPicker() {
 
 void SettingsScreen::hidePinEditor() {
     if (!_pinTextarea) return;
+    // Opened automatically by a Lock Mode change and still no usable PIN -> fall
+    // back to key lock rather than leaving "pin" set but inert.
+    if (_pinModePending) {
+        _pinModePending = false;
+        auto& mgr = ConfigManager::instance();
+        if (mgr.config().security.pinCode.length() < 4 && mgr.config().security.lockMode == "pin") {
+            mgr.config().security.lockMode = "key";
+            g_dsDirty = true;
+            UIManager::instance().showToast(t("pin_mode_reverted"));
+        }
+    }
     UIManager::instance().restoreFromModalGroup();
     if (_editorGroup) { lv_group_del(_editorGroup); _editorGroup = nullptr; }
 #ifdef PLATFORM_TWATCH

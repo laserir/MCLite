@@ -8,6 +8,11 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Added
+- **A too-short PIN can no longer be saved.** Every lock path requires at least 4 characters, but the PIN editor
+  only enforced the 8-character maximum — so a shorter PIN saved happily and then did nothing, leaving Lock Mode
+  set to PIN while the trackball hold quietly engaged the key lock instead. The editor now rejects 1-3 characters
+  (clearing the PIN is still allowed), and choosing **Lock Mode → PIN** without a usable PIN opens the PIN editor
+  straight away, reverting to key lock if you leave without setting one.
 - **Failed PIN entries now back off.** A wrong PIN could previously be retried instantly, so a 4-digit code was
   guessable at machine speed. Three wrong tries are free (fat fingers), then each further miss waits 5s, 10s,
   30s and 60s, with the countdown shown on the lock screen and typing ignored until it clears. A correct entry
