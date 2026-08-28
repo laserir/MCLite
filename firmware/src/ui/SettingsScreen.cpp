@@ -742,6 +742,27 @@ std::vector<String>* SettingsScreen::cannedList() const {
     return nullptr;
 }
 
+// The chat picker reads a DM's quick replies from ContactStore, not from config
+// (ChatScreen.cpp, ConvoId::DM branch), so editing config alone leaves the running
+// session showing the old list until the next boot. Channels and rooms are read
+// straight from config and need no sync. Match on the public key rather than the
+// index: ContactStore::loadFromConfig() skips contacts whose key fails to parse,
+// so its indices can diverge from config's.
+void SettingsScreen::syncCannedToRuntime() const {
+    if (_cannedTarget != CannedTarget::Contact) return;
+    auto& c = ConfigManager::instance().config();
+    if (_cannedTargetIdx < 0 || (size_t)_cannedTargetIdx >= c.contacts.size()) return;
+    const String& b64 = c.contacts[_cannedTargetIdx].publicKey;
+    auto& cs = ContactStore::instance();
+    for (size_t i = 0; i < cs.count(); i++) {
+        Contact* sc = cs.findByIndex(i);
+        if (sc && sc->publicKeyB64.equalsIgnoreCase(b64)) {
+            sc->canned = c.contacts[_cannedTargetIdx].canned;
+            return;
+        }
+    }
+}
+
 // Name of the conversation being edited, for the section header. Empty = global.
 String SettingsScreen::cannedTargetName() const {
     auto& c = ConfigManager::instance().config();
@@ -1464,6 +1485,7 @@ void SettingsScreen::cannedSaveCb(lv_event_t* e) {
     } else if ((size_t)idx < list->size()) {
         (*list)[(size_t)idx] = text;
     }
+    self->syncCannedToRuntime();
     g_dsDirty = true;
     lv_async_call([](void* p) { ((SettingsScreen*)p)->hideCannedEditor(); }, self);
 }
@@ -1487,6 +1509,7 @@ void SettingsScreen::cannedDeleteCb(lv_event_t* e) {
         // Emptying a per-conversation list reverts that conversation to the global one.
         list->erase(list->begin() + idx);
     }
+    self->syncCannedToRuntime();
     g_dsDirty = true;
     lv_async_call([](void* p) { ((SettingsScreen*)p)->hideCannedEditor(); }, self);
 }

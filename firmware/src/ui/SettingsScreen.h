@@ -319,6 +319,7 @@ private:
     CannedTarget _cannedTarget    = CannedTarget::Global;
     int          _cannedTargetIdx = -1;   // index into contacts/channels/roomServers
     std::vector<String>* cannedList() const;   // nullptr if the target vanished
+    void syncCannedToRuntime() const;          // push a contact edit into ContactStore
     String cannedTargetName() const;
 
     lv_obj_t* _cannedOverlay  = nullptr;

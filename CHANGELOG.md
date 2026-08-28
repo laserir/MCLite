@@ -13,7 +13,7 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   **Admin → Contacts / Channels / Rooms → pick one → Quick Replies** now edits it directly. An empty list means
   that conversation follows the global list, and the screen says so rather than showing a blank page; deleting
   the last entry reverts it to global. The global list keeps its existing behaviour, where an empty list means
-  the eight built-in defaults.
+  the eight built-in defaults. Edits apply straight away in the running session, with no reboot.
 - **Message reactions.** Long-press a chat bubble to react with an emoji (👍 👎 ❤ 😂 😮 😢); reactions appear as
   chips under the message and aggregate when several people pick the same one. Implements the
   [MeshCore One reactions spec](https://github.com/Avi0n/MeshCoreOne/blob/main/docs/Reactions.md), so reactions
