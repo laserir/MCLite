@@ -1,5 +1,5 @@
 {
-    "version": 51,
+    "version": 52,
     "no_sd_title": "Nessuna scheda SD",
     "no_sd_msg": "Inserire una scheda SD con config.json\ne riavviare.\n\nUsare il MCLite Config Tool\nper creare la configurazione.",
     "setup_title": "Configurazione necessaria",
@@ -152,6 +152,9 @@
     "admin_lock_action": "Blocca",
     "admin_need_pin": "Imposta prima un PIN admin",
     "admin_locked": "Admin bloccato",
+    "admin_unlocked": "Admin sbloccato - blocco disattivato",
+    "admin_lock_title": "Bloccare admin?",
+    "admin_lock_body": "Admin e tutte le impostazioni saranno nascoste su questo dispositivo. Per rientrare premi 0 (T-Deck) o il tasto laterale (T-Watch) e inserisci il PIN admin. Senza quel PIN resta solo config.json sulla scheda SD. Il PIN verra chiesto subito dopo per confermare.",
     "pin_title_admin": "PIN admin",
     "lbl_perm_convmgmt": "Gestisci conversazioni",
     "lbl_perm_companion": "Mostra Companion",

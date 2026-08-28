@@ -267,7 +267,8 @@ private:
 
     // Vertical button-list modal (picker styling: MODAL_TEXT_WIDTH btnmatrix,
     // one button per row) — replaces narrow side-by-side lv_msgbox dialogs.
-    enum class ConvoModal { None, AddChooser, DeleteConfirm, RebootConfirm, OffgridConfirm, PermLockConfirm };
+    enum class ConvoModal { None, AddChooser, DeleteConfirm, RebootConfirm, OffgridConfirm, PermLockConfirm,
+                            AdminLockConfirm };
 
     // A permission change the user has chosen but not yet confirmed. Tightening
     // permissions cannot be undone from the device (the rows are gated at

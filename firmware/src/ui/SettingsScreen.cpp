@@ -1193,6 +1193,14 @@ void SettingsScreen::openButtonModal(ConvoModal purpose) {
             g_btnModalLabels = { t("perm_lock_confirm"), t("btn_cancel") };
             break;
         }
+        case ConvoModal::AdminLockConfirm:
+            // Explain before asking for the PIN. Locking Admin removes every
+            // on-device settings screen, so the consequence and the way back have
+            // to be stated plainly -- a bare PIN pad tells the user nothing.
+            title = t("admin_lock_title");
+            body  = t("admin_lock_body");
+            g_btnModalLabels = { t("admin_lock_action"), t("btn_cancel") };
+            break;
         default: return;
     }
 
@@ -1335,6 +1343,17 @@ void SettingsScreen::onConvoModalChoice(lv_obj_t* dlg, int idxIn) {
         return;
     }
 
+    if (purpose == ConvoModal::AdminLockConfirm) {
+        if (idx == 0) {
+            // Explained and accepted; typing the PIN is what actually arms it.
+            lv_async_call([](void*){
+                UIManager::instance().showPinLock(UIManager::PinPurpose::ConfirmAdminLock);
+            }, nullptr);
+        } else {
+            lv_async_call([](void* p){ ((SettingsScreen*)p)->show(); }, self);
+        }
+        return;
+    }
     if (purpose == ConvoModal::PermLockConfirm) {
         if (idx == 0) self->applyPendingPermission();
         else          self->_permPending = PermField::None;   // Cancel: discard
@@ -1804,9 +1823,7 @@ void SettingsScreen::adminLockRowCb(lv_event_t* e) {
         lv_async_call([](void* p){ ((SettingsScreen*)p)->openPinEditor(PinTarget::AdminPin); }, self);
         return;
     }
-    lv_async_call([](void*){
-        UIManager::instance().showPinLock(UIManager::PinPurpose::ConfirmAdminLock);
-    }, nullptr);
+    lv_async_call([](void* p){ ((SettingsScreen*)p)->openButtonModal(ConvoModal::AdminLockConfirm); }, self);
 }
 
 void SettingsScreen::permSettingsRowCb(lv_event_t* e) {

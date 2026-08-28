@@ -1578,6 +1578,9 @@ void UIManager::onPinKey(uint32_t key) {
             if (done == PinPurpose::AdminUnlock) {
                 mgr.config().security.adminEnabled = true;   // permanent re-enable
                 mgr.save();
+                // Say so explicitly: the lock is now OFF and stays off until it is
+                // locked again, which is not obvious from Admin simply opening.
+                showToast(t("admin_unlocked"));
                 showScreen(Screen::ADMIN);
             } else if (done == PinPurpose::ConfirmAdminLock) {
                 mgr.config().security.adminEnabled = false;  // typing the PIN is the confirmation
