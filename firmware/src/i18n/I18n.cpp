@@ -194,6 +194,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"canned_add_msg",      "Add Message"},
     {"canned_enter_msg",    "Message text"},
     {"canned_msg_empty",    "Message cannot be empty"},
+    {"canned_uses_global",  "Using the global list"},
     {"lbl_allow_mute",      "Mute Chats"},
     {"lbl_show_hops",       "Show Hop Count"},
     {"lbl_share_contact",   "Share Contact"},

@@ -37,6 +37,13 @@ class SettingsScreen {
 public:
     void create(lv_obj_t* parent);
     void setSection(SettingsSection s) { _section = s; }
+
+    // Which canned-message list the editor is working on.
+    enum class CannedTarget : uint8_t { Global, Contact, Channel, Room };
+    // Open the canned-message list for a target. Always go through this rather
+    // than showSettings(CannedMessages) directly, so the target is never stale
+    // from a previous per-conversation visit.
+    void openCannedList(CannedTarget t, int idx);
     void show();
     void hide();
     void tick();  // refreshes the live Heard-Adverts count on the Radio section
@@ -303,7 +310,17 @@ private:
     // Pending PIN during two-step confirmation
     String _pendingPin;
 
-    // Canned messages editor overlay
+    // Canned messages editor overlay. The same editor serves the global list and
+    // the per-conversation overrides; _cannedTarget says which. The distinction
+    // matters: for Global an empty list means "use the 8 built-in defaults" and
+    // editing materialises them, whereas for a conversation an empty list means
+    // "fall back to global" — materialising there would silently detach that
+    // conversation from the global list.
+    CannedTarget _cannedTarget    = CannedTarget::Global;
+    int          _cannedTargetIdx = -1;   // index into contacts/channels/roomServers
+    std::vector<String>* cannedList() const;   // nullptr if the target vanished
+    String cannedTargetName() const;
+
     lv_obj_t* _cannedOverlay  = nullptr;
     lv_obj_t* _cannedTextarea = nullptr;
     lv_obj_t* _cannedDelBtn   = nullptr;

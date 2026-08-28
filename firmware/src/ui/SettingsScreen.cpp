@@ -714,7 +714,58 @@ void SettingsScreen::buildSecurity() {
 
 // ─────────────────────────── Canned messages section ───────────────────────────
 
-void SettingsScreen::cannedSectionRowCb(lv_event_t*) {
+void SettingsScreen::cannedSectionRowCb(lv_event_t* e) {
+    auto* self = (SettingsScreen*)lv_event_get_user_data(e);
+    if (self) self->openCannedList(CannedTarget::Global, -1);
+}
+
+// Resolve the target to the actual vector being edited. Returns nullptr if the
+// target index no longer exists (e.g. the contact was deleted while the editor
+// was open), so every caller must null-check.
+std::vector<String>* SettingsScreen::cannedList() const {
+    auto& c = ConfigManager::instance().config();
+    switch (_cannedTarget) {
+        case CannedTarget::Global:  return &c.messaging.cannedCustom;
+        case CannedTarget::Contact:
+            if (_cannedTargetIdx >= 0 && (size_t)_cannedTargetIdx < c.contacts.size())
+                return &c.contacts[_cannedTargetIdx].canned;
+            return nullptr;
+        case CannedTarget::Channel:
+            if (_cannedTargetIdx >= 0 && (size_t)_cannedTargetIdx < c.channels.size())
+                return &c.channels[_cannedTargetIdx].canned;
+            return nullptr;
+        case CannedTarget::Room:
+            if (_cannedTargetIdx >= 0 && (size_t)_cannedTargetIdx < c.roomServers.size())
+                return &c.roomServers[_cannedTargetIdx].canned;
+            return nullptr;
+    }
+    return nullptr;
+}
+
+// Name of the conversation being edited, for the section header. Empty = global.
+String SettingsScreen::cannedTargetName() const {
+    auto& c = ConfigManager::instance().config();
+    switch (_cannedTarget) {
+        case CannedTarget::Contact:
+            if (_cannedTargetIdx >= 0 && (size_t)_cannedTargetIdx < c.contacts.size())
+                return c.contacts[_cannedTargetIdx].alias;
+            break;
+        case CannedTarget::Channel:
+            if (_cannedTargetIdx >= 0 && (size_t)_cannedTargetIdx < c.channels.size())
+                return c.channels[_cannedTargetIdx].name;
+            break;
+        case CannedTarget::Room:
+            if (_cannedTargetIdx >= 0 && (size_t)_cannedTargetIdx < c.roomServers.size())
+                return c.roomServers[_cannedTargetIdx].name;
+            break;
+        default: break;
+    }
+    return String();
+}
+
+void SettingsScreen::openCannedList(CannedTarget t, int idx) {
+    _cannedTarget    = t;
+    _cannedTargetIdx = idx;
     UIManager::instance().showSettings(SettingsSection::CannedMessages);
 }
 
@@ -722,11 +773,17 @@ void SettingsScreen::buildCannedList() {
     const bool edit = canEdit(false);
     const auto& cfg = ConfigManager::instance().config();
 
-    // Effective list: custom when set, built-in defaults otherwise.
+    const std::vector<String>* list = cannedList();
+    const bool isGlobal = (_cannedTarget == CannedTarget::Global);
+
+    // Effective list. Global: an empty list means "use the built-in defaults", so
+    // show them. Per-conversation: an empty list means "fall back to the global
+    // list", so show nothing — seeding it with defaults here would silently turn
+    // a follows-global conversation into an override.
     std::vector<String> messages;
-    if (!cfg.messaging.cannedCustom.empty()) {
-        messages = cfg.messaging.cannedCustom;
-    } else {
+    if (list && !list->empty()) {
+        messages = *list;
+    } else if (isGlobal) {
         for (int i = 1; i <= 8; i++) {
             char key[12];
             snprintf(key, sizeof(key), "canned_%d", i);
@@ -734,9 +791,15 @@ void SettingsScreen::buildCannedList() {
         }
     }
 
-    char hdr[48];
-    snprintf(hdr, sizeof(hdr), t("sec_canned_messages"), (int)messages.size());
+    char hdr[64];
+    String who = cannedTargetName();
+    if (who.length() > 0) snprintf(hdr, sizeof(hdr), "%s (%d)", who.c_str(), (int)messages.size());
+    else                  snprintf(hdr, sizeof(hdr), t("sec_canned_messages"), (int)messages.size());
     addSectionHeader(hdr);
+
+    // Per-conversation lists that are empty follow the global list; say so rather
+    // than showing a bare, unexplained empty screen.
+    if (!isGlobal && messages.empty()) addReadOnlyRow(t("canned_uses_global"), "");
 
     if (edit && (int)messages.size() < 8)
         addNavRow((String(LV_SYMBOL_PLUS " ") + t("canned_add_msg")).c_str(), "", cannedAddRowCb);
@@ -761,10 +824,10 @@ void SettingsScreen::cannedRowCb(lv_event_t* e) {
     SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
     if (!self) return;
     int idx = (int)(intptr_t)lv_obj_get_user_data(lv_event_get_target(e));
-    const auto& cfg = ConfigManager::instance().config();
+    const std::vector<String>* list = self->cannedList();
     String text;
-    if (!cfg.messaging.cannedCustom.empty() && (size_t)idx < cfg.messaging.cannedCustom.size()) {
-        text = cfg.messaging.cannedCustom[idx];
+    if (list && (size_t)idx < list->size()) {
+        text = (*list)[idx];
     } else {
         char key[12];
         snprintf(key, sizeof(key), "canned_%d", idx + 1);
@@ -1053,10 +1116,13 @@ void SettingsScreen::openButtonModal(ConvoModal purpose) {
             title = name;
             // Row actions: an extra per-section action at idx 0 (Reset Path for contacts; Set
             // Scope for channels and rooms), then Delete (idx 1), then Cancel.
+            // Row actions: per-section action at idx 0 (Reset Path for contacts,
+            // Set Scope for channels/rooms), Quick Replies at idx 1, Delete at
+            // idx 2, Cancel last. deleteIdx below MUST track this ordering.
             if (_section == SettingsSection::Contacts)
-                g_btnModalLabels = { t("convo_reset_path"), t("btn_delete"), t("btn_cancel") };
+                g_btnModalLabels = { t("convo_reset_path"), t("sec_canned_messages_t"), t("btn_delete"), t("btn_cancel") };
             else
-                g_btnModalLabels = { t("convo_set_scope"), t("btn_delete"), t("btn_cancel") };
+                g_btnModalLabels = { t("convo_set_scope"), t("sec_canned_messages_t"), t("btn_delete"), t("btn_cancel") };
             break;
         }
         case ConvoModal::RebootConfirm:
@@ -1150,7 +1216,22 @@ void SettingsScreen::onConvoModalChoice(lv_obj_t* dlg, int idxIn) {
             return;
         }
 
-        const size_t deleteIdx = 1;   // all sections now have an action at idx 0
+        if (idx == 1) {                                 // Quick Replies (per-conversation)
+            CannedTarget t = isContact ? CannedTarget::Contact
+                           : isChannel ? CannedTarget::Channel
+                                       : CannedTarget::Room;
+            self->_cannedTarget    = t;
+            self->_cannedTargetIdx = (int)i;
+            lv_async_call([](void* p){
+                auto* sc = (SettingsScreen*)p;
+                sc->openCannedList(sc->_cannedTarget, sc->_cannedTargetIdx);
+            }, self);
+            return;
+        }
+
+        // Delete moved from idx 1 to idx 2 when Quick Replies was inserted above.
+        // Getting this wrong makes the Quick Replies button delete the row.
+        const size_t deleteIdx = 2;
         if (idx != deleteIdx) { lv_async_call([](void* p){ ((SettingsScreen*)p)->show(); }, self); return; }  // Cancel
         bool ok = false;
         if (self->_section == SettingsSection::Contacts && i < c.contacts.size()) {
@@ -1365,20 +1446,23 @@ void SettingsScreen::cannedSaveCb(lv_event_t* e) {
     String text = convoTrim(String(lv_textarea_get_text(self->_cannedTextarea)));
     if (text.length() == 0) { UIManager::instance().showToast(t("canned_msg_empty")); return; }
 
-    auto& cfg = ConfigManager::instance().config();
+    std::vector<String>* list = self->cannedList();
+    if (!list) { lv_async_call([](void* p) { ((SettingsScreen*)p)->hideCannedEditor(); }, self); return; }
     int idx = self->_cannedEditIdx;
 
-    if (cfg.messaging.cannedCustom.empty()) {
+    // Global only: editing one of the shown defaults materialises all 8 first, so
+    // the other seven are preserved rather than lost. A per-conversation list has
+    // no defaults to preserve and must stay exactly what the user typed.
+    if (self->_cannedTarget == CannedTarget::Global && list->empty()) {
         for (int i = 1; i <= 8; i++) {
             char key[12]; snprintf(key, sizeof(key), "canned_%d", i);
-            cfg.messaging.cannedCustom.push_back(t(key));
+            list->push_back(t(key));
         }
     }
     if (idx < 0) {
-        if (cfg.messaging.cannedCustom.size() < 8)
-            cfg.messaging.cannedCustom.push_back(text);
-    } else if ((size_t)idx < cfg.messaging.cannedCustom.size()) {
-        cfg.messaging.cannedCustom[(size_t)idx] = text;
+        if (list->size() < 8) list->push_back(text);
+    } else if ((size_t)idx < list->size()) {
+        (*list)[(size_t)idx] = text;
     }
     g_dsDirty = true;
     lv_async_call([](void* p) { ((SettingsScreen*)p)->hideCannedEditor(); }, self);
@@ -1390,15 +1474,18 @@ void SettingsScreen::cannedDeleteCb(lv_event_t* e) {
     int idx = self->_cannedEditIdx;
     if (idx < 0) return;
 
-    auto& cfg = ConfigManager::instance().config();
-    if (cfg.messaging.cannedCustom.empty()) {
+    std::vector<String>* list = self->cannedList();
+    if (!list) { lv_async_call([](void* p) { ((SettingsScreen*)p)->hideCannedEditor(); }, self); return; }
+    if (self->_cannedTarget == CannedTarget::Global && list->empty()) {
+        // Deleting one of the shown defaults materialises the other seven.
         for (int i = 1; i <= 8; i++) {
             if (i - 1 == idx) continue;
             char key[12]; snprintf(key, sizeof(key), "canned_%d", i);
-            cfg.messaging.cannedCustom.push_back(t(key));
+            list->push_back(t(key));
         }
-    } else if ((size_t)idx < cfg.messaging.cannedCustom.size()) {
-        cfg.messaging.cannedCustom.erase(cfg.messaging.cannedCustom.begin() + idx);
+    } else if ((size_t)idx < list->size()) {
+        // Emptying a per-conversation list reverts that conversation to the global one.
+        list->erase(list->begin() + idx);
     }
     g_dsDirty = true;
     lv_async_call([](void* p) { ((SettingsScreen*)p)->hideCannedEditor(); }, self);

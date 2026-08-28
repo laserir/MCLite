@@ -347,6 +347,10 @@ void UIManager::loadMainScreen() {
     lv_timer_handler();
 }
 
+void UIManager::showGlobalCannedList() {
+    _settingsScreen.openCannedList(SettingsScreen::CannedTarget::Global, -1);
+}
+
 void UIManager::showSettings(SettingsSection s) {
     _settingsScreen.setSection(s);
     showScreen(Screen::DEVICE_SETTINGS);

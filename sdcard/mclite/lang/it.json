@@ -1,5 +1,5 @@
 {
-    "version": 46,
+    "version": 47,
     "no_sd_title": "Nessuna scheda SD",
     "no_sd_msg": "Inserire una scheda SD con config.json\ne riavviare.\n\nUsare il MCLite Config Tool\nper creare la configurazione.",
     "setup_title": "Configurazione necessaria",
@@ -306,5 +306,6 @@
     "sec_canned_messages": "Risposte rapide (%d)",
     "canned_add_msg": "Aggiungi messaggio",
     "canned_enter_msg": "Testo del messaggio",
-    "canned_msg_empty": "Il messaggio non puo essere vuoto"
+    "canned_msg_empty": "Il messaggio non puo essere vuoto",
+    "canned_uses_global": "Si usa la lista globale"
 }

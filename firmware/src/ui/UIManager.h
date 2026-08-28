@@ -34,6 +34,10 @@ public:
 
     void showScreen(Screen screen);
     void showSettings(SettingsSection s);  // set the settings section, then show it
+    // Open the GLOBAL canned-message list. Goes through SettingsScreen so the
+    // editor target is reset — entering via showSettings(CannedMessages) directly
+    // would inherit whichever conversation was edited last.
+    void showGlobalCannedList();
     void openChat(const ConvoId& id);
     void goHome();
 

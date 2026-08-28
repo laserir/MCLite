@@ -271,6 +271,8 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
     "canned_messages": true,           // Quick-reply picker: true = on (default messages, default), false = off,
                                        //   or ["Reply 1", "Reply 2"] = on with custom messages (max 8).
                                        //   Editable on-device: Admin -> Canned Messages (or Settings -> Messaging).
+                                       //   Per-conversation lists are editable on-device too:
+                                       //   Admin -> Contacts/Channels/Rooms -> pick one -> Quick Replies.
                                        //   This is the GLOBAL list; individual contacts/channels/rooms can override
                                        //   it with their own "canned" array (see above). Per-conversation lists win.
     "share_contact": true,             // Share button in a DM chat header re-broadcasts that contact's advert so

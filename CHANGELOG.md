@@ -8,6 +8,12 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Added
+- **Per-conversation quick replies are editable on the device.** A contact, channel or room can carry its own
+  quick-reply list that overrides the global one, but until now that list could only be set from the config tool.
+  **Admin → Contacts / Channels / Rooms → pick one → Quick Replies** now edits it directly. An empty list means
+  that conversation follows the global list, and the screen says so rather than showing a blank page; deleting
+  the last entry reverts it to global. The global list keeps its existing behaviour, where an empty list means
+  the eight built-in defaults.
 - **Message reactions.** Long-press a chat bubble to react with an emoji (👍 👎 ❤ 😂 😮 😢); reactions appear as
   chips under the message and aggregate when several people pick the same one. Implements the
   [MeshCore One reactions spec](https://github.com/Avi0n/MeshCoreOne/blob/main/docs/Reactions.md), so reactions
