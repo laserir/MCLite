@@ -5,7 +5,7 @@ All notable changes to MCLite are documented here. The format is loosely based o
 
 Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-watch-vX.Y.Z.bin`).
 
-## [Unreleased]
+## [0.4.3] — 2026-08-29
 
 ### Added
 - **Colour emoji.** The emoji you can actually pick on the device — the 30 in the chat picker and the 6 reaction
