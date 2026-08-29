@@ -3992,13 +3992,11 @@ function validate() {
   const lockMode = document.getElementById('lockMode').value;
   const pinCode = document.getElementById('pinCode').value;
   const pinField = document.getElementById('pinCodeField');
-  if (lockMode === 'pin') {
-    if (!/^[a-zA-Z0-9]{4,8}$/.test(pinCode)) {
-      pinField.classList.add('invalid');
-      issues.push('PIN must be 4–8 alphanumeric characters');
-    } else {
-      pinField.classList.remove('invalid');
-    }
+  // Required in PIN Lock mode; if set at all it must be one the firmware accepts,
+  // since ConfigManager drops a PIN outside 4-8 alphanumeric characters at load.
+  if ((lockMode === 'pin' || pinCode) && !/^[a-zA-Z0-9]{4,8}$/.test(pinCode)) {
+    pinField.classList.add('invalid');
+    issues.push('PIN must be 4-8 alphanumeric characters' + (lockMode === 'pin' ? '' : ', or empty'));
   } else {
     pinField.classList.remove('invalid');
   }
@@ -6456,20 +6454,42 @@ maybeShowWizard();
       }
     }
 
-    // ===== 8. Security: PIN =====
+    // ===== 8. Security: PINs =====
+    // This is the check that gates "Ready to export". validate() has its own copy
+    // for the legacy shell, but the block further down clears every .field.invalid
+    // it set and re-applies only what markStatic() collected here -- so anything
+    // missing from THIS list is silently exportable no matter what validate() says.
     const lockMode = (document.getElementById('lockMode') || {}).value || 'none';
     const pin = (document.getElementById('pinCode') || {}).value || '';
-    if (lockMode === 'pin') {
-      if (!/^[a-zA-Z0-9]{4,8}$/.test(pin)) {
-        issues.push('Security: PIN must be 4–8 alphanumeric characters');
-        elevate('security', 'err');
-        markStatic('pinCode');
-      } else {
-        elevate('security', 'ok');
-      }
-    } else {
-      elevate('security', 'ok');
+    const PIN_RE = /^[a-zA-Z0-9]{4,8}$/;
+    let secOk = true;
+
+    // Required when the PIN lock is selected.
+    if (lockMode === 'pin' && !PIN_RE.test(pin)) {
+      issues.push('Security: PIN must be 4-8 alphanumeric characters');
+      markStatic('pinCode');
+      secOk = false;
+    } else if (pin && !PIN_RE.test(pin)) {
+      // Set but unusable. The firmware refuses to load a PIN outside 4-8
+      // alphanumeric characters (ConfigManager), so leaving one in the file just
+      // means it is dropped at boot -- and now that the field is always visible,
+      // silently exporting a bad one is exactly the surprise to avoid.
+      issues.push('Security: PIN must be 4-8 alphanumeric characters, or empty');
+      markStatic('pinCode');
+      secOk = false;
     }
+
+    // Optional, but an admin PIN the device cannot accept means Admin can be
+    // locked with no way back except editing config.json on the SD card. This was
+    // missing entirely, so a malformed admin PIN still reported "Ready to export".
+    const adminPinVal = (document.getElementById('adminPin') || {}).value || '';
+    if (adminPinVal && !PIN_RE.test(adminPinVal)) {
+      issues.push('Security: Admin PIN must be 4-8 alphanumeric characters, or empty');
+      markStatic('adminPin');
+      secOk = false;
+    }
+
+    elevate('security', secOk ? 'ok' : 'err');
 
     // ===== Apply pane states to dots =====
     Object.keys(paneState).forEach(pane => {

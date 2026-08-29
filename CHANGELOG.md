@@ -7,6 +7,13 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 
 ## [Unreleased]
 
+### Fixed
+- **Config tool: a badly formatted PIN no longer says "Ready to export".** The Admin PIN was not checked by the
+  readiness gate at all, so an unusable one exported cleanly — and an unusable PIN means a device that can be
+  locked out of Admin with no way back except editing the file on the SD card. A device PIN that is set but
+  malformed is now flagged too, whatever the Lock mode, since the firmware drops such a PIN when it loads the
+  config. Both fields show the red border and the reason.
+
 ### Changed
 - **Config tool: the PIN Code field is always visible**, on the same line as Lock and Auto Lock. It used to appear
   only after you set Lock to PIN Lock, while Admin PIN was always shown — so the screen looked like it had
