@@ -40,11 +40,13 @@ static bool colorEmojiPathCb(const lv_font_t* font, void* img_src, uint16_t,
                                                      : COLOR_LOOKUP_BODY(unicode);
     if (!d) return false;   // not in the baked set → LVGL walks on to the mono font
     lv_memcpy(img_src, d, sizeof(lv_img_dsc_t));
-    // Required, and easy to miss: lv_imgfont hands every glyph back through the
-    // SAME scratch buffer, and lv_img_cache is keyed on the source pointer. Without
-    // dropping the stale entry, the first emoji decoded gets drawn for all of them.
-    // Cheap here — "decoding" a true-colour dsc is a header copy, and other images
-    // (map tiles) use distinct pointers so their caching is unaffected.
+    // Defensive, and currently a no-op: lv_imgfont hands every glyph back through
+    // the SAME scratch buffer and lv_img_cache keys on the source pointer, so a
+    // live cache would replay the first decoded emoji for all of them. This build
+    // never sets LV_IMG_CACHE_DEF_SIZE, so LVGL defaults it to 0 and both the
+    // cache and this function compile away (lv_img_cache.c). Keep the call: it
+    // costs nothing and it is what makes enabling the cache safe later. Other
+    // images (map tiles) have distinct pointers, so their caching is unaffected.
     lv_img_cache_invalidate_src(img_src);
     return true;
 }
@@ -54,13 +56,14 @@ static bool colorEmojiPathCb(const lv_font_t* font, void* img_src, uint16_t,
 // lv_imgfont_create() sets line_height to the glyph size and base_line to 0. Those
 // are the metrics LVGL lays every line out with, because the label's own font wins
 // over whatever the fallback chain resolves a glyph to. Left alone, a 12px imgfont
-// gives Montserrat 12 a 12px line box instead of its 15px one and the bottoms of
-// the text get clipped. Adopt the mono font's metrics so the text keeps its real
-// line height.
+// gave the 12px text a 12px line box instead of the mono emoji font's real 17px
+// one, and the bottoms of the text got clipped. Adopt the mono font's metrics so
+// the text keeps its true line height.
 //
-// This does not move anything: lv_draw_sw_letter puts the baseline at
-// (line_height - base_line), which is 12 both before (12-0) and after (15-3), so
-// the emoji still sit on the baseline and the glyphs do not shift.
+// lv_draw_sw_letter puts the baseline at (line_height - base_line), so this moves
+// it from 12 (12-0) to 13 (17-4) for T-Deck body text -- one pixel, onto the mono
+// font's real baseline, which is where it belonged. box_h <= line_height - base_line
+// in all four board/size combinations, so no glyph clips or overruns.
 static void adoptMetrics(lv_font_t* f, const lv_font_t* mono) {
     if (!f) return;
     f->line_height         = mono->line_height;
@@ -73,7 +76,12 @@ static void adoptMetrics(lv_font_t* f, const lv_font_t* mono) {
 
 void initColorEmoji() {
 #if LV_USE_IMGFONT
-    if (s_colorBody) return;   // already built
+    // Guard on BOTH: if only one allocation succeeded, guarding on s_colorBody
+    // alone let fontBody() re-enter and reassign s_colorHeading, leaking the old
+    // one and leaving already-styled labels pointing at a font that no longer
+    // matches s_colorHeading -- so colorEmojiPathCb would resolve them through the
+    // body-size lookup and draw undersized glyphs.
+    if (s_colorBody || s_colorHeading) return;   // already built (or tried)
     s_colorBody    = lv_imgfont_create(FONT_BODY_PX, colorEmojiPathCb);
     s_colorHeading = lv_imgfont_create(FONT_HEADING_PX, colorEmojiPathCb);
     // On OOM leave the pointers null; fontBody()/fontHeading() keep returning mono.
@@ -85,6 +93,9 @@ void initColorEmoji() {
 // Consult the live config rather than a boot-time snapshot, and build the imgfont
 // lazily the first time it is actually wanted, so a device that never enables
 // colour emoji never pays the allocation.
+//
+// main.cpp only calls initColorEmoji() when the setting is on, so a device with
+// colour emoji off really does skip the allocation.
 //
 // Note the Settings toggle still reboots to apply. Screens that are rebuilt per
 // show would pick the new font up immediately, but ChatScreen is created once at

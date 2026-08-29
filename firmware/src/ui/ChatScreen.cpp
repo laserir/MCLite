@@ -589,7 +589,14 @@ void ChatScreen::addBubble(const Message& msg) {
         static constexpr uint8_t MAX_EMOJI_TYPES = 8;
         EmojiCount agg[MAX_EMOJI_TYPES];
         uint8_t aggLen = 0;
-        for (const auto& r : msg.reactions) {
+        for (const auto& rRaw : msg.reactions) {
+            // Normalise before aggregating: MeshCore One sends U+2764 U+FE0F for
+            // the heart, our picker sends bare U+2764. Without stripping the
+            // variation selector the two count as different reactions (two chips
+            // reading "1" instead of one reading "2") and the VS16 itself renders
+            // as tofu, since the emoji font subsets do not carry it.
+            Reaction r = rRaw;
+            r.emoji = sanitizeForDisplay(r.emoji);
             bool found = false;
             for (uint8_t i = 0; i < aggLen; i++) {
                 if (agg[i].emoji == r.emoji) { agg[i].count++; found = true; break; }
@@ -766,7 +773,7 @@ void ChatScreen::trySendCurrent() {
     // The textarea caps at 160 *characters*, but emoji/accents are multi-byte, so a
     // short-looking message can exceed the byte budget and would otherwise fail to
     // send silently (still drawing a FAILED bubble).
-    if (text.length() > defaults::MAX_MSG_BYTES) {
+    if (text.length() > UIManager::maxMsgBytesFor(*_currentConvo)) {
         UIManager::instance().showToast(t("msg_too_long"));
         return;  // keep the user's text so they can trim it
     }

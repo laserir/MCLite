@@ -19,7 +19,52 @@ permissions:
   contents: write
 
 jobs:
+  # Cheap correctness gates that run before the matrix build. Each of these exists
+  # because something shipped past it: the translation cap silently dropped the last
+  # three strings on every localised device, and the colour-emoji assets can drift
+  # from the picker they are generated from.
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Native unit tests
+        run: pio test -d firmware/ -e native_test
+
+      - name: Translations are in sync
+        run: python3 tools/sync_lang.py --check
+
+      - name: Translation cap fits the string set
+        run: |
+          python3 - <<'EOF'
+          import json, re, sys, glob
+          src = open('firmware/src/i18n/I18n.cpp', encoding='utf-8').read()
+          table = re.search(r'DEFAULT_STRINGS\[\]\s*=\s*\{(.*?)\n\};', src, re.S).group(1)
+          count = len(re.findall(r'\{\s*"', table))
+          cap = int(re.search(r'MAX_STRINGS\s*=\s*(\d+)',
+                              open('firmware/src/i18n/I18n.h', encoding='utf-8').read()).group(1))
+          print(f'{count} strings, cap {cap}')
+          if count > cap:
+              sys.exit(f'ERROR: MAX_STRINGS={cap} < {count} strings; the last '
+                       f'{count - cap} keys would never load on a translated device.')
+          for f in glob.glob('sdcard/mclite/lang/*.json'):
+              n = sum(1 for v in json.load(open(f, encoding='utf-8')).values() if isinstance(v, str))
+              if n > cap:
+                  sys.exit(f'ERROR: {f} has {n} strings, over the {cap} cap.')
+          EOF
+
+      - name: Colour emoji assets match the picker
+        run: python3 firmware/assets/fonts/generate_color_emoji.py --check
+
   build:
+    needs: checks
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

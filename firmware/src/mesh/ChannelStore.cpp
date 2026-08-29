@@ -23,9 +23,13 @@ static String pskToBase64(const uint8_t* psk, size_t len) {
 
 void ChannelStore::loadFromConfig() {
     _channels.clear();
-    const auto& cfg = ConfigManager::instance().config();
+    // Non-const: the hashtag normalization below is written back into the config
+    // entry, so config and runtime agree on the name. They did not before, and
+    // anything keying off the config name (the per-channel quick-reply lookup in
+    // ChatScreen, which compares against the runtime name) silently missed.
+    auto& cfg = ConfigManager::instance().config();
 
-    for (const auto& cc : cfg.channels) {
+    for (auto& cc : cfg.channels) {
         Channel ch;
         ch.name  = cc.name;
         ch.type  = (cc.type == "private") ? ChannelType::PRIVATE : ChannelType::HASHTAG;
@@ -81,6 +85,7 @@ void ChannelStore::loadFromConfig() {
                 continue;
             }
             ch.name = normalized;
+            cc.name = normalized;   // keep the config in step with the runtime name
             uint8_t hash[32];
             mbedtls_sha256((const uint8_t*)normalized.c_str(), normalized.length(), hash, 0);
             memcpy(ch.psk, hash, 16);

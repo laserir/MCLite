@@ -17,8 +17,13 @@ inline String computeMsgHash(const String& text, uint32_t senderTimestamp) {
     static constexpr const char CROCKFORD[] = "0123456789abcdefghjkmnpqrstvwxyz";
 
     // Build input: text bytes + 4-byte little-endian timestamp.
-    // Messages are capped at MAX_MSG_BYTES (160), so 164 bytes is a safe stack bound.
-    static constexpr size_t BUF_MAX = 164;
+    // Composition is capped at MAX_MSG_BYTES (160), but the RECEIVE path does not
+    // enforce that -- MeshCore null-terminates the decrypted block and hands it
+    // straight up, so inbound text can reach ~171 bytes from a non-conforming
+    // sender. Sizing for 160 made computeMsgHash silently truncate those and
+    // produce a hash the sender would never agree with. 184 covers the real
+    // maximum with room for the timestamp.
+    static constexpr size_t BUF_MAX = 184;
     uint8_t buf[BUF_MAX];
     const size_t tlen = text.length() < BUF_MAX - 4 ? text.length() : BUF_MAX - 4;
     memcpy(buf, text.c_str(), tlen);

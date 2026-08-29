@@ -307,7 +307,13 @@ bool ConfigManager::parseJson(const String& json) {
             _config.messaging.cannedMessages = true;
             JsonArray arr = cm.as<JsonArray>();
             for (size_t i = 0; i < arr.size() && i < 8; i++) {
-                _config.messaging.cannedCustom.push_back(arr[i].as<String>());
+                // Skip blanks, like parseCannedArray() does for the per-conversation
+                // lists. LVGL treats the first empty string in a btnmatrix map as the
+                // map terminator, so one blank entry silently truncates the chat
+                // picker while the Settings list still shows every entry.
+                String v = arr[i].as<String>();
+                v.trim();
+                if (v.length() > 0) _config.messaging.cannedCustom.push_back(v);
             }
         } else {
             _config.messaging.cannedMessages = defaults::CANNED_MESSAGES_ENABLED;
@@ -367,6 +373,25 @@ bool ConfigManager::parseJson(const String& json) {
     _config.security.adminEnabled = doc["security"]["admin_enabled"] | defaults::ADMIN_ENABLED;
     _config.security.adminPin     = doc["security"]["admin_pin"] | defaults::ADMIN_PIN;
 
+    // A PIN outside 4-8 characters is unusable and must not be allowed to arm a
+    // lock. The entry overlay accepts at most 8 characters, so a 9+ character PIN
+    // would engage the lock and then be impossible to type -- permanently, across
+    // reboots, recoverable only by editing the SD card. Too short fails the
+    // compare for the same reason. The on-device editor and the config tool both
+    // enforce 4-8, but config.json is hand-edited often enough to need the guard
+    // here too. Treat an out-of-range PIN as unset rather than truncating it,
+    // since a truncated secret is not the one the owner chose.
+    if (_config.security.pinCode.length() > 0 &&
+        (_config.security.pinCode.length() < 4 || _config.security.pinCode.length() > 8)) {
+        LOGLN("[Config] security.pin_code is not 4-8 chars - ignoring it");
+        _config.security.pinCode = "";
+    }
+    if (_config.security.adminPin.length() > 0 &&
+        (_config.security.adminPin.length() < 4 || _config.security.adminPin.length() > 8)) {
+        LOGLN("[Config] security.admin_pin is not 4-8 chars - ignoring it");
+        _config.security.adminPin = "";
+    }
+
     if (doc["security"]["auto_lock"].is<const char*>()) {
         String mode = doc["security"]["auto_lock"] | defaults::AUTO_LOCK;
         if (mode != "none" && mode != "key" && mode != "pin") mode = "none";
@@ -382,6 +407,17 @@ bool ConfigManager::parseJson(const String& json) {
             _config.security.autoLock = doc["security"]["auto_key_lock"].as<bool>() ? "key" : "none";
         }
         // else: field missing, not pin — keep default (AUTO_LOCK = "key")
+    }
+
+    // A lock mode that needs a PIN, with no usable PIN, is a lock that silently
+    // does nothing -- the same confusing state d46ebec fixed for the on-device
+    // editor. Fall back to the key lock so the intent (lock the device) survives.
+    if (_config.security.pinCode.length() == 0) {
+        if (_config.security.lockMode == "pin") {
+            LOGLN("[Config] lock=pin with no usable pin_code - falling back to key lock");
+            _config.security.lockMode = "key";
+        }
+        if (_config.security.autoLock == "pin") _config.security.autoLock = "key";
     }
 
     // Permissions — within the Admin gate. Missing block keeps the permissive
@@ -566,10 +602,15 @@ String ConfigManager::toJson() const {
 
     doc["offgrid"]["enabled"] = _config.offgrid.enabled;
 
-    // WiFi — only emit when an SSID is set, to keep config.json clean on devices that don't use it.
+    // WiFi — normally only emitted when an SSID is set, to keep config.json clean on
+    // devices that don't use it. auto_update is exempt: its switch is deliberately
+    // reachable before any network is joined (WiFiSetupScreen), so gating the whole
+    // block on the SSID silently threw the setting away on the next save.
     if (_config.wifi.ssid.length() > 0) {
         doc["wifi"]["ssid"]        = _config.wifi.ssid;
         doc["wifi"]["password"]    = _config.wifi.password;
+        doc["wifi"]["auto_update"] = _config.wifi.autoUpdate;
+    } else if (_config.wifi.autoUpdate) {   // struct default is false (ConfigManager.h)
         doc["wifi"]["auto_update"] = _config.wifi.autoUpdate;
     }
 

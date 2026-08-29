@@ -71,8 +71,8 @@ constexpr bool     CANNED_MESSAGES_ENABLED = true;
 constexpr bool     ALLOW_MUTE            = false;  // Enable per-chat mute (long-press); off by default
 constexpr bool     AUTO_TELEMETRY        = false;  // Auto-refresh contacts' GPS via periodic telemetry (opt-in)
 constexpr bool     SHARE_CONTACT         = true;   // Chat-header Share button (re-broadcast a contact's advert)
-constexpr bool     SHOW_HOP_COUNT        = false;
-constexpr bool     REACTIONS_ENABLED     = false;  // Emoji reactions (MeshCore One interop); off by default  // Show received-message hop count (xN) in the chat bubble; off by default
+constexpr bool     SHOW_HOP_COUNT        = false;  // Show received-message hop count (xN) in the chat bubble; off by default
+constexpr bool     REACTIONS_ENABLED     = false;  // Emoji reactions (MeshCore One interop); off by default
 
 // Auto-telemetry scheduler tuning (background GPS refresh for contacts who don't advert location)
 constexpr uint32_t AUTO_TELEM_SCAN_MS        = 60000;    // Evaluate at most one request per minute

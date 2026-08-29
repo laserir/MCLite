@@ -11,7 +11,7 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 - **Colour emoji.** The emoji you can actually pick on the device — the 30 in the chat picker and the 6 reaction
   emoji — now render as full-colour glyphs, inline in chat bubbles and in the pickers. Everything else keeps
   using the existing monochrome font, so nothing goes blank: the chain is colour subset, then mono emoji, then
-  plain text. Costs about 37 KB of flash and no meaningful RAM. On by default; turn it off in
+  plain text. Costs about 37 KB of flash on T-Deck (67 KB on T-Watch, which bakes larger glyphs) and no meaningful RAM. On by default; turn it off in
   **Settings → Display → Colour Emoji** or with `display.color_emoji` for the previous monochrome look, which
   some may prefer on the amber and high-contrast themes since colour glyphs cannot follow the palette. The
   on-device toggle reboots to apply, like the theme switch.
@@ -23,30 +23,6 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   cannot lock yourself out with a mis-tap. Set it in **Settings → Security → Admin PIN** or as
   `security.admin_pin`. Wrong entries back off exactly like the screen PIN, on a separate counter.
   Without an Admin PIN set, a locked device can only be recovered by editing `config.json` on the SD card.
-
-### Fixed
-- **The PIN editor now says what it wants.** Entering a PIN asks for it twice, but both prompts were captioned
-  identically and a mismatch silently cleared the field, so the second prompt looked like the first had been
-  rejected and a typo looked like the editor refusing everything. The second step is now captioned **Repeat PIN**,
-  a mismatch says so, and saving or clearing confirms with a toast. The title also names which PIN you are
-  setting, since there are now two.
-- **A PIN could not be cleared.** The editor used "nothing pending yet" to detect the first of the two entries,
-  which an empty PIN is indistinguishable from, so submitting an empty PIN looped forever instead of clearing it.
-- **`admin_enabled` is now actually enforced.** It was only checked on the T-Deck `0` key and the status-bar
-  gear, so on T-Watch it did nothing at all (the side button opened Admin regardless), and the Back buttons in
-  Settings, Heard Adverts and the WiFi/USB/Bluetooth screens could walk straight back into a disabled Admin.
-  All six routes are now gated in one place.
-- **A too-short PIN can no longer be saved.** Every lock path requires at least 4 characters, but the PIN editor
-  only enforced the 8-character maximum — so a shorter PIN saved happily and then did nothing, leaving Lock Mode
-  set to PIN while the trackball hold quietly engaged the key lock instead. The editor now rejects 1-3 characters
-  (clearing the PIN is still allowed), and choosing **Lock Mode → PIN** without a usable PIN opens the PIN editor
-  straight away, reverting to key lock if you leave without setting one.
-- **Failed PIN entries now back off.** A wrong PIN could previously be retried instantly, so a 4-digit code was
-  guessable at machine speed. Three wrong tries are free (fat fingers), then each further miss waits 5s, 10s,
-  30s and 60s, with the countdown shown on the lock screen and typing ignored until it clears. A correct entry
-  resets it; re-locking on auto-dim does not hand out fresh free tries. The counter is deliberately not
-  persisted: anyone who can power-cycle to clear it can equally pull the SD card and read `security.pin_code`,
-  which is stored in plain text. **SOS is unaffected** and still works while the device is PIN-locked.
 - **Permissions are editable on the device.** **Settings → Security** now carries **Settings Access**
   (Full / Restricted / Read-only), **Manage Conversations** and **Show Companion**, so a device can be locked
   down before handing it to someone without needing a computer and an SD reader. Tightening asks for
@@ -77,6 +53,62 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   checks GitHub for a newer release on boot. Both already existed as `messaging.share_contact` and
   `wifi.auto_update` in `config.json`; neither had a switch you could reach without a computer. The `wifi` block
   is also documented in the README config reference for the first time.
+
+### Fixed
+- **A T-Watch could be locked out of its own UI permanently.** The PIN entry screen only ever listened for
+  physical key events, and T-Watch has no keyboard or trackball compiled in — its only input device is the
+  touchscreen, which never produces them. Setting **Lock Mode → PIN** therefore produced a lock screen with no
+  way to type into it, surviving reboots, recoverable only by pulling the SD card. The same dead end sat behind
+  a single accidental side-button press once Admin was locked, which also meant the advertised T-Watch route
+  back into Admin never worked. The PIN screen now draws an on-screen keyboard on any board without physical
+  keys, and the Admin prompts (never the screen lock) can be dismissed with ESC or a Cancel button.
+- **A PIN outside 4-8 characters could brick the device.** `pin_code` and `admin_pin` were loaded from
+  `config.json` without a length check, but the entry field accepts at most 8 characters, so a longer PIN armed
+  a lock nobody could open. Both are now ignored unless they are 4-8 characters, and a `lock: pin` with no
+  usable PIN falls back to the key lock instead of silently doing nothing.
+- **Ordinary messages could be silently destroyed.** Any direct message whose last line happened to be exactly
+  eight Crockford-legal characters was parsed as an emoji reaction and dropped — no bubble, no unread badge, no
+  notification, nothing written to the SD card. A message opening with an emoji or an accented character and
+  ending in an eight-letter word was enough, and this ran even with reactions turned off. The parser now
+  requires the whole prefix to be non-ASCII and at most a few codepoints.
+- **The three newest translated strings never loaded.** The translation loader's cap was one below the number of
+  strings, so on every German, French and Italian device the last three keys in the file were silently dropped —
+  which happened to be the new per-conversation quick-reply editor's.
+- **Reactions attached to the wrong text after a retry, or on long channel messages.** A retried message went out
+  with a fresh timestamp but kept its old hash, and the local copy sampled the clock a second time rather than
+  using what actually went on the air. Channel messages were also measured without MeshCore's `<name>: ` prefix,
+  so a long one was truncated on the air while the sender's own bubble showed the full text — the two ends then
+  disagreed about what had been said. Reactions are also capped per message now, and a peer can no longer push
+  unbounded data into the list.
+- **Assorted:** `wifi.auto_update` is no longer discarded on a device that has never joined a network; the
+  Set Scope picker no longer strands an overlay on screen when you leave Settings with ESC; an abandoned
+  permission-lock dialog no longer re-appears later and can no longer be committed by accident; per-channel quick
+  replies now apply to hashtag channels whose configured name was not already normalised; blank entries in
+  `canned_messages` no longer truncate the chat picker; reaction chips now aggregate `❤️` and `❤`
+  as the same emoji instead of showing two chips and a tofu box; the config tool now validates the Admin PIN.
+
+- **The PIN editor now says what it wants.** Entering a PIN asks for it twice, but both prompts were captioned
+  identically and a mismatch silently cleared the field, so the second prompt looked like the first had been
+  rejected and a typo looked like the editor refusing everything. The second step is now captioned **Repeat PIN**,
+  a mismatch says so, and saving or clearing confirms with a toast. The title also names which PIN you are
+  setting, since there are now two.
+- **A PIN could not be cleared.** The editor used "nothing pending yet" to detect the first of the two entries,
+  which an empty PIN is indistinguishable from, so submitting an empty PIN looped forever instead of clearing it.
+- **`admin_enabled` is now actually enforced.** It was only checked on the T-Deck `0` key and the status-bar
+  gear, so on T-Watch it did nothing at all (the side button opened Admin regardless), and the Back buttons in
+  Settings, Heard Adverts and the WiFi/USB/Bluetooth screens could walk straight back into a disabled Admin.
+  All six routes are now gated in one place.
+- **A too-short PIN can no longer be saved.** Every lock path requires at least 4 characters, but the PIN editor
+  only enforced the 8-character maximum — so a shorter PIN saved happily and then did nothing, leaving Lock Mode
+  set to PIN while the trackball hold quietly engaged the key lock instead. The editor now rejects 1-3 characters
+  (clearing the PIN is still allowed), and choosing **Lock Mode → PIN** without a usable PIN opens the PIN editor
+  straight away, reverting to key lock if you leave without setting one.
+- **Failed PIN entries now back off.** A wrong PIN could previously be retried instantly, so a 4-digit code was
+  guessable at machine speed. Three wrong tries are free (fat fingers), then each further miss waits 5s, 10s,
+  30s and 60s, with the countdown shown on the lock screen and typing ignored until it clears. A correct entry
+  resets it; re-locking on auto-dim does not hand out fresh free tries. The counter is deliberately not
+  persisted: anyone who can power-cycle to clear it can equally pull the SD card and read `security.pin_code`,
+  which is stored in plain text. **SOS is unaffected** and still works while the device is PIN-locked.
 - **Status-bar menu button (T-Deck).** Optionally show a gear at the left of the status bar that opens Admin, and
   tapping it again returns home — a touch alternative to the **0** key shortcut, which nothing on screen advertised.
   It works from any screen, and is suppressed while the keypad is locked, while the map is open, or when

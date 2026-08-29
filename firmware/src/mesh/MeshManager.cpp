@@ -232,12 +232,13 @@ bool MeshManager::loginRoom(size_t roomIdx, const char* password, uint32_t& estT
     return _mesh->loginRoom(roomIdx, password ? password : "", estTimeout) != MSG_SEND_FAILED;
 }
 
-uint32_t MeshManager::sendRoomPost(size_t roomIdx, const String& text) {
+uint32_t MeshManager::sendRoomPost(size_t roomIdx, const String& text, uint32_t* outTimestamp) {
     if (!_mesh || !_radioReady) return 0;
     const auto& cfg = ConfigManager::instance().config();
     // Same timestamp policy as sendMessage/sendGroupMessage: GPS epoch when
     // synced, else millis()/1000 as a unique-per-message fallback.
     uint32_t timestamp = TimeHelper::instance().bestEpoch();
+    if (outTimestamp) *outTimestamp = timestamp;
     return _mesh->sendRoomPost(roomIdx, text.c_str(), timestamp,
                                 cfg.messaging.maxRetries);
 }
@@ -321,23 +322,25 @@ void MeshManager::update() {
     }
 }
 
-uint32_t MeshManager::sendMessage(size_t contactIndex, const String& text) {
+uint32_t MeshManager::sendMessage(size_t contactIndex, const String& text, uint32_t* outTimestamp) {
     if (!_mesh || !_radioReady) return 0;
 
     const auto& cfg = ConfigManager::instance().config();
     // Use GPS epoch time if available, otherwise millis()/1000 as unique fallback
     // (wrong date but prevents packet dedup when sending same text twice)
     uint32_t timestamp = TimeHelper::instance().bestEpoch();
+    if (outTimestamp) *outTimestamp = timestamp;
 
     return _mesh->sendDM(contactIndex, text.c_str(), timestamp,
                           cfg.messaging.maxRetries);
 }
 
-uint32_t MeshManager::sendGroupMessage(uint8_t channelIndex, const String& text) {
+uint32_t MeshManager::sendGroupMessage(uint8_t channelIndex, const String& text, uint32_t* outTimestamp) {
     if (!_mesh || !_radioReady) return 0;
 
     const auto& cfg = ConfigManager::instance().config();
     uint32_t timestamp = TimeHelper::instance().bestEpoch();
+    if (outTimestamp) *outTimestamp = timestamp;
 
     // Find the MeshCore channel index (our ChannelStore index maps to
     // the order we called addChannel during init)

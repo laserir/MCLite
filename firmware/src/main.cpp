@@ -137,8 +137,10 @@ void setup() {
     // the color in at widget-create time, so this must run before any screen).
     theme::applyThemeFromConfig();
     // Build the colour-emoji imgfonts before any screen is created, since
-    // FONT_BODY / FONT_HEADING resolve through them from here on.
-    theme::initColorEmoji();
+    // FONT_BODY / FONT_HEADING resolve through them from here on. Skipped when the
+    // feature is off so the allocation really is only paid by devices using it
+    // (the toggle reboots to apply, so this boot-time read is the whole story).
+    if (ConfigManager::instance().config().display.colorEmoji) theme::initColorEmoji();
 
     // Show custom boot text if configured (updates existing boot screen label)
     if (cfg.display.bootText.length() > 0) {

@@ -54,10 +54,15 @@ public:
     void update();       // Call from main loop (processes radio events)
 
     // Send a DM to a contact by index — returns internal packet ID
-    uint32_t sendMessage(size_t contactIndex, const String& text);
+    // outTimestamp reports the sender_timestamp that actually went on the wire.
+    // The caller must store THAT value, not a second bestEpoch() sample: the
+    // reaction hash is SHA-256(text || LE32(timestamp)), so a one-second
+    // difference between the wire and the local copy silently breaks every
+    // reaction to that message, in both directions.
+    uint32_t sendMessage(size_t contactIndex, const String& text, uint32_t* outTimestamp = nullptr);
 
     // Send a group message to a channel by index — returns internal packet ID
-    uint32_t sendGroupMessage(uint8_t channelIndex, const String& text);
+    uint32_t sendGroupMessage(uint8_t channelIndex, const String& text, uint32_t* outTimestamp = nullptr);
 
     // Set callbacks
     void onMessage(OnMessageCallback cb)      { _onMessage = cb; }
@@ -87,7 +92,7 @@ public:
 
     // Send a post to a room (by config index). Returns internal packetId, 0 on
     // failure. ACK arrives via the existing onAck/onFail callbacks.
-    uint32_t sendRoomPost(size_t roomIdx, const String& text);
+    uint32_t sendRoomPost(size_t roomIdx, const String& text, uint32_t* outTimestamp = nullptr);
 
     // Request telemetry from a contact — returns true on success
     bool requestTelemetry(size_t contactIndex, uint32_t& estTimeout);

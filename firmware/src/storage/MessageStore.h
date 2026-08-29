@@ -138,6 +138,11 @@ private:
         String  senderName;
     };
     static constexpr size_t MAX_PENDING_REACTIONS = 32;
+    // Cap reactions per message. Without it a peer can append one entry per
+    // (emoji, sender) pair forever -- every append also rewrites the whole
+    // conversation to SD -- and the list is reloaded at boot, so the growth is
+    // permanent. 16 is well past any real use of a 6-emoji picker.
+    static constexpr size_t MAX_REACTIONS_PER_MSG = 16;
     std::vector<PendingReaction> _pendingReactions;
 
     Conversation& getOrCreate(const ConvoId& id, const String& displayName,

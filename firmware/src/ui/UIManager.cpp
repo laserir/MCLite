@@ -3,6 +3,7 @@
 #include "theme.h"
 #include "ModalDialog.h"
 #include "../util/MsgHash.h"
+#include "../util/ReactionParse.h"
 #include "../mesh/MeshManager.h"
 #include "../mesh/ContactStore.h"
 #include "../mesh/ChannelStore.h"
@@ -37,37 +38,6 @@ namespace mclite {
 // Defined below; forward-declared so the telemetry-timeout path (in update())
 // can rebuild the modal body with any fallback (advert/heard) position.
 static String buildTelemText(const Contact* contact, const TelemetryData* td);
-
-// Parse a MeshCore-format reaction from incoming message text.
-// Channel/Room format: {emoji}@[{targetSenderName}]\n{8-char-crockford}
-// DM format:           {emoji}\n{8-char-crockford}
-// Returns true and fills out_emoji / out_hash if it matches. Emoji must start
-// with a non-ASCII byte so plain "text\n12345678" messages are never misidentified.
-static bool parseIncomingReaction(const String& text, bool isChannel,
-                                   String& out_emoji, String& out_hash) {
-    int nl = text.lastIndexOf('\n');
-    if (nl < 0) return false;
-    if ((int)text.length() != nl + 1 + 8) return false;
-
-    String hash = text.substring(nl + 1);
-    if (!isCrockfordB32(hash)) return false;
-
-    String prefix = text.substring(0, nl);
-    String emoji;
-    if (isChannel) {
-        int atBracket = prefix.indexOf("@[");
-        if (atBracket < 0 || !prefix.endsWith("]")) return false;
-        emoji = prefix.substring(0, atBracket);
-    } else {
-        emoji = prefix;
-    }
-    // Emoji must start with a non-ASCII byte (all real emoji are non-ASCII in UTF-8)
-    if (emoji.length() == 0 || (uint8_t)emoji[0] < 0x80) return false;
-
-    out_emoji = emoji;
-    out_hash  = normalizeCrockford(hash);
-    return true;
-}
 
 UIManager& UIManager::instance() {
     static UIManager inst;
@@ -777,11 +747,23 @@ void UIManager::refreshConvoList() {
     if (_currentScreen == Screen::CONVO_LIST) _convoList.refresh();
 }
 
+// Channels pay for MeshCore's "<sender>: " prefix out of the same MAX_TEXT_LEN
+// budget (BaseChatMesh::sendGroup truncates text_len to MAX_TEXT_LEN - prefix_len).
+// Charging it here instead means the user is told the message is too long, rather
+// than the radio quietly dropping the tail: the sender's own bubble would show
+// text that was never delivered, the receiver would store and hash a different
+// string (so reactions miss), and the cut can land mid-UTF-8-sequence.
+size_t UIManager::maxMsgBytesFor(const ConvoId& id) {
+    if (id.type != ConvoId::CHANNEL) return defaults::MAX_MSG_BYTES;
+    const size_t prefix = ConfigManager::instance().config().deviceName.length() + 2;  // "name: "
+    return prefix < defaults::MAX_MSG_BYTES ? defaults::MAX_MSG_BYTES - prefix : 0;
+}
+
 uint32_t UIManager::handleSend(const ConvoId& id, const String& text) {
     // Defensive byte-length guard (ChatScreen guards user-typed text first; this
     // also covers the location-send path). String::length() is the UTF-8 byte
     // count — over budget would fail in MeshCore and leave a silent FAILED bubble.
-    if (text.length() > defaults::MAX_MSG_BYTES) {
+    if (text.length() > maxMsgBytesFor(id)) {
         showToast(t("msg_too_long"));
         return 0;
     }
@@ -789,6 +771,11 @@ uint32_t UIManager::handleSend(const ConvoId& id, const String& text) {
     uint32_t packetId = 0;
     bool isDM   = (id.type == ConvoId::DM);
     bool isRoom = (id.type == ConvoId::ROOM);
+    // Capture the timestamp that actually goes on the wire. Sampling bestEpoch()
+    // again below would give a different value whenever the send straddles a
+    // second boundary, and the stored reaction hash would then never match the
+    // one a peer computes. Falls back to a fresh sample only if nothing was sent.
+    uint32_t wireTimestamp = 0;
 
     if (isDM) {
         // Find contact index
@@ -796,7 +783,7 @@ uint32_t UIManager::handleSend(const ConvoId& id, const String& text) {
         for (size_t i = 0; i < contacts.count(); i++) {
             const auto* c = contacts.findByIndex(i);
             if (c && c->shortId() == id.id) {
-                packetId = MeshManager::instance().sendMessage(i, text);
+                packetId = MeshManager::instance().sendMessage(i, text, &wireTimestamp);
                 break;
             }
         }
@@ -807,7 +794,7 @@ uint32_t UIManager::handleSend(const ConvoId& id, const String& text) {
             if (rooms[i].publicKey.length() != 64) continue;
             // Compare first 8 bytes (16 hex chars) to room shortId
             if (rooms[i].publicKey.substring(0, 16) == id.id) {
-                packetId = MeshManager::instance().sendRoomPost(i, text);
+                packetId = MeshManager::instance().sendRoomPost(i, text, &wireTimestamp);
                 break;
             }
         }
@@ -815,7 +802,7 @@ uint32_t UIManager::handleSend(const ConvoId& id, const String& text) {
         // Find channel index
         auto* ch = ChannelStore::instance().findByName(id.id);
         if (ch) {
-            packetId = MeshManager::instance().sendGroupMessage(ch->index, text);
+            packetId = MeshManager::instance().sendGroupMessage(ch->index, text, &wireTimestamp);
         }
     }
 
@@ -840,7 +827,8 @@ uint32_t UIManager::handleSend(const ConvoId& id, const String& text) {
     Message msg;
     msg.fromSelf  = true;
     msg.text      = text;
-    msg.timestamp = TimeHelper::instance().bestEpoch();
+    msg.timestamp = wireTimestamp ? wireTimestamp
+                                  : TimeHelper::instance().bestEpoch();
     msg.status    = initialStatus;
     msg.packetId  = packetId;
 
@@ -1057,12 +1045,13 @@ void UIManager::handleRetry(const ConvoId& id, const String& text, uint32_t oldP
 
     // Re-send via MeshManager — match the original send path by convo type
     uint32_t newPacketId = 0;
+    uint32_t wireTimestamp = 0;   // the retry goes out with a FRESH timestamp
     if (id.type == ConvoId::DM) {
         auto& contacts = ContactStore::instance();
         for (size_t i = 0; i < contacts.count(); i++) {
             const auto* c = contacts.findByIndex(i);
             if (c && c->shortId() == id.id) {
-                newPacketId = MeshManager::instance().sendMessage(i, text);
+                newPacketId = MeshManager::instance().sendMessage(i, text, &wireTimestamp);
                 break;
             }
         }
@@ -1071,7 +1060,7 @@ void UIManager::handleRetry(const ConvoId& id, const String& text, uint32_t oldP
         for (size_t i = 0; i < cfgRooms.size() && i < MAX_ROOMS; i++) {
             if (cfgRooms[i].publicKey.length() == 64 &&
                 cfgRooms[i].publicKey.substring(0, 16) == id.id) {
-                newPacketId = MeshManager::instance().sendRoomPost(i, text);
+                newPacketId = MeshManager::instance().sendRoomPost(i, text, &wireTimestamp);
                 break;
             }
         }
@@ -1079,9 +1068,17 @@ void UIManager::handleRetry(const ConvoId& id, const String& text, uint32_t oldP
 
     if (newPacketId == 0) return;
 
-    // Update the existing failed message in-place
+    // Update the existing failed message in-place. The timestamp and hash must
+    // move with it: the resend carries a new sender_timestamp, and the peer will
+    // store and hash THAT. Keeping the original values here would leave the two
+    // ends hashing different inputs, so every reaction to this message would miss
+    // in both directions -- silently, since a failed hash lookup just queues.
     target->packetId = newPacketId;
     target->status = MessageStatus::SENDING;
+    if (wireTimestamp) {
+        target->timestamp = wireTimestamp;
+        target->msgHash   = computeMsgHash(target->text, wireTimestamp);
+    }
     MessageStore::instance().saveHistory(id);
 
     _chatScreen.refresh();
@@ -1505,6 +1502,40 @@ void UIManager::showPinLock(PinPurpose purpose) {
     lv_obj_set_style_text_color(_pinStatus, theme::TEXT_SECONDARY(), 0);
     lv_label_set_text(_pinStatus, t("pin_hint"));
 
+    // Cancel, for the admin prompts only. The screen lock must stay uncancellable,
+    // but AdminUnlock is reached by a single '0' press (T-Deck) or side-button
+    // press (T-Watch), so without an exit an accidental press traps the whole UI
+    // until a power cycle -- and an incoming SOS alert would be unreadable behind
+    // this opaque overlay. Deliberately NOT added to _pinGroup (touch-only
+    // buttons in the encoder group break the refocus chain).
+    if (purpose != PinPurpose::ScreenUnlock) {
+        lv_obj_t* cancelBtn = lv_btn_create(_pinOverlay);
+        lv_obj_set_style_bg_color(cancelBtn, theme::BG_SECONDARY(), 0);
+        lv_obj_set_style_shadow_width(cancelBtn, 0, 0);
+        lv_obj_set_ext_click_area(cancelBtn, 8);
+        lv_obj_add_event_cb(cancelBtn, pinCancelCb, LV_EVENT_CLICKED, this);
+        lv_obj_t* cancelLbl = lv_label_create(cancelBtn);
+        lv_obj_set_style_text_font(cancelLbl, FONT_BODY, 0);
+        lv_obj_set_style_text_color(cancelLbl, theme::TEXT_PRIMARY(), 0);
+        lv_label_set_text(cancelLbl, t("btn_cancel"));
+        lv_obj_center(cancelLbl);
+    }
+
+    // On a board with no physical keyboard the only indev is a touch POINTER,
+    // which never emits LV_EVENT_KEY -- so without this the overlay has no input
+    // path at all and arming a PIN lock bricks the device until the SD card is
+    // pulled. Full alphanumeric rather than a numeric pad: pin_code accepts
+    // letters (onPinKey below), and a numeric-only pad would strand anyone who
+    // set one through the Settings editor.
+    if (!IInput::instance().has(InputCapability::Keyboard)) {
+        _pinKeypad = lv_keyboard_create(_pinOverlay);
+        lv_keyboard_set_mode(_pinKeypad, LV_KEYBOARD_MODE_TEXT_LOWER);
+        lv_keyboard_set_textarea(_pinKeypad, NULL);   // we own the buffer, not a textarea
+        lv_obj_set_width(_pinKeypad, LV_PCT(100));
+        lv_obj_set_height(_pinKeypad, LV_PCT(45));
+        lv_obj_add_event_cb(_pinKeypad, pinKeypadCb, LV_EVENT_VALUE_CHANGED, this);
+    }
+
     // Use a dedicated group so trackball/keyboard can't focus away from the overlay
     _pinGroup = lv_group_create();
     lv_obj_add_flag(_pinOverlay, LV_OBJ_FLAG_CLICKABLE);
@@ -1520,6 +1551,31 @@ void UIManager::pinKeyCb(lv_event_t* e) {
     UIManager* self = static_cast<UIManager*>(lv_event_get_user_data(e));
     uint32_t key = lv_event_get_key(e);
     self->onPinKey(key);
+}
+
+// Translate an on-screen keypad press into the same key codes the physical
+// keyboard produces, so onPinKey() stays the single place that knows the rules.
+void UIManager::pinKeypadCb(lv_event_t* e) {
+    UIManager* self = static_cast<UIManager*>(lv_event_get_user_data(e));
+    lv_obj_t*  kb   = lv_event_get_target(e);
+    uint16_t   id   = lv_btnmatrix_get_selected_btn(kb);
+    if (id == LV_BTNMATRIX_BTN_NONE) return;
+    const char* txt = lv_btnmatrix_get_btn_text(kb, id);
+    if (!txt) return;
+    if (!strcmp(txt, LV_SYMBOL_BACKSPACE)) { self->onPinKey(LV_KEY_BACKSPACE); return; }
+    if (!strcmp(txt, LV_SYMBOL_NEW_LINE) ||
+        !strcmp(txt, LV_SYMBOL_OK))        { self->onPinKey(LV_KEY_ENTER);     return; }
+    if (!strcmp(txt, LV_SYMBOL_KEYBOARD) ||
+        !strcmp(txt, LV_SYMBOL_CLOSE))     { self->onPinKey(LV_KEY_ESC);       return; }
+    // Single ASCII character. The mode-switch keys ("abc"/"ABC"/"1#") and the
+    // multi-byte LV_SYMBOLs are all longer than one byte, so this skips them and
+    // lv_keyboard's own handler deals with the mode changes.
+    if (txt[0] && !txt[1]) self->onPinKey((uint8_t)txt[0]);
+}
+
+void UIManager::pinCancelCb(lv_event_t* e) {
+    UIManager* self = static_cast<UIManager*>(lv_event_get_user_data(e));
+    self->onPinKey(LV_KEY_ESC);
 }
 
 // Seconds left on the failed-PIN backoff, 0 when free. Rollover-safe: compares
@@ -1544,6 +1600,14 @@ void UIManager::onPinKey(uint32_t key) {
     _lastActivity = millis();
 
     const auto& cfg = ConfigManager::instance().config();
+
+    if (key == LV_KEY_ESC) {
+        // Screen unlock is deliberately not cancellable -- that is the whole point
+        // of it. The admin prompts are, per the feature's design: typing the PIN
+        // arms the action, anything else backs out.
+        if (_pinPurpose != PinPurpose::ScreenUnlock) dismissPinLock();
+        return;
+    }
 
     if (key == LV_KEY_BACKSPACE || key == LV_KEY_DEL) {
         if (_pinBuffer.length() > 0) {
@@ -1577,14 +1641,17 @@ void UIManager::onPinKey(uint32_t key) {
             auto& mgr = ConfigManager::instance();
             if (done == PinPurpose::AdminUnlock) {
                 mgr.config().security.adminEnabled = true;   // permanent re-enable
-                mgr.save();
+                // A failed write leaves the change in RAM only, so Admin would be
+                // locked again after the next reboot. Say so rather than claiming
+                // success.
+                if (!mgr.save()) showToast(t("err_save_failed"));
                 // Say so explicitly: the lock is now OFF and stays off until it is
                 // locked again, which is not obvious from Admin simply opening.
                 showToast(t("admin_unlocked"));
                 showScreen(Screen::ADMIN);
             } else if (done == PinPurpose::ConfirmAdminLock) {
                 mgr.config().security.adminEnabled = false;  // typing the PIN is the confirmation
-                mgr.save();
+                if (!mgr.save()) showToast(t("err_save_failed"));
                 showToast(t("admin_locked"));
                 goHome();
             }
@@ -1653,6 +1720,7 @@ void UIManager::dismissPinLock() {
         _pinOverlay = nullptr;
         _pinDots = nullptr;
         _pinStatus = nullptr;
+        _pinKeypad = nullptr;   // child of the overlay, already deleted with it
     }
     if (_pinGroup) {
         lv_group_del(_pinGroup);

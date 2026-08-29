@@ -22,7 +22,11 @@ private:
     // Must stay above the number of keys in the largest SD lang file (~268 today).
     // When exceeded, the loader silently truncates and every key past the cap
     // falls back to English — keep generous headroom as strings are added.
-    static constexpr size_t MAX_STRINGS = 320;
+    // Must stay above the DEFAULT_STRINGS count (323 today). The loader drops
+    // everything past this cap, so an undersized value silently leaves the last
+    // keys in file order untranslated -- exactly what happened when the count
+    // grew past 320. Headroom is cheap: sizeof(Entry) bytes of .bss per slot.
+    static constexpr size_t MAX_STRINGS = 400;
 
     struct Entry { const char* key; const char* value; };
     Entry _entries[MAX_STRINGS];

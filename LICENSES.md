@@ -33,6 +33,7 @@ MCLite uses the following open-source libraries. Their license terms apply to th
 | Asset | License | Copyright |
 |-------|---------|-----------|
 | [OpenMoji](https://openmoji.org/) emoji font (monochrome subset, `firmware/src/ui/fonts/emoji_font_*.c`) | CC-BY-SA 4.0 | (c) OpenMoji project (HfG Schwaebisch Gmuend) |
+| [OpenMoji](https://openmoji.org/) colour glyphs (`firmware/src/ui/fonts/emoji_color_*.c`, source PNGs in `firmware/assets/fonts/.openmoji-cache/`) | CC-BY-SA 4.0 | (c) OpenMoji project (HfG Schwaebisch Gmuend) |
 
 ## License Notes
 
@@ -40,7 +41,11 @@ MCLite uses the following open-source libraries. Their license terms apply to th
 - **Apache-2.0-licensed** libraries (PNGdec) are used under the terms of the Apache License 2.0.
 - **Zlib-licensed** libraries (orlp/ed25519) are used under the terms of the Zlib license.
 - **LGPL-2.1-licensed** libraries (TinyGPSPlus, Arduino ESP32 core) are dynamically linked. Users may replace them by rebuilding with PlatformIO.
-- The **OpenMoji** emoji glyphs (embedded as generated LVGL fonts) are used under **CC-BY-SA 4.0** with
-  attribution to the OpenMoji project. Only a monochrome subset is included; see
-  `firmware/assets/fonts/generate_emoji_fonts.sh`.
+- The **OpenMoji** emoji glyphs are used under **CC-BY-SA 4.0** with attribution to the OpenMoji project.
+  Two subsets are included, both generated rather than hand-edited:
+  - a monochrome subset embedded as LVGL fonts, see `firmware/assets/fonts/generate_emoji_fonts.sh`;
+  - a 34-glyph colour subset embedded as LVGL images, see `firmware/assets/fonts/generate_color_emoji.py`.
+  The colour subset's original PNGs are also checked in under `firmware/assets/fonts/.openmoji-cache/`, so the
+  generated output is reproducible offline. That directory is redistributed OpenMoji artwork, under the same
+  CC-BY-SA 4.0 terms.
 - MCLite itself is released under the **MIT License**. See [LICENSE](LICENSE).

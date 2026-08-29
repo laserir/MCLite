@@ -2982,9 +2982,9 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
         </select>
         <div class="hint collapsible">Press 0 on home screen to view device info. Disable to hide admin access. With an Admin PIN set, pressing 0 (T-Deck) or the side button (T-Watch) asks for that PIN and re-enables admin.</div>
       </div>
-      <div class="field">
+      <div class="field" id="adminPinField">
         <label>Admin PIN<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-        <input type="text" id="adminPin" maxlength="8" placeholder="(none)">
+        <input type="text" id="adminPin" maxlength="8" placeholder="(none)" pattern="[a-zA-Z0-9]*">
         <div class="hint collapsible">4-8 characters, separate from the screen-lock PIN. Re-enables the Admin screen after it has been locked from the device. Leave empty for none &mdash; then a locked device can only be recovered by editing this file on the SD card. Stored in plain text, like the screen PIN.</div>
       </div>
     </div>
@@ -4009,6 +4009,19 @@ function validate() {
     }
   } else {
     pinField.classList.remove('invalid');
+  }
+
+  // Admin PIN is optional, but if set it must be something the device can accept:
+  // the firmware ignores anything outside 4-8 chars, and the on-device keypad only
+  // produces [0-9a-zA-Z]. An unenterable admin PIN means a device that can be
+  // locked out of Admin with no way back except editing this file.
+  const adminPin = document.getElementById('adminPin').value;
+  const adminPinField = document.getElementById('adminPinField');
+  if (adminPin && !/^[a-zA-Z0-9]{4,8}$/.test(adminPin)) {
+    adminPinField.classList.add('invalid');
+    issues.push('Admin PIN must be 4-8 alphanumeric characters (or empty for none)');
+  } else {
+    adminPinField.classList.remove('invalid');
   }
 
   // Contact/channel count limits (must match firmware MAX_CONTACTS/MAX_GROUP_CHANNELS)

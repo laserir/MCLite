@@ -117,6 +117,11 @@ public:
     void dismissPinLock();
     bool isLocked() const { return _isLocked; }
 
+    // Byte budget for one outgoing message in this conversation. Channels get
+    // less: MeshCore prepends "<deviceName>: " to a group post and then truncates
+    // at MAX_TEXT_LEN, so the prefix has to come out of our budget.
+    static size_t maxMsgBytesFor(const ConvoId& id);
+
     // Key lock (lightweight input lock — no PIN required)
     void engageKeyLock();
     void disengageKeyLock();
@@ -218,6 +223,9 @@ private:
     lv_obj_t*  _pinOverlay  = nullptr;
     lv_obj_t*  _pinDots     = nullptr;
     lv_obj_t*  _pinStatus   = nullptr;
+    // On-screen keypad, built only on boards with no physical keyboard. Child of
+    // _pinOverlay, so it dies with it; the pointer is just cleared on teardown.
+    lv_obj_t*  _pinKeypad   = nullptr;
     lv_group_t* _pinGroup   = nullptr;
     String    _pinBuffer;
     // Failed-PIN backoff. Deliberately RAM-only: anyone who can power-cycle to
@@ -237,6 +245,8 @@ private:
     uint32_t  pinWaitRemaining() const;   // seconds left, 0 if not waiting
     void onPinKey(uint32_t key);
     static void pinKeyCb(lv_event_t* e);
+    static void pinKeypadCb(lv_event_t* e);   // on-screen keypad -> onPinKey
+    static void pinCancelCb(lv_event_t* e);   // touch Cancel on the admin prompts
     void checkWake();  // Wake display on any input while dimmed
 
     // Key lock state

@@ -311,6 +311,9 @@ bool MessageStore::applyReaction(const ConvoId& id, const String& targetHash,
                 for (const auto& r : msg.reactions) {
                     if (r.emoji == emoji && r.senderName == senderName) return true;
                 }
+                // Drop rather than grow without bound; treat it as handled so the
+                // sender is not queued for retry.
+                if (msg.reactions.size() >= MAX_REACTIONS_PER_MSG) return true;
                 msg.reactions.push_back({emoji, senderName});
                 saveHistory(id);
                 return true;

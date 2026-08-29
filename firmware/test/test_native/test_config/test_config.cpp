@@ -136,6 +136,108 @@ void test_admin_pin_independent_of_screen_pin() {
     TEST_ASSERT_EQUAL_STRING("9876", cfg->config().security.adminPin.c_str());
 }
 
+// ─── PIN length validation on load ───────────────────────────────────────────
+// The entry overlay accepts at most 8 characters and the compare requires at
+// least 4, but the engage guards only check ">= 4". A PIN outside 4-8 in
+// config.json would therefore arm a lock that can never be opened -- permanently,
+// across reboots, recoverable only by editing the SD card. Hand-editing
+// config.json is a supported workflow, so the guard has to live here too.
+
+void test_overlong_pin_is_rejected() {
+    parse("{\"security\":{\"lock\":\"pin\",\"pin_code\":\"correcthorse\"}}");
+    TEST_ASSERT_EQUAL_STRING("", cfg->config().security.pinCode.c_str());
+}
+
+void test_too_short_pin_is_rejected() {
+    parse("{\"security\":{\"lock\":\"pin\",\"pin_code\":\"12\"}}");
+    TEST_ASSERT_EQUAL_STRING("", cfg->config().security.pinCode.c_str());
+}
+
+void test_valid_pin_lengths_survive() {
+    parse("{\"security\":{\"pin_code\":\"1234\"}}");
+    TEST_ASSERT_EQUAL_STRING("1234", cfg->config().security.pinCode.c_str());
+    parse("{\"security\":{\"pin_code\":\"12345678\"}}");
+    TEST_ASSERT_EQUAL_STRING("12345678", cfg->config().security.pinCode.c_str());
+}
+
+// A lock mode that needs a PIN, with no usable PIN, is a lock that silently does
+// nothing. Fall back to the key lock so the user's intent survives.
+void test_pin_lock_without_usable_pin_falls_back_to_key() {
+    parse("{\"security\":{\"lock\":\"pin\",\"auto_lock\":\"pin\",\"pin_code\":\"12\"}}");
+    TEST_ASSERT_EQUAL_STRING("key", cfg->config().security.lockMode.c_str());
+    TEST_ASSERT_EQUAL_STRING("key", cfg->config().security.autoLock.c_str());
+}
+
+void test_pin_lock_with_usable_pin_is_kept() {
+    parse("{\"security\":{\"lock\":\"pin\",\"pin_code\":\"1234\"}}");
+    TEST_ASSERT_EQUAL_STRING("pin", cfg->config().security.lockMode.c_str());
+}
+
+void test_overlong_admin_pin_is_rejected() {
+    parse("{\"security\":{\"admin_enabled\":false,\"admin_pin\":\"123456789\"}}");
+    TEST_ASSERT_EQUAL_STRING("", cfg->config().security.adminPin.c_str());
+}
+
+void test_too_short_admin_pin_is_rejected() {
+    parse("{\"security\":{\"admin_pin\":\"12\"}}");
+    TEST_ASSERT_EQUAL_STRING("", cfg->config().security.adminPin.c_str());
+}
+
+// ─── wifi.auto_update ────────────────────────────────────────────────────────
+// Its switch is reachable before any network is joined, so gating the whole wifi
+// block on the SSID silently discarded the setting on the next save.
+void test_auto_update_persists_without_ssid() {
+    parse("{\"wifi\":{\"auto_update\":true}}");
+    TEST_ASSERT_TRUE(cfg->config().wifi.autoUpdate);
+    String json = cfg->toJson();
+    cfg->config() = AppConfig{};
+    cfg->parseJson(json);
+    TEST_ASSERT_TRUE(cfg->config().wifi.autoUpdate);
+}
+
+void test_auto_update_round_trips_with_ssid() {
+    parse("{\"wifi\":{\"ssid\":\"net\",\"password\":\"pw\",\"auto_update\":true}}");
+    String json = cfg->toJson();
+    cfg->config() = AppConfig{};
+    cfg->parseJson(json);
+    TEST_ASSERT_TRUE(cfg->config().wifi.autoUpdate);
+    TEST_ASSERT_EQUAL_STRING("net", cfg->config().wifi.ssid.c_str());
+}
+
+// Default false, and not written out when it is the default and there is no SSID.
+void test_auto_update_defaults_false() {
+    parse("{}");
+    TEST_ASSERT_FALSE(cfg->config().wifi.autoUpdate);
+    String json = cfg->toJson();
+    TEST_ASSERT_NULL(strstr(json.c_str(), "auto_update"));
+}
+
+// ─── messaging.reactions ─────────────────────────────────────────────────────
+void test_reactions_defaults_false() {
+    parse("{}");
+    TEST_ASSERT_FALSE(cfg->config().messaging.reactions);
+}
+
+void test_reactions_round_trips() {
+    parse("{\"messaging\":{\"reactions\":true}}");
+    TEST_ASSERT_TRUE(cfg->config().messaging.reactions);
+    String json = cfg->toJson();
+    cfg->config() = AppConfig{};
+    cfg->parseJson(json);
+    TEST_ASSERT_TRUE(cfg->config().messaging.reactions);
+}
+
+// ─── canned messages ─────────────────────────────────────────────────────────
+// LVGL treats the first empty string in a btnmatrix map as the map terminator, so
+// one blank entry silently truncated the chat picker while Settings showed them all.
+void test_blank_canned_entries_are_dropped() {
+    parse("{\"messaging\":{\"canned_messages\":[\"OK\",\"\",\"Copy\"]}}");
+    TEST_ASSERT_TRUE(cfg->config().messaging.cannedMessages);
+    TEST_ASSERT_EQUAL(2, cfg->config().messaging.cannedCustom.size());
+    TEST_ASSERT_EQUAL_STRING("OK", cfg->config().messaging.cannedCustom[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("Copy", cfg->config().messaging.cannedCustom[1].c_str());
+}
+
 void test_permissions_default_full() {
     TEST_ASSERT_TRUE(parse("{}"));
     TEST_ASSERT_EQUAL_STRING("full", cfg->config().permissions.settings.c_str());
@@ -1370,6 +1472,19 @@ int main() {
 
     // permissions
     RUN_TEST(test_admin_enabled_defaults_true);
+    RUN_TEST(test_overlong_pin_is_rejected);
+    RUN_TEST(test_too_short_pin_is_rejected);
+    RUN_TEST(test_valid_pin_lengths_survive);
+    RUN_TEST(test_pin_lock_without_usable_pin_falls_back_to_key);
+    RUN_TEST(test_pin_lock_with_usable_pin_is_kept);
+    RUN_TEST(test_overlong_admin_pin_is_rejected);
+    RUN_TEST(test_too_short_admin_pin_is_rejected);
+    RUN_TEST(test_auto_update_persists_without_ssid);
+    RUN_TEST(test_auto_update_round_trips_with_ssid);
+    RUN_TEST(test_auto_update_defaults_false);
+    RUN_TEST(test_reactions_defaults_false);
+    RUN_TEST(test_reactions_round_trips);
+    RUN_TEST(test_blank_canned_entries_are_dropped);
     RUN_TEST(test_admin_pin_defaults_empty);
     RUN_TEST(test_admin_lockout_round_trips);
     RUN_TEST(test_admin_pin_omitted_when_empty);

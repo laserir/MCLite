@@ -85,6 +85,18 @@ public:
     bool startsWith(const char* prefix) const {
         return _str.rfind(prefix, 0) == 0;
     }
+    bool endsWith(const char* suffix) const {
+        size_t n = std::strlen(suffix);
+        return _str.length() >= n && _str.compare(_str.length() - n, n, suffix) == 0;
+    }
+    int lastIndexOf(char c) const {
+        auto pos = _str.rfind(c);
+        return pos == std::string::npos ? -1 : (int)pos;
+    }
+    int lastIndexOf(const char* s) const {
+        auto pos = _str.rfind(s);
+        return pos == std::string::npos ? -1 : (int)pos;
+    }
 
     String substring(size_t from) const {
         if (from >= _str.length()) return String();

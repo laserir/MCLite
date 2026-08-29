@@ -106,8 +106,8 @@ struct MessagingConfig {
     bool     allowMute        = false;   // Allow per-chat mute via long-press (off by default)
     bool     autoTelemetry    = false;   // Periodically auto-refresh contacts' GPS via telemetry (opt-in, default off)
     bool     shareContact     = true;    // Show the chat-header Share button (re-broadcast a contact's advert)
-    bool     showHopCount     = false;
-    bool     reactions        = false;  // Emoji reactions on chat bubbles   // Show received-message hop count (xN) in the chat bubble (default off)
+    bool     showHopCount     = false;   // Show received-message hop count (xN) in the chat bubble (default off)
+    bool     reactions        = false;   // Emoji reactions on chat bubbles (MeshCore One interop)
 };
 
 struct BatteryConfig {

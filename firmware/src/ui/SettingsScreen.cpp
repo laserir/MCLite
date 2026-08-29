@@ -1162,10 +1162,16 @@ void SettingsScreen::openButtonModal(ConvoModal purpose) {
             // Row actions: per-section action at idx 0 (Reset Path for contacts,
             // Set Scope for channels/rooms), Quick Replies at idx 1, Delete at
             // idx 2, Cancel last. deleteIdx below MUST track this ordering.
-            if (_section == SettingsSection::Contacts)
-                g_btnModalLabels = { t("convo_reset_path"), t("sec_canned_messages_t"), t("btn_delete"), t("btn_cancel") };
+            // Quick Replies is omitted when canned messages are off -- the chat
+            // picker is not built in that case, so an edit here could never show
+            // up. onConvoModalChoice derives its indices from the same flag.
+            const bool cannedOn = ConfigManager::instance().config().messaging.cannedMessages;
+            const char* action = (_section == SettingsSection::Contacts) ? t("convo_reset_path")
+                                                                        : t("convo_set_scope");
+            if (cannedOn)
+                g_btnModalLabels = { action, t("sec_canned_messages_t"), t("btn_delete"), t("btn_cancel") };
             else
-                g_btnModalLabels = { t("convo_set_scope"), t("sec_canned_messages_t"), t("btn_delete"), t("btn_cancel") };
+                g_btnModalLabels = { action, t("btn_delete"), t("btn_cancel") };
             break;
         }
         case ConvoModal::RebootConfirm:
@@ -1232,6 +1238,14 @@ void SettingsScreen::applyPendingPermission() {
 }
 
 void SettingsScreen::hideButtonModal() {
+    // Closing the dialog any other way than Lock/Cancel (ESC out of Settings, a
+    // screen change) must discard the pending change. Leaving it set meant
+    // hideChoicePicker() would later re-raise the confirm dialog -- so a user who
+    // abandoned a tightening could be handed it again after merely *loosening*
+    // something else, and commit it by accident.
+    _permPending = PermField::None;
+    _permPendingValue = "";
+
     if (!_convoModalBtnm) return;
     ModalDialog::close(_convoModalBtnm);
     _convoModalBtnm = nullptr;
@@ -1279,7 +1293,7 @@ void SettingsScreen::onConvoModalChoice(lv_obj_t* dlg, int idxIn) {
         const bool isRoom    = self->_section == SettingsSection::Rooms;
 
         // idx 0 is the per-section action (Reset Path for contacts; Set Scope for channels/rooms),
-        // then Delete, then Cancel — so Delete is always idx 1.
+        // then Delete, then Cancel — so Delete is always idx 2 (see deleteIdx below).
         if (isContact && idx == 0) {                    // Reset Path
             if (i < c.contacts.size()) {
                 String b64 = c.contacts[i].publicKey;
@@ -1300,7 +1314,10 @@ void SettingsScreen::onConvoModalChoice(lv_obj_t* dlg, int idxIn) {
             return;
         }
 
-        if (idx == 1) {                                 // Quick Replies (per-conversation)
+        // Layout must match the label list built in openButtonModal(): with canned
+        // messages off there is no Quick Replies row, so Delete moves up one.
+        const bool cannedOn = ConfigManager::instance().config().messaging.cannedMessages;
+        if (cannedOn && idx == 1) {                     // Quick Replies (per-conversation)
             CannedTarget t = isContact ? CannedTarget::Contact
                            : isChannel ? CannedTarget::Channel
                                        : CannedTarget::Room;
@@ -1313,9 +1330,9 @@ void SettingsScreen::onConvoModalChoice(lv_obj_t* dlg, int idxIn) {
             return;
         }
 
-        // Delete moved from idx 1 to idx 2 when Quick Replies was inserted above.
+        // Delete sits after the per-section action and (when present) Quick Replies.
         // Getting this wrong makes the Quick Replies button delete the row.
-        const size_t deleteIdx = 2;
+        const size_t deleteIdx = cannedOn ? 2 : 1;
         if (idx != deleteIdx) { lv_async_call([](void* p){ ((SettingsScreen*)p)->show(); }, self); return; }  // Cancel
         bool ok = false;
         if (self->_section == SettingsSection::Contacts && i < c.contacts.size()) {
@@ -1673,6 +1690,7 @@ void SettingsScreen::hide() {
 
         if (_themeBtnm) hideThemePicker();
         if (_nameTextarea) hideNameEditor();
+        if (_scopeRollerPanel) hideScopeRoller();
         if (_scopeTextarea) hideScopeEditor();
         if (_langBtnm) hideLanguagePicker();
         if (_lockModeBtnm) hideLockModePicker();
@@ -3022,8 +3040,12 @@ void SettingsScreen::nameRowCb(lv_event_t* e) {
 void SettingsScreen::hideScopeEditor() {
     if (!_scopeTextarea) return;
     // Drop any pending scope-list request state (#45) so a late reply is ignored once
-    // the editor (and its group) are gone. No dialog is up here — the picker modals hold
-    // input focus while open, so hide can only run with the plain editor showing.
+    // the editor (and its group) are gone. The dialog CAN be up here: the ESC path
+    // polls the hardware key directly (main.cpp handleKeyShortcuts) and is not
+    // blocked by an open modal, so pressing ESC while "requesting..." is showing
+    // reaches hide(). Closing it rather than just forgetting the pointer is what
+    // keeps it from being orphaned on screen for the rest of the session.
+    if (_scopeReqDialog) ModalDialog::close(_scopeReqDialog);
     _scopeReqDialog = nullptr;
     _scopeReqExpiry = 0;
     UIManager::instance().restoreFromModalGroup();
