@@ -8,9 +8,11 @@ falling back to those mono fonts, so nothing renders blank.
 
   source : OpenMoji colour PNGs (CC-BY-SA 4.0) — same project as the mono font,
            so the existing attribution in LICENSES.md still covers this.
-  format : LV_IMG_CF_TRUE_COLOR_ALPHA, RGB565 little-endian + 8-bit alpha,
-           emitted as [lo, hi, alpha] triples. Assumes LV_COLOR_DEPTH 16 and
-           LV_COLOR_16_SWAP 0 (both true for this build).
+  format : LV_IMG_CF_TRUE_COLOR_ALPHA, RGB565 + 8-bit alpha. Byte order follows
+           LV_COLOR_16_SWAP, which is READ OUT OF firmware/lv_conf.h rather than
+           assumed -- this build sets it to 1, so pixels are [hi, lo, alpha].
+           Getting this backwards compiles and runs fine but renders the colours
+           mangled, so the value is parsed, not hardcoded.
   sizes  : T-Deck 12/14 px, T-Watch 16/20 px — matching FONT_BODY / FONT_HEADING
            in theme.h. imgfont glyphs do NOT scale with the text, so each size
            needs its own baked set.
@@ -26,6 +28,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.normpath(os.path.join(HERE, "..", "..", "src", "ui", "fonts"))
 CHAT = os.path.normpath(os.path.join(HERE, "..", "..", "src", "ui", "ChatScreen.cpp"))
 CACHE = os.path.join(HERE, ".openmoji-cache")
+LV_CONF = os.path.normpath(os.path.join(HERE, "..", "..", "lv_conf.h"))
 URL = "https://raw.githubusercontent.com/hfg-gmuend/openmoji/master/color/72x72/{cp}.png"
 
 # size -> the platform whose FONT_BODY/FONT_HEADING use it (see theme.h)
@@ -53,6 +56,21 @@ def codepoints_from_source():
     return sorted(out)
 
 
+def color_16_swap():
+    """LV_COLOR_16_SWAP from lv_conf.h. Decides RGB565 byte order in the output."""
+    src = io.open(LV_CONF, encoding="utf-8").read()
+    m = re.search(r"^\s*#define\s+LV_COLOR_16_SWAP\s+(\d+)", src, re.M)
+    if not m:
+        sys.exit("could not read LV_COLOR_16_SWAP from " + LV_CONF)
+    d = re.search(r"^\s*#define\s+LV_COLOR_DEPTH\s+(\d+)", src, re.M)
+    if not d or d.group(1) != "16":
+        sys.exit("this generator only emits RGB565; LV_COLOR_DEPTH is not 16")
+    return int(m.group(1))
+
+
+SWAP = color_16_swap()
+
+
 def fetch(cp):
     os.makedirs(CACHE, exist_ok=True)
     path = os.path.join(CACHE, f"{cp:04X}.png")
@@ -64,7 +82,7 @@ def fetch(cp):
 
 
 def bake(png_path, px):
-    """Autocrop, scale to fit, bottom-align, emit [lo, hi, alpha] per pixel."""
+    """Autocrop, scale to fit, bottom-align, emit RGB565 + alpha per pixel."""
     from PIL import Image
     img = Image.open(png_path).convert("RGBA")
     bbox = img.split()[3].getbbox()          # trim transparent margin
@@ -79,7 +97,8 @@ def bake(png_path, px):
     out = bytearray()
     for (r, g, b, a) in list(canvas.getdata()):
         v = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
-        out += bytes((v & 0xFF, (v >> 8) & 0xFF, a))
+        hi, lo = (v >> 8) & 0xFF, v & 0xFF
+        out += bytes((hi, lo, a) if SWAP else (lo, hi, a))
     return bytes(out)
 
 

@@ -50,22 +50,46 @@ static bool colorEmojiPathCb(const lv_font_t* font, void* img_src, uint16_t,
 }
 #endif
 
+#if LV_USE_IMGFONT
+// lv_imgfont_create() sets line_height to the glyph size and base_line to 0. Those
+// are the metrics LVGL lays every line out with, because the label's own font wins
+// over whatever the fallback chain resolves a glyph to. Left alone, a 12px imgfont
+// gives Montserrat 12 a 12px line box instead of its 15px one and the bottoms of
+// the text get clipped. Adopt the mono font's metrics so the text keeps its real
+// line height.
+//
+// This does not move anything: lv_draw_sw_letter puts the baseline at
+// (line_height - base_line), which is 12 both before (12-0) and after (15-3), so
+// the emoji still sit on the baseline and the glyphs do not shift.
+static void adoptMetrics(lv_font_t* f, const lv_font_t* mono) {
+    if (!f) return;
+    f->line_height         = mono->line_height;
+    f->base_line           = mono->base_line;
+    f->underline_position  = mono->underline_position;
+    f->underline_thickness = mono->underline_thickness;
+    f->fallback            = mono;   // unbaked glyphs fall through to mono
+}
+#endif
+
 void initColorEmoji() {
 #if LV_USE_IMGFONT
     if (s_colorBody) return;   // already built
     s_colorBody    = lv_imgfont_create(FONT_BODY_PX, colorEmojiPathCb);
     s_colorHeading = lv_imgfont_create(FONT_HEADING_PX, colorEmojiPathCb);
-    // Chain to the mono font so unbaked glyphs still render; on OOM leave the
-    // pointers null and fontBody()/fontHeading() keep returning the mono fonts.
-    if (s_colorBody)    s_colorBody->fallback    = MONO_BODY;
-    if (s_colorHeading) s_colorHeading->fallback = MONO_HEADING;
+    // On OOM leave the pointers null; fontBody()/fontHeading() keep returning mono.
+    adoptMetrics(s_colorBody,    MONO_BODY);
+    adoptMetrics(s_colorHeading, MONO_HEADING);
 #endif
 }
 
-// Consult the live config rather than a boot-time snapshot, so toggling colour
-// emoji in Settings takes effect on the next screen rebuild instead of needing a
-// reboot. The imgfont is built lazily the first time it is actually wanted, so a
-// device that never enables it never pays the allocation.
+// Consult the live config rather than a boot-time snapshot, and build the imgfont
+// lazily the first time it is actually wanted, so a device that never enables
+// colour emoji never pays the allocation.
+//
+// Note the Settings toggle still reboots to apply. Screens that are rebuilt per
+// show would pick the new font up immediately, but ChatScreen is created once at
+// boot and its labels keep the font pointer they were handed, so a live toggle
+// would leave chat looking unchanged. Rebooting keeps every screen consistent.
 const lv_font_t* fontBody() {
     if (!ConfigManager::instance().config().display.colorEmoji) return MONO_BODY;
     if (!s_colorBody) initColorEmoji();

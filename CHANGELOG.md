@@ -13,7 +13,8 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   using the existing monochrome font, so nothing goes blank: the chain is colour subset, then mono emoji, then
   plain text. Costs about 37 KB of flash and no meaningful RAM. On by default; turn it off in
   **Settings → Display → Colour Emoji** or with `display.color_emoji` for the previous monochrome look, which
-  some may prefer on the amber and high-contrast themes since colour glyphs cannot follow the palette.
+  some may prefer on the amber and high-contrast themes since colour glyphs cannot follow the palette. The
+  on-device toggle reboots to apply, like the theme switch.
   Requested by @artoo-dv (#46), who also suggested the curated-subset approach that keeps the cost this low.
 - **Admin can be locked from the device, with a PIN to get back in.** **Settings → Security → Lock Admin** hides
   the whole Admin hub; pressing **0** (T-Deck) or the **side button** (T-Watch) then asks for a new **Admin PIN**

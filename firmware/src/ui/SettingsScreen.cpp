@@ -1761,7 +1761,15 @@ void SettingsScreen::boolToggleCb(lv_event_t* e) {
         case BoolField::ShowHopCount:     c.messaging.showHopCount = v; break;
         case BoolField::ShareContact:     c.messaging.shareContact = v; break;
         case BoolField::Reactions:        c.messaging.reactions = v; break;
-        case BoolField::ColorEmoji:       c.display.colorEmoji = v; break;
+        // Reboot to apply: ChatScreen is created once at boot (UIManager::init),
+        // so its header/emoji-button labels hold the font pointer they were given
+        // then. Rebuilt-per-show screens would follow the toggle, but chat would
+        // keep the old font until restart, which reads as the setting half-working.
+        case BoolField::ColorEmoji:
+            c.display.colorEmoji = v;
+            g_dsReboot = true;
+            UIManager::instance().showToast(t("theme_apply_body"));
+            break;
         // Turning a permission off tightens the device and cannot be undone from
         // it, so defer to the confirm dialog. Turning one back on is the safe
         // direction and applies immediately.

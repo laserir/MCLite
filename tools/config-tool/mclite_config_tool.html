@@ -2661,6 +2661,14 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
         <div class="hint collapsible">Show the emoji picker in chat for composing emoji. Received emoji always render either way. Default on.</div>
       </div>
       <div class="field">
+        <label>Colour Emoji<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
+        <select id="dispColorEmoji">
+          <option value="true" selected>On</option>
+          <option value="false">Off</option>
+        </select>
+        <div class="hint collapsible">Render the emoji you can pick on the device (the chat picker and the reaction set) as full-colour glyphs. Every other emoji stays monochrome, so nothing goes blank. Colour glyphs use a fixed palette and do not follow the theme &mdash; turn this off for the plain monochrome look. Also switchable on-device (Admin &rarr; Display, reboots to apply). On by default.</div>
+      </div>
+      <div class="field">
         <label>Menu button<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <select id="dispMenuButton">
           <option value="false" selected>Off</option>
@@ -2731,14 +2739,6 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
           <option value="false">Off</option>
         </select>
         <div class="hint collapsible">Show a Share button in the chat header that re-broadcasts a contact's advert at zero hop, so a nearby device can add them from its Heard Adverts (no key typing). On by default.</div>
-      </div>
-      <div class="field">
-        <label>Colour Emoji<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-        <select id="dispColorEmoji">
-          <option value="true" selected>On</option>
-          <option value="false">Off</option>
-        </select>
-        <div class="hint collapsible">Render the emoji you can pick on the device (the chat picker and the reaction set) as full-colour glyphs. Every other emoji stays monochrome, so nothing goes blank. Colour glyphs use a fixed palette and do not follow the theme &mdash; turn this off for the plain monochrome look. On by default.</div>
       </div>
       <div class="field">
         <label>Reactions<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
