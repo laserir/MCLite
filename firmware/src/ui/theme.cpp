@@ -10,6 +10,73 @@ namespace theme {
 // The live palette. Defaults to DARK until applyThemeFromConfig() runs at boot.
 Palette ACTIVE = PALETTE_DARK;
 
+// ─────────────────────────── Colour emoji (lv_imgfont) ───────────────────────
+// Generated glyph tables — see assets/fonts/generate_color_emoji.py. Only the two
+// sizes this board actually uses are compiled in (the .c files self-gate on the
+// platform macro), matching FONT_BODY / FONT_HEADING below.
+#ifdef PLATFORM_TWATCH
+extern "C" const lv_img_dsc_t* mclite_color_emoji_16(uint32_t cp);
+extern "C" const lv_img_dsc_t* mclite_color_emoji_20(uint32_t cp);
+#define MONO_BODY     (&lv_font_emoji_16)
+#define MONO_HEADING  (&lv_font_emoji_20)
+#define COLOR_LOOKUP_BODY     mclite_color_emoji_16
+#define COLOR_LOOKUP_HEADING  mclite_color_emoji_20
+#else
+extern "C" const lv_img_dsc_t* mclite_color_emoji_12(uint32_t cp);
+extern "C" const lv_img_dsc_t* mclite_color_emoji_14(uint32_t cp);
+#define MONO_BODY     (&lv_font_emoji_12)
+#define MONO_HEADING  (&lv_font_emoji_14)
+#define COLOR_LOOKUP_BODY     mclite_color_emoji_12
+#define COLOR_LOOKUP_HEADING  mclite_color_emoji_14
+#endif
+
+static lv_font_t* s_colorBody    = nullptr;
+static lv_font_t* s_colorHeading = nullptr;
+
+#if LV_USE_IMGFONT
+static bool colorEmojiPathCb(const lv_font_t* font, void* img_src, uint16_t,
+                             uint32_t unicode, uint32_t) {
+    const lv_img_dsc_t* d = (font == s_colorHeading) ? COLOR_LOOKUP_HEADING(unicode)
+                                                     : COLOR_LOOKUP_BODY(unicode);
+    if (!d) return false;   // not in the baked set → LVGL walks on to the mono font
+    lv_memcpy(img_src, d, sizeof(lv_img_dsc_t));
+    // Required, and easy to miss: lv_imgfont hands every glyph back through the
+    // SAME scratch buffer, and lv_img_cache is keyed on the source pointer. Without
+    // dropping the stale entry, the first emoji decoded gets drawn for all of them.
+    // Cheap here — "decoding" a true-colour dsc is a header copy, and other images
+    // (map tiles) use distinct pointers so their caching is unaffected.
+    lv_img_cache_invalidate_src(img_src);
+    return true;
+}
+#endif
+
+void initColorEmoji() {
+#if LV_USE_IMGFONT
+    if (s_colorBody) return;   // already built
+    s_colorBody    = lv_imgfont_create(FONT_BODY_PX, colorEmojiPathCb);
+    s_colorHeading = lv_imgfont_create(FONT_HEADING_PX, colorEmojiPathCb);
+    // Chain to the mono font so unbaked glyphs still render; on OOM leave the
+    // pointers null and fontBody()/fontHeading() keep returning the mono fonts.
+    if (s_colorBody)    s_colorBody->fallback    = MONO_BODY;
+    if (s_colorHeading) s_colorHeading->fallback = MONO_HEADING;
+#endif
+}
+
+// Consult the live config rather than a boot-time snapshot, so toggling colour
+// emoji in Settings takes effect on the next screen rebuild instead of needing a
+// reboot. The imgfont is built lazily the first time it is actually wanted, so a
+// device that never enables it never pays the allocation.
+const lv_font_t* fontBody() {
+    if (!ConfigManager::instance().config().display.colorEmoji) return MONO_BODY;
+    if (!s_colorBody) initColorEmoji();
+    return s_colorBody ? s_colorBody : MONO_BODY;
+}
+const lv_font_t* fontHeading() {
+    if (!ConfigManager::instance().config().display.colorEmoji) return MONO_HEADING;
+    if (!s_colorHeading) initColorEmoji();
+    return s_colorHeading ? s_colorHeading : MONO_HEADING;
+}
+
 const Palette* builtinPaletteByName(const char* name) {
     if (!name) return nullptr;
     if (!strcmp(name, "dark"))          return &PALETTE_DARK;

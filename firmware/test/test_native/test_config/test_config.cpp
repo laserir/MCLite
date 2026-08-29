@@ -551,6 +551,22 @@ void test_emoji_round_trips() {
 
 // ═══ Display menu button (T-Deck status-bar gear) ═══
 
+// ═══ Colour emoji ═══
+
+void test_color_emoji_defaults_true() {
+    parse("{\"display\":{}}");
+    TEST_ASSERT_TRUE(cfg->config().display.colorEmoji);
+}
+
+void test_color_emoji_round_trips() {
+    parse("{\"display\":{\"color_emoji\": false}}");
+    TEST_ASSERT_FALSE(cfg->config().display.colorEmoji);
+    String json = cfg->toJson();
+    cfg->config() = AppConfig{};
+    cfg->parseJson(json);
+    TEST_ASSERT_FALSE(cfg->config().display.colorEmoji);
+}
+
 void test_menu_button_defaults_false() {
     parse("{\"display\":{}}");
     TEST_ASSERT_FALSE(cfg->config().display.menuButton);
@@ -1276,6 +1292,8 @@ int main() {
     RUN_TEST(test_emoji_defaults_true);
     RUN_TEST(test_emoji_explicit_false);
     RUN_TEST(test_emoji_round_trips);
+    RUN_TEST(test_color_emoji_defaults_true);
+    RUN_TEST(test_color_emoji_round_trips);
     RUN_TEST(test_menu_button_defaults_false);
     RUN_TEST(test_menu_button_explicit_true);
     RUN_TEST(test_menu_button_round_trips);

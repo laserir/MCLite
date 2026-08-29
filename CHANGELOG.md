@@ -8,6 +8,13 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Added
+- **Colour emoji.** The emoji you can actually pick on the device — the 30 in the chat picker and the 6 reaction
+  emoji — now render as full-colour glyphs, inline in chat bubbles and in the pickers. Everything else keeps
+  using the existing monochrome font, so nothing goes blank: the chain is colour subset, then mono emoji, then
+  plain text. Costs about 37 KB of flash and no meaningful RAM. On by default; turn it off in
+  **Settings → Display → Colour Emoji** or with `display.color_emoji` for the previous monochrome look, which
+  some may prefer on the amber and high-contrast themes since colour glyphs cannot follow the palette.
+  Requested by @artoo-dv (#46), who also suggested the curated-subset approach that keeps the cost this low.
 - **Admin can be locked from the device, with a PIN to get back in.** **Settings → Security → Lock Admin** hides
   the whole Admin hub; pressing **0** (T-Deck) or the **side button** (T-Watch) then asks for a new **Admin PIN**
   and re-enables Admin when it is correct. The PIN is separate from the screen-lock PIN — that one unlocks the

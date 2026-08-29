@@ -1,5 +1,5 @@
 {
-    "version": 53,
+    "version": 54,
     "no_sd_title": "Nessuna scheda SD",
     "no_sd_msg": "Inserire una scheda SD con config.json\ne riavviare.\n\nUsare il MCLite Config Tool\nper creare la configurazione.",
     "setup_title": "Configurazione necessaria",
@@ -122,6 +122,7 @@
     "lbl_dim_brightness": "Luminosita ridotta",
     "lbl_kbd_backlight": "Lumin tastiera",
     "lbl_emoji": "Emoji",
+    "lbl_color_emoji": "Emoji a colori",
     "lbl_menu_button": "Pulsante menu",
     "lbl_screenshots": "Salva screenshot",
     "lbl_show_memory": "Mostra memoria",

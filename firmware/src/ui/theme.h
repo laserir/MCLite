@@ -291,6 +291,21 @@ constexpr int CONVO_ROW_HEIGHT  = 64;
 constexpr int CONVO_ROW_HEIGHT  = 48;
 #endif
 
+// Body/heading fonts are resolved at runtime so colour emoji can be swapped in.
+// The colour font is an lv_imgfont whose fallback is the existing monochrome
+// emoji font (which in turn falls back to Montserrat), so the chain is
+//   colour subset -> mono emoji -> ASCII
+// and anything outside the baked set still renders exactly as before. Returns
+// the mono font directly when display.color_emoji is off or creation failed.
+#ifdef PLATFORM_TWATCH
+constexpr int FONT_BODY_PX = 16, FONT_HEADING_PX = 20;
+#else
+constexpr int FONT_BODY_PX = 12, FONT_HEADING_PX = 14;
+#endif
+const lv_font_t* fontBody();
+const lv_font_t* fontHeading();
+void initColorEmoji();     // call once after config load, before the UI is built
+
 // Fonts — T-Watch bumps every level up by 2-4pt so labels are readable at
 // arm's length. T-Deck unchanged.
 #ifdef PLATFORM_TWATCH
@@ -303,15 +318,15 @@ constexpr int CONVO_ROW_HEIGHT  = 48;
 // text and section headings read comfortably at arm's length. Emoji fonts are
 // primary here; they fall back to Montserrat for ASCII (--lv-fallback), so emoji
 // in any message render inline. Used in chat bubbles, the chat header, admin rows.
-#define FONT_BODY     &lv_font_emoji_16  // body text, list rows, bubble text, timestamps
-#define FONT_HEADING  &lv_font_emoji_20  // header titles, modal text, close-button glyph
+#define FONT_BODY     mclite::theme::fontBody()     // colour-emoji font when enabled, else mono
+#define FONT_HEADING  mclite::theme::fontHeading()
 #else
 #define FONT_SMALL    &lv_font_montserrat_12
 #define FONT_NORMAL   &lv_font_montserrat_14
 #define FONT_LARGE    &lv_font_montserrat_16
 #define FONT_TITLE    &lv_font_montserrat_20
-#define FONT_BODY     &lv_font_emoji_12  // body text with emoji fallback
-#define FONT_HEADING  &lv_font_emoji_14  // header titles with emoji fallback
+#define FONT_BODY     mclite::theme::fontBody()     // colour-emoji font when enabled, else mono
+#define FONT_HEADING  mclite::theme::fontHeading()
 #endif
 
 }  // namespace theme

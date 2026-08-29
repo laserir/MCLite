@@ -512,6 +512,9 @@ void SettingsScreen::buildDisplay() {
     addSliderRowGated(t("lbl_kbd_backlight"), &_kbdBrightnessSlider, &_kbdBrightnessValLbl,
                       1, 255, cfg.display.kbdBrightness, String(cfg.display.kbdBrightness), true);
     addSwitchRowGated(t("lbl_emoji"), cfg.display.emoji, emojiToggleCb, nullptr, false);
+    // Colour glyphs for the on-device emoji set; everything else stays monochrome.
+    addSwitchRowGated(t("lbl_color_emoji"), cfg.display.colorEmoji, boolToggleCb,
+                      (void*)BoolField::ColorEmoji, false);
 #ifndef PLATFORM_TWATCH
     // T-Deck only — T-Watch reaches Admin via the PEK short-press and has no
     // room for the gear in its two-row status bar.
@@ -1758,6 +1761,7 @@ void SettingsScreen::boolToggleCb(lv_event_t* e) {
         case BoolField::ShowHopCount:     c.messaging.showHopCount = v; break;
         case BoolField::ShareContact:     c.messaging.shareContact = v; break;
         case BoolField::Reactions:        c.messaging.reactions = v; break;
+        case BoolField::ColorEmoji:       c.display.colorEmoji = v; break;
         // Turning a permission off tightens the device and cannot be undone from
         // it, so defer to the confirm dialog. Turning one back on is the safe
         // direction and applies immediately.

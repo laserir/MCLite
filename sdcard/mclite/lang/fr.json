@@ -1,5 +1,5 @@
 {
-    "version": 53,
+    "version": 54,
     "no_sd_title": "Pas de carte SD",
     "no_sd_msg": "Inserer une carte SD avec config.json\net redemarrer.\n\nUtilisez l'outil MCLite Config Tool\npour creer votre configuration.",
     "setup_title": "Configuration requise",
@@ -122,6 +122,7 @@
     "lbl_dim_brightness": "Luminosite reduite",
     "lbl_kbd_backlight": "Lumi clavier",
     "lbl_emoji": "Emoji",
+    "lbl_color_emoji": "Emoji en couleur",
     "lbl_menu_button": "Bouton menu",
     "lbl_screenshots": "Sauver captures",
     "lbl_show_memory": "Afficher memoire",

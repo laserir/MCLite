@@ -100,5 +100,6 @@
 
 /* Others */
 #define LV_USE_SNAPSHOT 1   /* screen capture to SD (gated by debug.screenshots) */
+#define LV_USE_IMGFONT  1   /* colour emoji: maps codepoints to images, see ui/fonts/emoji_color_*.c */
 
 #endif /* LV_CONF_H */

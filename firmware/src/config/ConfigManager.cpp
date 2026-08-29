@@ -53,6 +53,7 @@ void ConfigManager::applyDefaults() {
     _config.display.kbdBacklight  = defaults::KBD_BACKLIGHT;
     _config.display.kbdBrightness = defaults::KBD_BRIGHTNESS;
     _config.display.emoji         = defaults::EMOJI_ENABLED;
+    _config.display.colorEmoji    = defaults::COLOR_EMOJI;
     _config.display.menuButton    = defaults::MENU_BUTTON;
     _config.messaging.saveHistory      = defaults::SAVE_HISTORY;
     _config.messaging.maxHistoryPerChat = defaults::MAX_HISTORY_PER_CHAT;
@@ -252,6 +253,7 @@ bool ConfigManager::parseJson(const String& json) {
         uint8_t kbdBr = disp["kbd_brightness"] | defaults::KBD_BRIGHTNESS;
         _config.display.kbdBrightness  = constrain(kbdBr, 1, 255);
         _config.display.emoji          = disp["emoji"] | defaults::EMOJI_ENABLED;
+        _config.display.colorEmoji     = disp["color_emoji"] | defaults::COLOR_EMOJI;
         _config.display.menuButton     = disp["menu_button"] | defaults::MENU_BUTTON;
 
         // Custom themes (display.themes[]) — each is {name, base?, <colorKey>:"#RRGGBB"…}.
@@ -499,6 +501,7 @@ String ConfigManager::toJson() const {
     disp["kbd_backlight"]    = _config.display.kbdBacklight;
     disp["kbd_brightness"]   = _config.display.kbdBrightness;
     disp["emoji"]            = _config.display.emoji;
+    disp["color_emoji"]      = _config.display.colorEmoji;
     disp["menu_button"]      = _config.display.menuButton;
     if (!_config.display.customThemes.empty()) {
         JsonArray themesArr = disp["themes"].to<JsonArray>();

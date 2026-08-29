@@ -64,7 +64,7 @@ That's it. Full walkthrough in [Getting Started](#getting-started) below, plus [
 - **Channels** -- group chats via shared, public, or hashtag channels (optional listen-only mode)
 - **Room servers** -- join community message boards (up to 8), with auto-login and reconnect
 - **Quick replies** -- optional canned-message picker; per-chat lists can double as a command menu (e.g. a Home Assistant bridge)
-- **Emoji** -- inline emoji rendering plus an on-device picker, with graceful plain-text fallback
+- **Emoji** -- inline emoji rendering plus an on-device picker, with graceful plain-text fallback; the emoji you can pick are drawn in full colour
 - **Reactions** -- long-press a message to react with an emoji, interoperable with the MeshCore One app (off by default; other clients see a plain text message)
 - **Message history** -- conversations saved to SD and restored on reboot
 
@@ -244,6 +244,10 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
     "kbd_backlight": true,             // Keyboard backlight on/off with auto-dim
     "kbd_brightness": 127,             // Keyboard backlight brightness (1-255)
     "emoji": true,                     // Show the chat emoji picker (received emoji always render). Default on.
+    "color_emoji": true,               // Render the emoji you can pick on-device (the picker set + the reaction
+                                       //   set) as full-colour glyphs; every other emoji stays monochrome, so
+                                       //   nothing goes blank. Colour glyphs use a fixed palette and do not follow
+                                       //   the theme. Off = the plain monochrome look. Default on.
     "menu_button": false,              // T-Deck only: status-bar gear that opens Admin. Default off (use the "0" key). Hidden when security.admin_enabled is false.
 
     // Optional custom palettes. Select one by putting its "name" in "theme" above.

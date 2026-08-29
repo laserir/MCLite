@@ -136,6 +136,9 @@ void setup() {
     // Select the color palette from config (before UI init — inline styles bake
     // the color in at widget-create time, so this must run before any screen).
     theme::applyThemeFromConfig();
+    // Build the colour-emoji imgfonts before any screen is created, since
+    // FONT_BODY / FONT_HEADING resolve through them from here on.
+    theme::initColorEmoji();
 
     // Show custom boot text if configured (updates existing boot screen label)
     if (cfg.display.bootText.length() > 0) {

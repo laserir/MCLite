@@ -89,6 +89,7 @@ struct DisplayConfig {
     bool     kbdBacklight   = true;  // Keyboard backlight follows auto-dim (on/off)
     uint8_t  kbdBrightness  = 127;   // Keyboard backlight level (1-255)
     bool     emoji          = true;  // Show the chat emoji picker (received emoji always render)
+    bool     colorEmoji     = true;  // Render the on-device emoji set in colour (rest stay monochrome)
     bool     menuButton     = false; // T-Deck only: status-bar gear that opens Admin
     std::vector<CustomTheme> customThemes;  // optional user palettes (display.themes[])
 };
