@@ -5,6 +5,16 @@ All notable changes to MCLite are documented here. The format is loosely based o
 
 Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-watch-vX.Y.Z.bin`).
 
+## [Unreleased]
+
+### Changed
+- **Config tool: the PIN Code field is always visible**, on the same line as Lock and Auto Lock. It used to appear
+  only after you set Lock to PIN Lock, while Admin PIN was always shown — so the screen looked like it had
+  forgotten the device PIN. Its hint now says it applies in PIN Lock mode. Validation is unchanged: a PIN is only
+  required when Lock is PIN Lock.
+- **Config tool: Admin PIN shows the same error text as the device PIN** when it is not 4-8 alphanumeric
+  characters. It already got the red border, but with no message explaining why.
+
 ## [0.4.3] — 2026-08-29
 
 ### Added

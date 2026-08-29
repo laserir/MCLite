@@ -2942,11 +2942,11 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
   <!-- Security -->
   <div class="section hidden" data-mode="advanced">
     <div class="section-title">Security</div>
-    <!-- Two key-lock settings on one line -->
+    <!-- Lock, Auto Lock and the PIN they use, on one line -->
     <div class="row">
       <div class="field">
         <label>Lock<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-        <select id="lockMode" onchange="toggleLockFields()">
+        <select id="lockMode">
           <option value="none">None</option>
           <option value="key" selected>Key Lock</option>
           <option value="pin">PIN Lock</option>
@@ -2962,14 +2962,11 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
         </select>
         <div class="hint collapsible">Automatically lock when display dims. Falls back if selected lock type isn't available.</div>
       </div>
-    </div>
-    <!-- PIN code (shown only when a PIN lock is selected) -->
-    <div class="row" style="margin-top:8px">
-      <div class="field" id="pinCodeField" style="display:none">
+      <div class="field" id="pinCodeField">
         <label>PIN Code<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <input type="password" id="pinCode" value="" maxlength="8" placeholder="4-8 characters" pattern="[a-zA-Z0-9]*">
         <div class="error" id="pinError">PIN must be 4-8 alphanumeric characters</div>
-        <div class="hint collapsible">Letters and numbers, case-insensitive. Required on boot and after idle timeout.</div>
+        <div class="hint collapsible">Used when Lock is set to PIN Lock. Letters and numbers, case-insensitive. Required on boot and after idle timeout.</div>
       </div>
     </div>
     <!-- Admin screen access on its own line -->
@@ -2985,6 +2982,7 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
       <div class="field" id="adminPinField">
         <label>Admin PIN<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
         <input type="text" id="adminPin" maxlength="8" placeholder="(none)" pattern="[a-zA-Z0-9]*">
+        <div class="error" id="adminPinError">Admin PIN must be 4-8 alphanumeric characters</div>
         <div class="hint collapsible">4-8 characters, separate from the screen-lock PIN. Re-enables the Admin screen after it has been locked from the device. Leave empty for none &mdash; then a locked device can only be recovered by editing this file on the SD card. Stored in plain text, like the screen PIN.</div>
       </div>
     </div>
@@ -3861,12 +3859,6 @@ function copyKey(type) {
   const key = type === 'pub' ? identity.publicKey : identity.privateKey;
   if (!key) { toast('Generate a keypair first'); return; }
   navigator.clipboard.writeText(key).then(() => toast('Copied to clipboard'));
-}
-
-// ===== Lock field toggle =====
-function toggleLockFields() {
-  const mode = document.getElementById('lockMode').value;
-  document.getElementById('pinCodeField').style.display = mode === 'pin' ? '' : 'none';
 }
 
 // ===== Timezone helpers =====
@@ -4827,7 +4819,6 @@ function loadConfig(cfg) {
   // dropping it would force a re-pair). Re-emitted by buildConfig when non-zero.
   blePin = cfg.ble?.pin ?? 0;
 
-  toggleLockFields();
 
   // Warn about firmware limits
   if (contacts.length > 32) toast('Warning: imported config has ' + contacts.length + ' contacts (firmware max 32)');
@@ -4907,7 +4898,6 @@ async function applyDefaultsAndGenerate() {
   document.getElementById('permSettings').value = 'full';
   document.getElementById('permCompanion').value = 'true';
   document.getElementById('permConversation').value = 'true';
-  toggleLockFields();
   renderContacts();
   renderChannels();
   renderRooms();
