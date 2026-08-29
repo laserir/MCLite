@@ -304,7 +304,8 @@ constexpr int FONT_BODY_PX = 12, FONT_HEADING_PX = 14;
 #endif
 const lv_font_t* fontBody();
 const lv_font_t* fontHeading();
-void initColorEmoji();     // call once after config load, before the UI is built
+void initColorEmoji();     // called once after config load (main.cpp, only when the
+                           // setting is on), and lazily from fontBody()/fontHeading()
 
 // Fonts — T-Watch bumps every level up by 2-4pt so labels are readable at
 // arm's length. T-Deck unchanged.

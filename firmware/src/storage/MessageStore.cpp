@@ -203,6 +203,11 @@ Conversation& MessageStore::addMessage(const ConvoId& id, const String& displayN
     // Compute hash on first storage so future reactions can target this message.
     if (stored.msgHash.isEmpty() && stored.timestamp > 0) {
         stored.msgHash = computeMsgHash(stored.text, stored.timestamp);
+    } else if (stored.msgHash.isEmpty()) {
+        // No timestamp -> no hash -> ChatScreen never attaches the long-press
+        // handler, so this message is quietly un-reactable. Log it rather than
+        // leaving the missing affordance unexplained.
+        LOGLN("[MessageStore] Message has no timestamp; it cannot carry reactions");
     }
     convo.messages.push_back(stored);
     convo.lastActivity = ++_activityCounter;  // Monotonic: always above loaded values

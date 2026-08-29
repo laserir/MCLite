@@ -1685,7 +1685,13 @@ void SettingsScreen::hide() {
     if (_screen) {
         // Commit batched edits on leave: one SD write, and reboot once if a
         // reboot-needing setting (theme/language/radio/gps) was changed.
-        if (g_dsDirty) { ConfigManager::instance().save(); g_dsDirty = false; }
+        // Report a failed write: everything edited in this visit is batched into
+        // this one save, so on an SD error the changes are lost and the user would
+        // otherwise only find out after a reboot.
+        if (g_dsDirty) {
+            if (!ConfigManager::instance().save()) UIManager::instance().showToast(t("err_save_failed"));
+            g_dsDirty = false;
+        }
         if (g_dsReboot) { g_dsReboot = false; delay(200); ESP.restart(); }
 
         if (_themeBtnm) hideThemePicker();
@@ -2478,7 +2484,13 @@ void SettingsScreen::openPinEditor(PinTarget target) {
     lv_keyboard_set_textarea(self->_pinKbd, self->_pinTextarea);
     lv_keyboard_set_popovers(self->_pinKbd, true);
     lv_btnmatrix_set_btn_ctrl_all(self->_pinKbd, LV_BTNMATRIX_CTRL_NO_REPEAT);
-    lv_obj_add_event_cb(self->_pinKbd, pinReadyCb, LV_EVENT_READY, self);
+    // Deliberately NOT registering pinReadyCb on the keyboard as the other editors
+    // do. lv_keyboard_def_event_cb sends READY to the keyboard and then forwards it
+    // to its textarea, so one OK tap would run this twice. The others are
+    // idempotent single-shot saves and do not care; this one is a two-step
+    // enter-then-repeat state machine, and the second invocation read the textarea
+    // the first had just cleared, so it always reported "PINs did not match" and
+    // the PIN could never be set with the keyboard's OK key.
     lv_obj_add_event_cb(self->_pinKbd, [](lv_event_t* ev) {
         auto* self = static_cast<SettingsScreen*>(lv_event_get_user_data(ev));
         if (!self) return;

@@ -162,8 +162,18 @@ bool ConfigManager::parseJson(const String& json) {
             cc.sendSos        = c["send_sos"]         | true;
             cc.fromDiscovery  = c["from_discovery"]   | false;
             parseCannedArray(c, cc.canned);
-            if (cc.publicKey.length() > 0) {
+            // Reject duplicates: two contacts sharing a key produce two runtime
+            // entries with the same shortId, so per-contact edits (quick replies,
+            // and anything else matched by key) land on whichever comes first and
+            // the second contact silently never sees them.
+            bool dup = false;
+            for (const auto& existing : _config.contacts) {
+                if (existing.publicKey.equalsIgnoreCase(cc.publicKey)) { dup = true; break; }
+            }
+            if (cc.publicKey.length() > 0 && !dup) {
                 _config.contacts.push_back(cc);
+            } else if (dup) {
+                LOGF("[Config] Skipping duplicate contact key for '%s'\n", cc.alias.c_str());
             }
         }
     }

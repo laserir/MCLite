@@ -1,5 +1,5 @@
 {
-    "version": 54,
+    "version": 55,
     "no_sd_title": "Pas de carte SD",
     "no_sd_msg": "Inserer une carte SD avec config.json\net redemarrer.\n\nUtilisez l'outil MCLite Config Tool\npour creer votre configuration.",
     "setup_title": "Configuration requise",
@@ -168,8 +168,8 @@
     "perm_none": "Lecture seule",
     "perm_lock_title": "Verrouiller cet appareil?",
     "perm_lock_settings_body": "Les reglages passent en lecture seule. Cet appareil ne peut pas revenir en arriere -- modifiez config.json sur la carte SD. Une application companion connectee perd aussi ce droit.",
-    "perm_lock_convmgmt_body": "Contacts, canaux et salons passent en lecture seule sur cet appareil et pour une application companion. Annulez via config.json sur la carte SD.",
-    "perm_lock_companion_body": "Le groupe Companion est masque dans Admin. Les services deja actifs continuent. Annulez via config.json sur la carte SD.",
+    "perm_lock_convmgmt_body": "Les contacts, canaux et salons passent en lecture seule sur cet appareil et pour une application compagnon connectee. Vous pouvez le reactiver ici tant que l'acces aux reglages reste Complet.",
+    "perm_lock_companion_body": "Le groupe Compagnon est masque dans l'ecran Admin. Les services deja lances continuent. Vous pouvez le reactiver ici tant que l'acces aux reglages reste Complet.",
     "perm_lock_confirm": "Verrouiller",
     "lbl_low_alert_threshold": "Seuil alerte",
     "btn_save": "Enregistrer",

@@ -52,7 +52,12 @@ def codepoints_from_source():
             try:
                 out.add(ord(raw.decode("utf-8")))
             except (UnicodeDecodeError, TypeError):
-                pass   # multi-codepoint sequence; not supported, skip
+                # A multi-codepoint sequence (an emoji carrying U+FE0F, a skin-tone
+                # modifier, a ZWJ pair) cannot be baked as a single glyph. Say so
+                # rather than dropping it silently: it falls back to the mono font
+                # with nothing explaining why, and --check would still report "in
+                # sync" because the baked set matches this same filtered list.
+                print(f"  note: {esc} is multi-codepoint, not bakeable - stays monochrome")
     return sorted(out)
 
 
@@ -121,7 +126,8 @@ def render(px, cps):
         L.append(f"    {{ LV_IMG_CF_TRUE_COLOR_ALPHA, 0, 0, {px}, {px} }},")
         L.append(f"    sizeof(ce{px}_{cp:04x}), ce{px}_{cp:04x} }};")
         L.append("")
-    L.append("// Sorted by codepoint so the lookup can binary-search.")
+    L.append("// Emitted in codepoint order; the compiler turns the switch into a jump")
+    L.append("// table or decision tree, so lookup does not walk the list.")
     L.append(f"const lv_img_dsc_t* mclite_color_emoji_{px}(uint32_t cp) {{")
     L.append("    switch (cp) {")
     for cp in cps:

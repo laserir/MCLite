@@ -161,18 +161,25 @@ void UIManager::update() {
     // Long-press remains a hardware shutdown via the PMU itself.
     // Suppressed while the screen is key-locked or PIN-locked so the lock
     // can't be bypassed to reach Admin.
-    if (Pmu::instance().consumeShortPress() && !_keyLocked && !_isLocked) {
+    // consumeShortPress() clears the PMU IRQ as a side effect, so it must be read
+    // exactly once per loop and never short-circuited away by a later condition --
+    // doing that swallowed the press and killed the double-press screenshot
+    // whenever a PIN prompt was up.
+    const bool pekShortPress = Pmu::instance().consumeShortPress();
+    if (pekShortPress && !_keyLocked) {
         const auto& sec = ConfigManager::instance().config().security;
-        // The screenshot is handled below and must keep working even when Admin is
-        // locked -- it used to rely on "the two Admin toggles cancel out", which no
-        // longer happens once the Admin branch is gated.
-        if (_currentScreen == Screen::ADMIN)      goHome();
-        else if (sec.adminEnabled)                showScreen(Screen::ADMIN);
-        else if (sec.adminPin.length() >= 4)      showPinLock(PinPurpose::AdminUnlock);
+        // Admin toggle only when nothing is already asking for a PIN; the lock must
+        // not be bypassable to reach Admin.
+        if (!_isLocked) {
+            if (_currentScreen == Screen::ADMIN)      goHome();
+            else if (sec.adminEnabled)                showScreen(Screen::ADMIN);
+            else if (sec.adminPin.length() >= 4)      showPinLock(PinPurpose::AdminUnlock);
+        }
         _lastActivity = now;
-        // Double short-press → screenshot (gated by debug.screenshots). The two
-        // Admin toggles cancel out, so you land back on the original screen and
-        // the capture grabs it. Single press stays instant (no added latency).
+        // Double short-press → screenshot (gated by debug.screenshots). Deliberately
+        // outside the Admin gate: it has to keep working whatever the admin state,
+        // including with the PIN prompt showing, which is the case that used to fail.
+        // Single press stays instant (no added latency).
         if (now - _pekLastMs < 500 && ConfigManager::instance().config().debug.screenshots) {
             Screenshot::capture();
         }
@@ -1709,8 +1716,13 @@ void UIManager::dismissPinLock() {
     _isLocked = false;
     _pinBuffer = "";
 
-    // Restore input group for keyboard/trackball before deleting PIN group
-    if (_inputGroup) {
+    // Restore input to whatever owned it before the overlay appeared. The auto-dim
+    // lock can fire over an open Settings editor, which holds a modal group; going
+    // straight back to _inputGroup left focus on the rows behind the editor's
+    // overlay while the editor itself was still on screen.
+    if (_modalGroup) {
+        IInput::instance().attachToGroup(_modalGroup);
+    } else if (_inputGroup) {
         IInput::instance().attachToGroup(_inputGroup);
     }
 

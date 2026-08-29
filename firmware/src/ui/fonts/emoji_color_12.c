@@ -820,7 +820,8 @@ static const lv_img_dsc_t cd12_1f9ed = {
     { LV_IMG_CF_TRUE_COLOR_ALPHA, 0, 0, 12, 12 },
     sizeof(ce12_1f9ed), ce12_1f9ed };
 
-// Sorted by codepoint so the lookup can binary-search.
+// Emitted in codepoint order; the compiler turns the switch into a jump
+// table or decision tree, so lookup does not walk the list.
 const lv_img_dsc_t* mclite_color_emoji_12(uint32_t cp) {
     switch (cp) {
         case 0x2600: return &cd12_2600;

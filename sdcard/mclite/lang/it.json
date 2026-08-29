@@ -1,5 +1,5 @@
 {
-    "version": 54,
+    "version": 55,
     "no_sd_title": "Nessuna scheda SD",
     "no_sd_msg": "Inserire una scheda SD con config.json\ne riavviare.\n\nUsare il MCLite Config Tool\nper creare la configurazione.",
     "setup_title": "Configurazione necessaria",
@@ -168,8 +168,8 @@
     "perm_none": "Sola lettura",
     "perm_lock_title": "Bloccare il dispositivo?",
     "perm_lock_settings_body": "Le impostazioni diventano di sola lettura. Il dispositivo non puo annullare -- modifica config.json sulla scheda SD. Anche una app companion connessa perde questo permesso.",
-    "perm_lock_convmgmt_body": "Contatti, canali e stanze diventano di sola lettura sul dispositivo e per una app companion. Annulla via config.json sulla scheda SD.",
-    "perm_lock_companion_body": "Il gruppo Companion viene nascosto in Admin. I servizi gia attivi continuano. Annulla via config.json sulla scheda SD.",
+    "perm_lock_convmgmt_body": "Contatti, canali e stanze diventano di sola lettura su questo dispositivo e per un'app companion collegata. Puoi riattivarlo qui finche l'accesso alle impostazioni resta Completo.",
+    "perm_lock_companion_body": "Il gruppo Companion viene nascosto dalla schermata Admin. I servizi gia avviati continuano. Puoi riattivarlo qui finche l'accesso alle impostazioni resta Completo.",
     "perm_lock_confirm": "Blocca",
     "lbl_low_alert_threshold": "Soglia allarme",
     "btn_save": "Salva",

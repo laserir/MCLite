@@ -1,5 +1,5 @@
 {
-    "version": 54,
+    "version": 55,
     "no_sd_title": "Keine SD-Karte",
     "no_sd_msg": "SD-Karte mit config.json einlegen\nund neu starten.\n\nVerwenden Sie das MCLite Config Tool\num Ihre Konfiguration zu erstellen.",
     "setup_title": "Einrichtung erforderlich",
@@ -168,8 +168,8 @@
     "perm_none": "Nur Lesen",
     "perm_lock_title": "Geraet sperren?",
     "perm_lock_settings_body": "Einstellungen werden schreibgeschuetzt. Dieses Geraet kann das nicht rueckgaengig machen -- config.json auf der SD-Karte bearbeiten. Auch eine verbundene Companion-App kann dann keine Einstellungen mehr aendern.",
-    "perm_lock_convmgmt_body": "Kontakte, Kanaele und Raeume werden auf diesem Geraet und fuer eine verbundene Companion-App schreibgeschuetzt. Rueckgaengig ueber config.json auf der SD-Karte.",
-    "perm_lock_companion_body": "Die Companion-Gruppe wird im Admin-Bildschirm ausgeblendet. Laufende Dienste laufen weiter. Rueckgaengig ueber config.json auf der SD-Karte.",
+    "perm_lock_convmgmt_body": "Kontakte, Kanaele und Raeume werden auf diesem Geraet und fuer eine verbundene Companion-App schreibgeschuetzt. Sie koennen dies hier wieder einschalten, solange der Einstellungszugriff auf Voll steht.",
+    "perm_lock_companion_body": "Die Companion-Gruppe wird im Admin-Bildschirm ausgeblendet. Bereits laufende Dienste laufen weiter. Sie koennen dies hier wieder einschalten, solange der Einstellungszugriff auf Voll steht.",
     "perm_lock_confirm": "Sperren",
     "lbl_low_alert_threshold": "Warnschwelle",
     "btn_save": "Speichern",
