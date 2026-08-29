@@ -22,6 +22,7 @@ static void parseCannedArray(JsonObject obj, std::vector<String>& out) {
     if (!arr) return;
     for (size_t i = 0; i < arr.size() && out.size() < 8; i++) {
         String s = arr[i].as<String>();
+        s.trim();   // same as the global list, so the two agree on what is blank
         if (s.length() > 0) out.push_back(s);
     }
 }
@@ -162,18 +163,14 @@ bool ConfigManager::parseJson(const String& json) {
             cc.sendSos        = c["send_sos"]         | true;
             cc.fromDiscovery  = c["from_discovery"]   | false;
             parseCannedArray(c, cc.canned);
-            // Reject duplicates: two contacts sharing a key produce two runtime
-            // entries with the same shortId, so per-contact edits (quick replies,
-            // and anything else matched by key) land on whichever comes first and
-            // the second contact silently never sees them.
-            bool dup = false;
-            for (const auto& existing : _config.contacts) {
-                if (existing.publicKey.equalsIgnoreCase(cc.publicKey)) { dup = true; break; }
-            }
-            if (cc.publicKey.length() > 0 && !dup) {
+            // Duplicate keys are rejected in ContactStore (runtime) rather than
+            // here. Dropping the entry at parse time also dropped it from the
+            // user's config.json on the next save, which destroys data over what
+            // may just be a typo in one field -- and a string compare misses the
+            // real case anyway, since public_key accepts hex OR base64 and the
+            // same key in two encodings compares unequal.
+            if (cc.publicKey.length() > 0) {
                 _config.contacts.push_back(cc);
-            } else if (dup) {
-                LOGF("[Config] Skipping duplicate contact key for '%s'\n", cc.alias.c_str());
             }
         }
     }
@@ -316,11 +313,13 @@ bool ConfigManager::parseJson(const String& json) {
         } else if (cm.is<JsonArray>()) {
             _config.messaging.cannedMessages = true;
             JsonArray arr = cm.as<JsonArray>();
-            for (size_t i = 0; i < arr.size() && i < 8; i++) {
-                // Skip blanks, like parseCannedArray() does for the per-conversation
-                // lists. LVGL treats the first empty string in a btnmatrix map as the
-                // map terminator, so one blank entry silently truncates the chat
-                // picker while the Settings list still shows every entry.
+            // Match parseCannedArray() exactly (the per-conversation lists): cap on
+            // ACCEPTED entries, not input slots, or an array padded with blanks
+            // yields a shorter list here than the same array on a contact. Blanks
+            // are skipped because LVGL reads the first empty string in a btnmatrix
+            // map as the map terminator, which silently truncates the chat picker
+            // while the Settings list still shows every entry.
+            for (size_t i = 0; i < arr.size() && _config.messaging.cannedCustom.size() < 8; i++) {
                 String v = arr[i].as<String>();
                 v.trim();
                 if (v.length() > 0) _config.messaging.cannedCustom.push_back(v);
@@ -391,14 +390,30 @@ bool ConfigManager::parseJson(const String& json) {
     // enforce 4-8, but config.json is hand-edited often enough to need the guard
     // here too. Treat an out-of-range PIN as unset rather than truncating it,
     // since a truncated secret is not the one the owner chose.
-    if (_config.security.pinCode.length() > 0 &&
-        (_config.security.pinCode.length() < 4 || _config.security.pinCode.length() > 8)) {
-        LOGLN("[Config] security.pin_code is not 4-8 chars - ignoring it");
+    // Length AND charset: the entry overlay only accepts [0-9a-zA-Z] (every other
+    // key code is discarded), so a PIN containing a hyphen, space or any symbol
+    // arms a lock that can never be typed -- the same permanent lockout as a
+    // too-long PIN. The Settings editor's keyboard offers those symbols and the
+    // textarea does not filter them, so this is reachable entirely on-device.
+    auto pinUsable = [](const String& p) {
+        if (p.length() < 4 || p.length() > 8) return false;
+        for (size_t i = 0; i < p.length(); i++) {
+            char c = p[i];
+            bool ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+            if (!ok) return false;
+        }
+        return true;
+    };
+    _rejectedPinCode = "";
+    _rejectedAdminPin = "";
+    if (_config.security.pinCode.length() > 0 && !pinUsable(_config.security.pinCode)) {
+        LOGLN("[Config] security.pin_code must be 4-8 alphanumeric chars - ignoring it");
+        _rejectedPinCode = _config.security.pinCode;   // keep it in the file
         _config.security.pinCode = "";
     }
-    if (_config.security.adminPin.length() > 0 &&
-        (_config.security.adminPin.length() < 4 || _config.security.adminPin.length() > 8)) {
-        LOGLN("[Config] security.admin_pin is not 4-8 chars - ignoring it");
+    if (_config.security.adminPin.length() > 0 && !pinUsable(_config.security.adminPin)) {
+        LOGLN("[Config] security.admin_pin must be 4-8 alphanumeric chars - ignoring it");
+        _rejectedAdminPin = _config.security.adminPin;
         _config.security.adminPin = "";
     }
 
@@ -601,10 +616,15 @@ String ConfigManager::toJson() const {
     doc["battery"]["low_alert_threshold"] = _config.battery.lowAlertThreshold;
 
     doc["security"]["lock"]           = _config.security.lockMode;
-    doc["security"]["pin_code"]      = _config.security.pinCode;
+    // Preserve a PIN the loader rejected. toJson runs on every save, and the first
+    // one happens at boot, so writing the blanked value here would destroy the
+    // secret the user needs to see in order to fix its length or charset.
+    doc["security"]["pin_code"]      = _config.security.pinCode.length() > 0
+                                         ? _config.security.pinCode : _rejectedPinCode;
     doc["security"]["auto_lock"]     = _config.security.autoLock;
     doc["security"]["admin_enabled"] = _config.security.adminEnabled;
-    if (_config.security.adminPin.length() > 0) doc["security"]["admin_pin"] = _config.security.adminPin;
+    if (_config.security.adminPin.length() > 0)      doc["security"]["admin_pin"] = _config.security.adminPin;
+    else if (_rejectedAdminPin.length() > 0)         doc["security"]["admin_pin"] = _rejectedAdminPin;
 
     doc["permissions"]["settings"]                = _config.permissions.settings;
     doc["permissions"]["conversation_management"] = _config.permissions.conversationManagement;

@@ -484,6 +484,11 @@ void UIManager::onIncomingMessage(const ConvoId& id, const Message& msg) {
         bool isChannel = (id.type == ConvoId::CHANNEL || id.type == ConvoId::ROOM);
         String rxEmoji, rxHash;
         if (parseIncomingReaction(msg.text, isChannel, rxEmoji, rxHash)) {
+            // Consuming a message means it is never stored or shown, so leave a
+            // trace: if this ever misfires on an ordinary message again, the
+            // serial log is the only way to tell it apart from a lost packet.
+            LOGF("[Rxn] Consumed as reaction: emoji=%s hash=%s\n",
+                 rxEmoji.c_str(), rxHash.c_str());
             bool applied = MessageStore::instance().applyReaction(id, rxHash, rxEmoji, msg.senderName);
             if (applied && _currentScreen == Screen::CHAT &&
                 _chatScreen.currentConvo() && *_chatScreen.currentConvo() == id) {
@@ -689,19 +694,21 @@ void UIManager::dismissSOSAlert(bool sendReply) {
         Message reply;
         reply.fromSelf  = true;
         reply.text      = replyText;
-        reply.timestamp = TimeHelper::instance().bestEpoch();
+        // Store the timestamp that actually went on the wire, not a second sample.
+        uint32_t ackTs = 0;
 
         if (_sosIsDM && _sosContactIndex >= 0) {
-            reply.packetId = MeshManager::instance().sendMessage(_sosContactIndex, replyText.c_str());
+            reply.packetId = MeshManager::instance().sendMessage(_sosContactIndex, replyText.c_str(), &ackTs);
             reply.status = reply.packetId ? MessageStatus::SENDING : MessageStatus::FAILED;
         } else if (_sosConvoId.type == ConvoId::CHANNEL) {
             // Find channel index and send as group message
             Channel* ch = ChannelStore::instance().findByName(_sosConvoId.id);
             if (ch) {
-                MeshManager::instance().sendGroupMessage(ch->index, replyText.c_str());
+                MeshManager::instance().sendGroupMessage(ch->index, replyText.c_str(), &ackTs);
             }
             reply.status = MessageStatus::SENT;  // Channels are fire-and-forget
         }
+        reply.timestamp = ackTs ? ackTs : TimeHelper::instance().bestEpoch();
 
         Conversation* convo = MessageStore::instance().getConversation(_sosConvoId);
         String displayName = convo ? convo->displayName : _sosConvoId.id;
@@ -1263,7 +1270,8 @@ void UIManager::sendSOSToAll() {
         Contact* c = contacts.findByIndex(i);
         if (!c || !c->sendSos) continue;
 
-        uint32_t packetId = mesh.sendMessage(i, sosText);
+        uint32_t sosTs = 0;
+        uint32_t packetId = mesh.sendMessage(i, sosText, &sosTs);
         LOGF("[SOS] DM %s: packetId=%u %s\n",
                       c->name.c_str(), packetId,
                       packetId ? "queued" : "FAILED (pool?)");
@@ -1273,7 +1281,7 @@ void UIManager::sendSOSToAll() {
         Message msg;
         msg.fromSelf  = true;
         msg.text      = sosText;
-        msg.timestamp = TimeHelper::instance().bestEpoch();
+        msg.timestamp = sosTs ? sosTs : TimeHelper::instance().bestEpoch();
         msg.status    = packetId ? MessageStatus::SENDING : MessageStatus::FAILED;
         msg.packetId  = packetId;
 
@@ -1295,7 +1303,8 @@ void UIManager::sendSOSToAll() {
     for (size_t i = 0; i < channels.count(); i++) {
         const auto& allCh = channels.all();
         if (!allCh[i].sendSos) continue;
-        uint32_t packetId = mesh.sendGroupMessage(allCh[i].index, sosText);
+        uint32_t sosTs = 0;
+        uint32_t packetId = mesh.sendGroupMessage(allCh[i].index, sosText, &sosTs);
         LOGF("[SOS] CH %s: packetId=%u %s\n",
                       allCh[i].name.c_str(), packetId,
                       packetId ? "queued" : "FAILED (pool?)");
@@ -1304,7 +1313,7 @@ void UIManager::sendSOSToAll() {
         Message msg;
         msg.fromSelf  = true;
         msg.text      = sosText;
-        msg.timestamp = TimeHelper::instance().bestEpoch();
+        msg.timestamp = sosTs ? sosTs : TimeHelper::instance().bestEpoch();
         msg.status    = packetId ? MessageStatus::SENT : MessageStatus::FAILED;
         msg.packetId  = packetId;
 
@@ -1325,7 +1334,8 @@ void UIManager::sendSOSToAll() {
         if (!rooms[i].sendSos) continue;
         if (rooms[i].publicKey.length() != 64) continue;
 
-        uint32_t packetId = mesh.sendRoomPost(i, sosText);
+        uint32_t sosTs = 0;
+        uint32_t packetId = mesh.sendRoomPost(i, sosText, &sosTs);
         LOGF("[SOS] ROOM %s: packetId=%u %s\n",
                       rooms[i].name.c_str(), packetId,
                       packetId ? "queued" : "FAILED (pool?)");
@@ -1335,7 +1345,7 @@ void UIManager::sendSOSToAll() {
         Message msg;
         msg.fromSelf  = true;
         msg.text      = sosText;
-        msg.timestamp = TimeHelper::instance().bestEpoch();
+        msg.timestamp = sosTs ? sosTs : TimeHelper::instance().bestEpoch();
         msg.status    = packetId ? MessageStatus::SENDING : MessageStatus::FAILED;
         msg.packetId  = packetId;
 
@@ -1395,12 +1405,17 @@ void UIManager::checkBatteryAlert() {
         auto& mesh = MeshManager::instance();
 
         if (mesh.isRadioReady()) {
-            uint32_t ts = TimeHelper::instance().bestEpoch();
+            // Per-send, not one pre-loop sample: each send() takes its own
+            // bestEpoch(), and there is real radio work plus a yield between
+            // them, so a single shared value is guaranteed to disagree with the
+            // wire for every contact after the first -- which silently breaks any
+            // reaction to a battery alert.
+            uint32_t ts = 0;
 
             for (size_t i = 0; i < contacts.count(); i++) {
                 Contact* c = contacts.findByIndex(i);
                 if (!c || !c->sendSos) continue;
-                uint32_t packetId = mesh.sendMessage(i, alertText);
+                uint32_t packetId = mesh.sendMessage(i, alertText, &ts);
 
                 ConvoId id{ConvoId::DM, c->shortId()};
                 Message msg;
@@ -1415,7 +1430,7 @@ void UIManager::checkBatteryAlert() {
             }
             for (const auto& ch : channels_store.all()) {
                 if (!ch.sendSos) continue;
-                uint32_t packetId = mesh.sendGroupMessage(ch.index, alertText);
+                uint32_t packetId = mesh.sendGroupMessage(ch.index, alertText, &ts);
 
                 ConvoId id{ConvoId::CHANNEL, ch.name};
                 Message msg;
@@ -1433,7 +1448,7 @@ void UIManager::checkBatteryAlert() {
             for (size_t i = 0; i < rooms.size() && i < MAX_ROOMS; i++) {
                 if (!rooms[i].sendSos) continue;
                 if (rooms[i].publicKey.length() != 64) continue;
-                uint32_t packetId = mesh.sendRoomPost(i, alertText);
+                uint32_t packetId = mesh.sendRoomPost(i, alertText, &ts);
 
                 ConvoId id{ConvoId::ROOM, rooms[i].publicKey.substring(0, 16)};
                 Message msg;
@@ -1540,8 +1555,22 @@ void UIManager::showPinLock(PinPurpose purpose) {
         lv_keyboard_set_textarea(_pinKeypad, NULL);   // we own the buffer, not a textarea
         lv_obj_set_width(_pinKeypad, LV_PCT(100));
         lv_obj_set_height(_pinKeypad, LV_PCT(45));
-        lv_obj_add_event_cb(_pinKeypad, pinKeypadCb, LV_EVENT_VALUE_CHANGED, this);
+        // PREPROCESS is load-bearing. lv_keyboard registers its own
+        // VALUE_CHANGED handler first, and that handler swaps the button map for
+        // the mode keys ("1#", "abc", "ABC") WITHOUT resetting the selected index.
+        // Running after it, lv_btnmatrix_get_btn_text() reads the NEW map at the
+        // old index: "1#" in lowercase is index 0, which is "1" in the special
+        // map, so tapping the mode key to reach the digits typed a stray 1 -- and
+        // "abc" in the special map sits where backspace is in lowercase, deleting
+        // a character. Both maps have 40 entries, so it never went out of range,
+        // it just silently corrupted the PIN.
+        lv_obj_add_event_cb(_pinKeypad, pinKeypadCb,
+                            (lv_event_code_t)(LV_EVENT_VALUE_CHANGED | LV_EVENT_PREPROCESS), this);
     }
+
+    // Remember what input was on so dismiss can hand it back exactly (an auto-dim
+    // lock can fire over an open Settings editor, whose group is not _inputGroup).
+    _pinPrevGroup = IInput::instance().currentGroup();
 
     // Use a dedicated group so trackball/keyboard can't focus away from the overlay
     _pinGroup = lv_group_create();
@@ -1552,6 +1581,30 @@ void UIManager::showPinLock(PinPurpose purpose) {
     lv_obj_add_event_cb(_pinOverlay, pinKeyCb, LV_EVENT_KEY, this);
 
     LOGLN("[UI] PIN lock shown");
+}
+
+// Runs one main-loop turn after a correct PIN (or a cancel), so the overlay and
+// its group are destroyed outside their own event dispatch.
+void UIManager::finishPinUnlock() {
+    if (!_pinOverlay) return;                 // already gone (double async, reboot)
+    const PinPurpose done = _pinPendingAction;
+    dismissPinLock();
+    auto& mgr = ConfigManager::instance();
+    if (done == PinPurpose::AdminUnlock) {
+        mgr.config().security.adminEnabled = true;   // permanent re-enable
+        // A failed write leaves the change in RAM only, so Admin would be locked
+        // again after the next reboot. Say so rather than claiming success.
+        if (!mgr.save()) showToast(t("err_save_failed"));
+        // Say so explicitly: the lock is now OFF and stays off until it is locked
+        // again, which is not obvious from Admin simply opening.
+        showToast(t("admin_unlocked"));
+        showScreen(Screen::ADMIN);
+    } else if (done == PinPurpose::ConfirmAdminLock) {
+        mgr.config().security.adminEnabled = false;  // typing the PIN is the confirmation
+        if (!mgr.save()) showToast(t("err_save_failed"));
+        showToast(t("admin_locked"));
+        goHome();
+    }
 }
 
 void UIManager::pinKeyCb(lv_event_t* e) {
@@ -1611,8 +1664,12 @@ void UIManager::onPinKey(uint32_t key) {
     if (key == LV_KEY_ESC) {
         // Screen unlock is deliberately not cancellable -- that is the whole point
         // of it. The admin prompts are, per the feature's design: typing the PIN
-        // arms the action, anything else backs out.
-        if (_pinPurpose != PinPurpose::ScreenUnlock) dismissPinLock();
+        // arms the action, anything else backs out. Async for the same reason as
+        // the success path: Cancel and the keypad live inside the overlay.
+        if (_pinPurpose != PinPurpose::ScreenUnlock) {
+            _pinPendingAction = PinPurpose::ScreenUnlock;   // dismiss only, no action
+            lv_async_call([](void* p) { ((UIManager*)p)->finishPinUnlock(); }, this);
+        }
         return;
     }
 
@@ -1643,25 +1700,14 @@ void UIManager::onPinKey(uint32_t key) {
         if (codeLower.length() >= 4 && inputLower == codeLower) {
             if (_pinPurpose == PinPurpose::ScreenUnlock) { _pinFails = 0; _pinWaitUntil = 0; }
             else                                         { _adminFails = 0; _adminWaitUntil = 0; }
-            PinPurpose done = _pinPurpose;
-            dismissPinLock();
-            auto& mgr = ConfigManager::instance();
-            if (done == PinPurpose::AdminUnlock) {
-                mgr.config().security.adminEnabled = true;   // permanent re-enable
-                // A failed write leaves the change in RAM only, so Admin would be
-                // locked again after the next reboot. Say so rather than claiming
-                // success.
-                if (!mgr.save()) showToast(t("err_save_failed"));
-                // Say so explicitly: the lock is now OFF and stays off until it is
-                // locked again, which is not obvious from Admin simply opening.
-                showToast(t("admin_unlocked"));
-                showScreen(Screen::ADMIN);
-            } else if (done == PinPurpose::ConfirmAdminLock) {
-                mgr.config().security.adminEnabled = false;  // typing the PIN is the confirmation
-                if (!mgr.save()) showToast(t("err_save_failed"));
-                showToast(t("admin_locked"));
-                goHome();
-            }
+            // Tear down asynchronously. onPinKey runs from the on-screen keypad's
+            // and the Cancel button's own event callbacks, and both are CHILDREN of
+            // _pinOverlay -- deleting it (and its group) synchronously from inside
+            // its own dispatch is the pattern this codebase has already been bitten
+            // by (see ChatScreen's modal dismissal). The follow-up action has to
+            // move with it so it still runs after the overlay is gone.
+            _pinPendingAction = _pinPurpose;
+            lv_async_call([](void* p) { ((UIManager*)p)->finishPinUnlock(); }, this);
             return;
         } else {
             // Wrong PIN. First PIN_FREE_TRIES are unpenalised (fat fingers); after
@@ -1716,14 +1762,16 @@ void UIManager::dismissPinLock() {
     _isLocked = false;
     _pinBuffer = "";
 
-    // Restore input to whatever owned it before the overlay appeared. The auto-dim
-    // lock can fire over an open Settings editor, which holds a modal group; going
-    // straight back to _inputGroup left focus on the rows behind the editor's
-    // overlay while the editor itself was still on screen.
-    if (_modalGroup) {
-        IInput::instance().attachToGroup(_modalGroup);
-    } else if (_inputGroup) {
-        IInput::instance().attachToGroup(_inputGroup);
+    // Restore input to the group it was actually on when the overlay appeared.
+    // _modalGroup is the wrong target: switchToModalGroup() puts only the overlay
+    // CONTAINER in it and every editor immediately re-attaches its own
+    // _editorGroup, so restoring _modalGroup left the keyboard and trackball
+    // pointing at a group with nothing focusable in it. _pinPrevGroup is captured
+    // in showPinLock() from the indev itself, so it is exact.
+    lv_group_t* restore = _pinPrevGroup ? _pinPrevGroup : _inputGroup;
+    _pinPrevGroup = nullptr;
+    if (restore) {
+        IInput::instance().attachToGroup(restore);
     }
 
     if (_pinOverlay) {
@@ -2128,6 +2176,21 @@ void UIManager::switchToModalGroup(lv_obj_t* modalWidget) {
 }
 
 void UIManager::restoreFromModalGroup() {
+    // If the PIN overlay is up, input belongs to it. An inbound SOS alert is
+    // deliberately shown while PIN-locked, and its ModalDialog takes the indevs;
+    // handing them back to _inputGroup on dismiss left the opaque PIN overlay on
+    // screen with nothing able to deliver a key to it, so the device was dead
+    // until a power cycle -- immediately after an emergency alert.
+    if (_pinOverlay && _pinGroup) {
+        if (_modalGroup) {
+            if (_pinPrevGroup == _modalGroup) _pinPrevGroup = nullptr;
+            lv_group_del(_modalGroup);
+            _modalGroup = nullptr;
+        }
+        IInput::instance().attachToGroup(_pinGroup);
+        lv_group_focus_obj(_pinOverlay);
+        return;
+    }
     if (_inputGroup) {
         IInput::instance().attachToGroup(_inputGroup);
     }

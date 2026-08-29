@@ -35,6 +35,10 @@ public:
     // Pointer (touch) indevs aren't routed through groups; implementations may
     // ignore the parameter.
     virtual void attachToGroup(lv_group_t* group) = 0;
+    // The group most recently passed to attachToGroup(). LVGL has no public
+    // getter for an indev's group, and the PIN overlay needs to hand input back
+    // to exactly what it interrupted.
+    virtual lv_group_t* currentGroup() const = 0;
 };
 
 }  // namespace mclite

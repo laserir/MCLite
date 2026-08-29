@@ -424,7 +424,7 @@ The T-Deck Plus is keyboard + trackball driven; the T-Watch Ultra is touch drive
 | Action | T-Deck Plus | T-Watch Ultra |
 |--------|-------------|---------------|
 | Admin / device info | Sym + 0, or tap the gear in the status bar (see `display.menu_button`) | Short-press upper (PWR) button |
-| Re-enable a locked Admin | Same as above, then enter `security.admin_pin` | Same as above, then enter `security.admin_pin` |
+| Re-enable a locked Admin | Sym + 0 from the conversation list, then enter `security.admin_pin` (the status-bar gear stays hidden) | Short-press upper (PWR) button, then enter `security.admin_pin` |
 | Back to the conversation list | Esc | Swipe right |
 | Open the Nth conversation | Sym + 1 ... 9, from the conversation list | Tap the conversation |
 | Lock / unlock | Hold trackball 1s | Hold lower (BOOT) button 1s |

@@ -240,6 +240,11 @@ public:
 private:
     ConfigManager() = default;
     AppConfig _config;
+    // A pin_code / admin_pin the loader refused (wrong length or charset). Kept so
+    // toJson() writes it back verbatim instead of erasing the user's secret on the
+    // next save -- they need to be able to read it to correct it.
+    String _rejectedPinCode;
+    String _rejectedAdminPin;
 
     void applyDefaults();
     bool parseJson(const String& json);

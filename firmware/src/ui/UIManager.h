@@ -227,6 +227,7 @@ private:
     // _pinOverlay, so it dies with it; the pointer is just cleared on teardown.
     lv_obj_t*  _pinKeypad   = nullptr;
     lv_group_t* _pinGroup   = nullptr;
+    lv_group_t* _pinPrevGroup = nullptr;  // group input was on before the overlay
     String    _pinBuffer;
     // Failed-PIN backoff. Deliberately RAM-only: anyone who can power-cycle to
     // clear it can equally pull the externally-accessible SD card and read
@@ -242,6 +243,8 @@ private:
     uint8_t   _adminFails    = 0;
     uint32_t  _adminWaitUntil = 0;
     PinPurpose _pinPurpose   = PinPurpose::ScreenUnlock;
+    PinPurpose _pinPendingAction = PinPurpose::ScreenUnlock;  // action for finishPinUnlock()
+    void finishPinUnlock();   // deferred teardown + follow-up action
     uint32_t  pinWaitRemaining() const;   // seconds left, 0 if not waiting
     void onPinKey(uint32_t key);
     static void pinKeyCb(lv_event_t* e);

@@ -105,6 +105,28 @@ void test_normalize_maps_oil_aliases() {
     TEST_ASSERT_EQUAL_STRING("00111100", normalizeCrockford("OoIiLl00").c_str());
 }
 
+// ═══ Length boundary — locks the truncation point in computeMsgHash ═══
+// The buffer was sized for the 160-byte composition cap, but the RECEIVE path
+// does not enforce it: MeshCore null-terminates the decrypted block and hands it
+// up, so inbound text reaches ~171 bytes. These pin the current bound so a future
+// resize cannot silently start truncating real messages again.
+
+void test_hash_171_byte_text_is_not_truncated() {
+    String a; for (int i = 0; i < 171; i++) a += 'x';
+    String b = a; b += 'y';           // 172 bytes, differs only past 171
+    // If either were truncated below 171, these would collide.
+    TEST_ASSERT_TRUE(computeMsgHash(a, 1700000000) != computeMsgHash(b, 1700000000));
+}
+
+void test_hash_truncates_past_the_buffer() {
+    // BUF_MAX is 184 and 4 bytes go to the timestamp, so 180 is the last byte
+    // hashed; anything beyond must not change the result.
+    String a; for (int i = 0; i < 180; i++) a += 'x';
+    String b = a; b += 'z';
+    TEST_ASSERT_EQUAL_STRING(computeMsgHash(a, 1700000000).c_str(),
+                             computeMsgHash(b, 1700000000).c_str());
+}
+
 int main(int, char**) {
     UNITY_BEGIN();
     RUN_TEST(test_sha256_stub_matches_known_vector);
@@ -113,6 +135,8 @@ int main(int, char**) {
     RUN_TEST(test_hash_depends_on_timestamp);
     RUN_TEST(test_hash_timestamp_is_little_endian);
     RUN_TEST(test_hash_empty_text);
+    RUN_TEST(test_hash_171_byte_text_is_not_truncated);
+    RUN_TEST(test_hash_truncates_past_the_buffer);
     RUN_TEST(test_hash_is_lowercase);
     RUN_TEST(test_hash_uses_crockford_alphabet);
     RUN_TEST(test_valid_crockford_accepted);

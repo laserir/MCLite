@@ -62,6 +62,23 @@ void ContactStore::loadFromConfig() {
         }
 
         c.computeShortId();
+
+        // Reject a key we already hold. Compare the DECODED 32 bytes, not the
+        // config string: public_key accepts hex or base64, so the same key in two
+        // encodings compares unequal as text while producing the identical
+        // shortId -- two runtime contacts that are indistinguishable to everything
+        // downstream, so per-contact edits matched by key land on the first and
+        // the second silently never sees them. Rejected here rather than in
+        // ConfigManager so the entry stays in the user's config.json.
+        bool dup = false;
+        for (const auto& existing : _contacts) {
+            if (memcmp(existing.publicKey, c.publicKey, 32) == 0) { dup = true; break; }
+        }
+        if (dup) {
+            LOGF("[ContactStore] Skipping '%s': duplicate public key\n", cc.alias.c_str());
+            continue;
+        }
+
         _contacts.push_back(c);
     }
 

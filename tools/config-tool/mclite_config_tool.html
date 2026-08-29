@@ -4294,11 +4294,10 @@ function buildPresetConfig() {
   // WiFi carries the sharer's SSID and plaintext password. Preset links are meant
   // to be handed round a group, so these must never travel in one. auto_update is
   // a harmless preference, so keep it if it was set.
-  if (cfg.wifi) {
-    delete cfg.wifi.ssid;
-    delete cfg.wifi.password;
-    if (Object.keys(cfg.wifi).length === 0) delete cfg.wifi;
-  }
+  // WiFi is per-device: credentials are private, and auto_update is a preference
+  // the recipient never sees change (the "applied" list has no WiFi entry), so a
+  // preset must not carry any of it.
+  delete cfg.wifi;
   if (cfg.device) {
     delete cfg.device.name;
     if (Object.keys(cfg.device).length === 0) delete cfg.device;
@@ -4882,6 +4881,12 @@ async function applyDefaultsAndGenerate() {
   document.getElementById('msgReactions').value = 'false';
   document.getElementById('msgShareContact').value = 'true';
   document.getElementById('wifiAutoUpdate').value = 'false';
+  // Credentials must not survive a reset -- "New config" previously carried the
+  // previous session's SSID and plaintext password straight into the new file.
+  document.getElementById('wifiSsid').value = '';
+  document.getElementById('wifiPassword').value = '';
+  document.getElementById('offgridEnabled').value = 'false';
+  document.getElementById('dbgShowMemory').value = 'false';
   document.getElementById('soundEnabled').value = 'true';
   document.getElementById('sosKeyword').value = 'SOS';
   document.getElementById('sosRepeat').value = 3;

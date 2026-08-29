@@ -59,6 +59,7 @@ bool InputTDeck::has(InputCapability /*cap*/) const {
 }
 
 void InputTDeck::attachToGroup(lv_group_t* group) {
+    _group = group;
     if (auto* d = Keyboard::instance().indev())  lv_indev_set_group(d, group);
     if (auto* d = Trackball::instance().indev()) lv_indev_set_group(d, group);
 }

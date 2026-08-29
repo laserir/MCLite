@@ -33,13 +33,44 @@ jobs:
           python-version: '3.x'
 
       - name: Install PlatformIO
-        run: pip install --upgrade platformio
+        # Pillow is needed by generate_color_emoji.py --check below: check mode
+        # re-bakes the glyphs from the committed PNGs rather than comparing a
+        # manifest, so it imports PIL. It is not a PlatformIO dependency.
+        run: pip install --upgrade platformio pillow
 
       - name: Native unit tests
         run: pio test -d firmware/ -e native_test
 
       - name: Translations are in sync
         run: python3 tools/sync_lang.py --check
+
+      - name: Translations cover every string, in ASCII
+        run: |
+          python3 - <<'EOF'
+          import json, re, sys, glob
+          src = open('firmware/src/i18n/I18n.cpp', encoding='utf-8').read()
+          table = re.search(r'DEFAULT_STRINGS\[\]\s*=\s*\{(.*?)\n\};', src, re.S).group(1)
+          en = set(re.findall(r'\{\s*"([^"]+)"', table))
+          want = int(re.search(r'LANG_VERSION\s*=\s*(\d+)',
+                               open('firmware/src/config/defaults.h', encoding='utf-8').read()).group(1))
+          bad = False
+          for f in sorted(glob.glob('sdcard/mclite/lang/*.json')):
+              raw = open(f, 'rb').read()
+              # Montserrat carries no extended-Latin glyphs: a non-ASCII byte renders
+              # as tofu on the device, so translations must stay ASCII-only.
+              for i, b in enumerate(raw):
+                  if b > 127:
+                      print(f'{f}: non-ASCII byte 0x{b:02x} at offset {i}'); bad = True; break
+              d = json.loads(raw)
+              if d.get('version') != want:
+                  print(f'{f}: version {d.get("version")} != LANG_VERSION {want}'); bad = True
+              keys = {k for k, v in d.items() if isinstance(v, str)}
+              missing, extra = en - keys, keys - en
+              # A missing key silently falls back to English on the device.
+              if missing: print(f'{f}: missing {sorted(missing)}'); bad = True
+              if extra:   print(f'{f}: unknown {sorted(extra)}');   bad = True
+          sys.exit(1 if bad else 0)
+          EOF
 
       - name: Translation cap fits the string set
         run: |

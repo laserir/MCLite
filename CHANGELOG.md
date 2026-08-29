@@ -53,8 +53,65 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   checks GitHub for a newer release on boot. Both already existed as `messaging.share_contact` and
   `wifi.auto_update` in `config.json`; neither had a switch you could reach without a computer. The `wifi` block
   is also documented in the README config reference for the first time.
+- **Status-bar menu button (T-Deck).** Optionally show a gear at the left of the status bar that opens Admin, and
+  tapping it again returns home — a touch alternative to the **0** key shortcut, which nothing on screen advertised.
+  It works from any screen, and is suppressed while the keypad is locked, while the map is open, or when
+  `security.admin_enabled` is off. Off by default — enable in **Settings → Display → Menu Button** or set
+  `display.menu_button` in `config.json`; the change applies without a reboot. T-Watch is unaffected: it already
+  reaches Admin via the side (PEK) button. Idea from the [MCLite-RPW](https://github.com/WaarlandIT/MCLite-RPW)
+  fork by PA3RPW.
+- **OTA also refreshes SD translations.** A WiFi firmware update (**Admin → WiFi → Check for updates**) now, right
+  after flashing, re-downloads the language files you already have on the SD card (`/mclite/lang/*.json`) from the
+  release it just installed — so strings added in a new version show up translated instead of falling back to
+  English until you next re-copy the files by hand. It only refreshes languages already present (never adds new
+  ones), validates each download before replacing the file (a failed or corrupt fetch leaves the existing one
+  untouched), and never blocks or fails the firmware update itself. English-only devices are unaffected. Also
+  clears the "lang file is older than firmware" serial warning after an update.
 
 ### Fixed
+- **A T-Watch could be locked out of its own UI permanently, in two ways.** The PIN entry screen only listened
+  for physical key events, and T-Watch has no keyboard or trackball compiled in, so setting **Lock Mode → PIN**
+  produced a lock screen with nothing able to type into it — surviving reboots, recoverable only by pulling the
+  SD card. Separately, a PIN could never be *set* on that board either: the editor's OK key ran the
+  enter-then-repeat step twice and always reported a mismatch. The PIN screen now draws an on-screen keyboard on
+  any board without physical keys, and the Admin prompts (never the screen lock) take ESC or a Cancel button.
+- **A PIN the device cannot type no longer arms a lock.** `pin_code` and `admin_pin` are now ignored unless they
+  are 4-8 **alphanumeric** characters. Anything longer than 8, or containing a symbol the entry screen has no key
+  for, previously armed a lock nobody could open. A rejected PIN is left in `config.json` rather than erased, so
+  you can still read it to correct it, and a `lock: pin` with no usable PIN falls back to the key lock.
+- **An incoming SOS while the screen was PIN-locked made the device unusable.** The alert dialog took over input
+  and handed it back to the screen behind the lock, leaving the PIN overlay on top with nothing able to reach it.
+  On an emergency device, immediately after an emergency alert.
+- **Ordinary messages could be silently destroyed.** Any message whose last line was eight Crockford-legal
+  characters could be parsed as an emoji reaction and dropped — no bubble, no unread badge, no notification,
+  nothing written to the SD card — and this ran even with reactions turned off. The parser now tests positively
+  for emoji codepoints instead of guessing from byte values, so CJK, Cyrillic and Greek messages are safe, and it
+  correctly accepts reactions it used to reject (keycaps, flags, skin tones, family sequences). Every message it
+  does consume is now logged.
+- **Pressing Enter to send could destroy the draft.** The Enter path bypassed the length check and the text
+  cleanup, then cleared the input regardless — so an over-length message vanished without being sent.
+- **The three newest translated strings never loaded**, because the loader's cap was one below the number of
+  strings. On every German, French and Italian device the last three keys were silently dropped.
+- **Reactions attached to the wrong text.** A retried message went out with a fresh timestamp but kept its old
+  identity, the local copy sampled the clock separately from what went on the air (including for SOS and battery
+  alerts), and channel messages were measured without the `<name>: ` prefix MeshCore prepends — so a long one was
+  truncated on the air while the sender's own bubble showed the full text.
+- **Share-preset links leaked the sharer's WiFi network name and password.** Preset links are meant to be handed
+  round a group; they now carry no WiFi at all. "New config" no longer keeps the previous session's credentials
+  either.
+- **Two permission dialogs claimed a change was irreversible when it is not** — those two can be switched back on
+  from the device while Settings Access is Full.
+- **Assorted:** duplicate contact keys no longer produce two indistinguishable contacts (and are no longer
+  deleted from your config file); `wifi.auto_update` survives on a device that has never joined a network; the
+  Set Scope picker no longer strands an overlay or holds the repeater-request slot after you leave Settings; an
+  abandoned permission-lock dialog can no longer reappear and be committed by accident; settings are saved after
+  the editors close rather than before, so a reverted lock mode is actually written; per-channel quick replies
+  apply to hashtag channels whose name was not already normalised; blank entries in `canned_messages` no longer
+  truncate the chat picker; reaction chips aggregate `❤️` and `❤` as one emoji; and the T-Watch screenshot
+  shortcut works again while a PIN prompt is showing.
+- **CI now runs the tests.** Nothing in the pipeline did. It also checks that translations cover every string,
+  are ASCII-only, carry the right version, and that the colour-emoji assets still match the picker — each of
+  which corresponds to a bug that shipped.
 - **A T-Watch could be locked out of its own UI permanently.** The PIN entry screen only ever listened for
   physical key events, and T-Watch has no keyboard or trackball compiled in — its only input device is the
   touchscreen, which never produces them. Setting **Lock Mode → PIN** therefore produced a lock screen with no
@@ -86,7 +143,6 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   replies now apply to hashtag channels whose configured name was not already normalised; blank entries in
   `canned_messages` no longer truncate the chat picker; reaction chips now aggregate `❤️` and `❤`
   as the same emoji instead of showing two chips and a tofu box; the config tool now validates the Admin PIN.
-
 - **The PIN editor now says what it wants.** Entering a PIN asks for it twice, but both prompts were captioned
   identically and a mismatch silently cleared the field, so the second prompt looked like the first had been
   rejected and a typo looked like the editor refusing everything. The second step is now captioned **Repeat PIN**,
@@ -109,20 +165,6 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   resets it; re-locking on auto-dim does not hand out fresh free tries. The counter is deliberately not
   persisted: anyone who can power-cycle to clear it can equally pull the SD card and read `security.pin_code`,
   which is stored in plain text. **SOS is unaffected** and still works while the device is PIN-locked.
-- **Status-bar menu button (T-Deck).** Optionally show a gear at the left of the status bar that opens Admin, and
-  tapping it again returns home — a touch alternative to the **0** key shortcut, which nothing on screen advertised.
-  It works from any screen, and is suppressed while the keypad is locked, while the map is open, or when
-  `security.admin_enabled` is off. Off by default — enable in **Settings → Display → Menu Button** or set
-  `display.menu_button` in `config.json`; the change applies without a reboot. T-Watch is unaffected: it already
-  reaches Admin via the side (PEK) button. Idea from the [MCLite-RPW](https://github.com/WaarlandIT/MCLite-RPW)
-  fork by PA3RPW.
-- **OTA also refreshes SD translations.** A WiFi firmware update (**Admin → WiFi → Check for updates**) now, right
-  after flashing, re-downloads the language files you already have on the SD card (`/mclite/lang/*.json`) from the
-  release it just installed — so strings added in a new version show up translated instead of falling back to
-  English until you next re-copy the files by hand. It only refreshes languages already present (never adds new
-  ones), validates each download before replacing the file (a failed or corrupt fetch leaves the existing one
-  untouched), and never blocks or fails the firmware update itself. English-only devices are unaffected. Also
-  clears the "lang file is older than firmware" serial warning after an update.
 
 ## [0.4.2] — 2026-07-23
 

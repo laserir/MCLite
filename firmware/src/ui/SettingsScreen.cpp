@@ -1683,17 +1683,6 @@ void SettingsScreen::convoEditorReadyCb(lv_event_t* e) {
 
 void SettingsScreen::hide() {
     if (_screen) {
-        // Commit batched edits on leave: one SD write, and reboot once if a
-        // reboot-needing setting (theme/language/radio/gps) was changed.
-        // Report a failed write: everything edited in this visit is batched into
-        // this one save, so on an SD error the changes are lost and the user would
-        // otherwise only find out after a reboot.
-        if (g_dsDirty) {
-            if (!ConfigManager::instance().save()) UIManager::instance().showToast(t("err_save_failed"));
-            g_dsDirty = false;
-        }
-        if (g_dsReboot) { g_dsReboot = false; delay(200); ESP.restart(); }
-
         if (_themeBtnm) hideThemePicker();
         if (_nameTextarea) hideNameEditor();
         if (_scopeRollerPanel) hideScopeRoller();
@@ -1709,6 +1698,30 @@ void SettingsScreen::hide() {
         if (_convoTextarea) hideConvoEditor();
         if (_cannedTextarea) hideCannedEditor();
         if (_convoModalBtnm) hideButtonModal();
+        // Clear unconditionally: boolToggleCb and hideChoicePicker arm _permPending
+        // and then defer opening the dialog, so leaving the screen in that window
+        // left a tightening armed with no dialog on screen for hideButtonModal to
+        // find -- and the queued async would then raise it over the conversation list.
+        _permPending = PermField::None;
+        _permPendingValue = "";
+
+        // Commit batched edits on leave: one SD write, then reboot once if a
+        // reboot-needing setting (theme/language/radio/gps) was changed.
+        //
+        // AFTER the teardown above, not before it: hidePinEditor() reverts a lock
+        // mode that has no usable PIN and sets g_dsDirty itself, so saving first
+        // left the file claiming lock=pin while the toast said otherwise. It also
+        // has to precede the restart, or a reboot-to-apply setting restarts
+        // without ever being written.
+        if (g_dsDirty) {
+            // Report a failed write: a whole visit's edits are batched into this
+            // one save, so on an SD error they are lost and the user would
+            // otherwise only find out after a reboot.
+            if (!ConfigManager::instance().save()) UIManager::instance().showToast(t("err_save_failed"));
+            g_dsDirty = false;
+        }
+        if (g_dsReboot) { g_dsReboot = false; delay(200); ESP.restart(); }
+
         lv_group_t* grp = lv_group_get_default();
         if (grp) {
             lv_group_set_editing(grp, false);
@@ -3057,7 +3070,16 @@ void SettingsScreen::hideScopeEditor() {
     // blocked by an open modal, so pressing ESC while "requesting..." is showing
     // reaches hide(). Closing it rather than just forgetting the pointer is what
     // keeps it from being orphaned on screen for the rest of the session.
-    if (_scopeReqDialog) ModalDialog::close(_scopeReqDialog);
+    if (_scopeReqDialog) {
+        ModalDialog::close(_scopeReqDialog);
+        // Release MeshCore's single anon-request slot, as the timeout and the
+        // dialog's own Cancel both do. Zeroing _scopeReqExpiry below means tick()
+        // will never clean up either, so without this the next "From repeater" is
+        // refused with scope_req_busy until reboot. Guarded on the expiry because
+        // scopeInfo() reuses this pointer for a plain OK dialog with no request
+        // outstanding.
+        if (_scopeReqExpiry != 0) MeshManager::instance().clearAnonReq();
+    }
     _scopeReqDialog = nullptr;
     _scopeReqExpiry = 0;
     UIManager::instance().restoreFromModalGroup();
@@ -3247,8 +3269,16 @@ void SettingsScreen::returnToScopeEditor() {
 // One-button info popup (no repeaters / busy / failed / timeout / no named regions),
 // then back to the editor.
 void SettingsScreen::scopeInfo(const String& msg) {
-    ModalDialog::show(t("scope_from_repeater"), msg, { String(t("btn_ok")) },
-        [this](lv_obj_t* dlg, int) { ModalDialog::close(dlg); returnToScopeEditor(); });
+    // Tracked in _scopeReqDialog so hide() can tear it down. Untracked, an ESC out
+    // of Settings while this was up left the panel and its scrim orphaned on
+    // lv_layer_top over the conversation list -- the same class of leak the scope
+    // roller had.
+    _scopeReqDialog = ModalDialog::show(t("scope_from_repeater"), msg, { String(t("btn_ok")) },
+        [this](lv_obj_t* dlg, int) {
+            _scopeReqDialog = nullptr;
+            ModalDialog::close(dlg);
+            returnToScopeEditor();
+        });
 }
 
 // "From repeater" tapped — snapshot heard repeaters and open the roller over the editor.

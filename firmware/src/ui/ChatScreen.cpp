@@ -590,13 +590,12 @@ void ChatScreen::addBubble(const Message& msg) {
         EmojiCount agg[MAX_EMOJI_TYPES];
         uint8_t aggLen = 0;
         for (const auto& rRaw : msg.reactions) {
-            // Normalise before aggregating: MeshCore One sends U+2764 U+FE0F for
-            // the heart, our picker sends bare U+2764. Without stripping the
-            // variation selector the two count as different reactions (two chips
-            // reading "1" instead of one reading "2") and the VS16 itself renders
-            // as tofu, since the emoji font subsets do not carry it.
-            Reaction r = rRaw;
-            r.emoji = sanitizeForDisplay(r.emoji);
+            // Reactions are normalised once, at store and load time
+            // (MessageStore::applyReaction / loadHistory), so nothing is needed
+            // here. That matters: refresh() rebuilds every bubble and fires on
+            // each inbound reaction, so sanitising per chip per redraw was pure
+            // heap churn on a fragmentation-sensitive device.
+            const Reaction& r = rRaw;
             bool found = false;
             for (uint8_t i = 0; i < aggLen; i++) {
                 if (agg[i].emoji == r.emoji) { agg[i].count++; found = true; break; }
@@ -747,7 +746,7 @@ void ChatScreen::gpsBtnCb(lv_event_t* e) {
     // suffix match, so a later insert still works.
     if (self->_lastLocInsert.length() == 0 || !cur.endsWith(self->_lastLocInsert)) {
         String ins = (cur.length() > 0 && !cur.endsWith(" ")) ? (" " + loc) : loc;
-        if ((int)(cur.length() + ins.length()) > defaults::MAX_MSG_BYTES) {
+        if ((int)(cur.length() + ins.length()) > (int)UIManager::maxMsgBytesFor(*self->_currentConvo)) {
             UIManager::instance().showToast(t("msg_too_long"));
             return;
         }
@@ -798,13 +797,18 @@ void ChatScreen::backBtnCb(lv_event_t* e) {
 }
 
 void ChatScreen::textareaCb(lv_event_t* e) {
-    // Enter key pressed in textarea — same as send
+    // Enter in the textarea must go through exactly the same path as the Send
+    // button. It used to call _onSend directly and then clear the box no matter
+    // what, which skipped sanitizeForDisplay and the length guard -- so an
+    // over-budget message was rejected by handleSend with a toast while the draft
+    // was wiped: nothing sent, nothing stored, nothing recoverable.
+    //
+    // Calling trySendCurrent() is also what makes the T-Watch path safe:
+    // lv_keyboard_def_event_cb sends READY to the keyboard (handled above) and
+    // then forwards it to the textarea, so this fires too. trySendCurrent()
+    // returns immediately on empty text, making the second call a no-op.
     ChatScreen* self = (ChatScreen*)lv_event_get_user_data(e);
-    const char* text = lv_textarea_get_text(self->_textarea);
-    if (text && strlen(text) > 0 && self->_currentConvo && self->_onSend) {
-        self->_onSend(*self->_currentConvo, String(text));
-        lv_textarea_set_text(self->_textarea, "");
-    }
+    self->trySendCurrent();
 }
 
 void ChatScreen::senderNameClickCb(lv_event_t* e) {
@@ -816,10 +820,11 @@ void ChatScreen::senderNameClickCb(lv_event_t* e) {
     String mention = "@[" + *name + "] ";
     // Only prepend if this mention isn't already in the draft — repeated taps just
     // (re)focus the input instead of stacking "@name @name ...". Also skip if it
-    // wouldn't fit the 160-char textarea limit, so we never silently truncate the
-    // tail of what the user already typed.
-    if (cur.indexOf(mention) < 0 &&
-        (int)(mention.length() + cur.length()) <= 160) {
+    // wouldn't fit the send budget, so we never silently truncate the tail of what
+    // the user already typed. Channels get less than 160: MeshCore prepends
+    // "<deviceName>: " and truncates, so the prefix comes out of the budget.
+    if (cur.indexOf(mention) < 0 && self->_currentConvo &&
+        mention.length() + cur.length() <= UIManager::maxMsgBytesFor(*self->_currentConvo)) {
         lv_textarea_set_text(self->_textarea, (mention + cur).c_str());
     }
 #ifdef PLATFORM_TWATCH
@@ -1123,8 +1128,10 @@ void ChatScreen::emojiBtnmCb(lv_event_t* e) {
 
     const char* current = lv_textarea_get_text(self->_textarea);
     size_t curLen = current ? strlen(current) : 0;
-    // Block an insert that would push the message past the 160-byte budget.
-    if (curLen + strlen(emoji) > defaults::MAX_MSG_BYTES) {
+    // Block an insert that would push the message past the send budget (less than
+    // 160 on a channel, where MeshCore's "<deviceName>: " prefix is charged too).
+    if (!self->_currentConvo ||
+        curLen + strlen(emoji) > UIManager::maxMsgBytesFor(*self->_currentConvo)) {
         UIManager::instance().showToast(t("msg_too_long"));
     } else if (curLen > 0) {
         lv_textarea_set_cursor_pos(self->_textarea, LV_TEXTAREA_CURSOR_LAST);

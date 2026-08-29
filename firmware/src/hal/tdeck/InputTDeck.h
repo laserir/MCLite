@@ -24,6 +24,10 @@ public:
     bool has(InputCapability cap) const override;
 
     void attachToGroup(lv_group_t* group) override;
+    lv_group_t* currentGroup() const override { return _group; }
+
+private:
+    lv_group_t* _group = nullptr;   // last group passed to attachToGroup
 };
 
 }  // namespace mclite

@@ -238,13 +238,16 @@ void test_blank_canned_entries_are_dropped() {
     TEST_ASSERT_EQUAL_STRING("Copy", cfg->config().messaging.cannedCustom[1].c_str());
 }
 
-// Two contacts sharing a public key produce two runtime entries with the same
-// shortId, so per-contact edits matched by key land on whichever comes first.
-void test_duplicate_contact_keys_are_rejected() {
+// Duplicate keys are rejected by ContactStore (runtime), NOT here: dropping the
+// entry at parse time would also drop it from the user's config.json on the next
+// save. The parser must keep whatever the file holds.
+void test_duplicate_contact_keys_survive_parse() {
     parse("{\"contacts\":[{\"alias\":\"A\",\"public_key\":\"AABB\"},"
           "{\"alias\":\"B\",\"public_key\":\"aabb\"}]}");
-    TEST_ASSERT_EQUAL(1, cfg->config().contacts.size());
-    TEST_ASSERT_EQUAL_STRING("A", cfg->config().contacts[0].alias.c_str());
+    TEST_ASSERT_EQUAL(2, cfg->config().contacts.size());
+    String json = cfg->toJson();
+    TEST_ASSERT_NOT_NULL(strstr(json.c_str(), "\"A\""));
+    TEST_ASSERT_NOT_NULL(strstr(json.c_str(), "\"B\""));
 }
 
 void test_distinct_contact_keys_both_kept() {
@@ -1487,7 +1490,7 @@ int main() {
 
     // permissions
     RUN_TEST(test_admin_enabled_defaults_true);
-    RUN_TEST(test_duplicate_contact_keys_are_rejected);
+    RUN_TEST(test_duplicate_contact_keys_survive_parse);
     RUN_TEST(test_distinct_contact_keys_both_kept);
     RUN_TEST(test_overlong_pin_is_rejected);
     RUN_TEST(test_too_short_pin_is_rejected);

@@ -32,6 +32,10 @@ extern "C" const lv_img_dsc_t* mclite_color_emoji_14(uint32_t cp);
 
 static lv_font_t* s_colorBody    = nullptr;
 static lv_font_t* s_colorHeading = nullptr;
+// Set once initColorEmoji() has run. Without it, a genuine OOM (both
+// allocations fail) meant every FONT_BODY/FONT_HEADING expansion -- i.e.
+// every label on every screen build -- retried two lv_mem_allocs forever.
+static bool       s_colorTried   = false;
 
 #if LV_USE_IMGFONT
 static bool colorEmojiPathCb(const lv_font_t* font, void* img_src, uint16_t,
@@ -81,7 +85,8 @@ void initColorEmoji() {
     // one and leaving already-styled labels pointing at a font that no longer
     // matches s_colorHeading -- so colorEmojiPathCb would resolve them through the
     // body-size lookup and draw undersized glyphs.
-    if (s_colorBody || s_colorHeading) return;   // already built (or tried)
+    if (s_colorTried) return;   // built, or tried and failed -- never retry
+    s_colorTried = true;
     s_colorBody    = lv_imgfont_create(FONT_BODY_PX, colorEmojiPathCb);
     s_colorHeading = lv_imgfont_create(FONT_HEADING_PX, colorEmojiPathCb);
     // On OOM leave the pointers null; fontBody()/fontHeading() keep returning mono.

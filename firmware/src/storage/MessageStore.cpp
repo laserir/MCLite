@@ -4,6 +4,7 @@
 #include "../config/ConfigManager.h"
 #include "../config/defaults.h"
 #include "../util/MsgHash.h"
+#include "../util/TextSanitizer.h"
 #include <ArduinoJson.h>
 #include <algorithm>
 
@@ -127,9 +128,15 @@ void MessageStore::loadHistory(const ConvoId& id) {
         JsonArray rxns = obj["rxn"].as<JsonArray>();
         for (JsonObject r : rxns) {
             Reaction rx;
-            rx.emoji      = r["e"] | "";
+            // Normalise on load so histories written before store-time
+            // normalisation stop showing a tofu box and splitting the count.
+            rx.emoji      = sanitizeForDisplay(r["e"] | "");
             rx.senderName = r["s"] | "";
-            if (rx.emoji.length() > 0) msg.reactions.push_back(rx);
+            // Enforce the cap on load too: a history file written before the cap
+            // existed (or by a future build) must not reload unbounded.
+            if (rx.emoji.length() > 0 && msg.reactions.size() < MAX_REACTIONS_PER_MSG) {
+                msg.reactions.push_back(rx);
+            }
         }
 
         convo->messages.push_back(msg);
@@ -312,14 +319,24 @@ bool MessageStore::applyReaction(const ConvoId& id, const String& targetHash,
     if (convo) {
         for (auto& msg : convo->messages) {
             if (msg.msgHash == targetHash) {
+                // Normalise BEFORE dedup, not at render time: MeshCore One sends
+                // the heart as U+2764 U+FE0F and our own picker sends bare U+2764,
+                // so without this one person reacting from two apps stores two
+                // entries, shows as a count of 2, and burns two slots of the cap.
+                const String e = sanitizeForDisplay(emoji);
                 // Dedup: (hash, sender, emoji) triple must be unique
                 for (const auto& r : msg.reactions) {
-                    if (r.emoji == emoji && r.senderName == senderName) return true;
+                    if (r.emoji == e && r.senderName == senderName) return true;
                 }
                 // Drop rather than grow without bound; treat it as handled so the
-                // sender is not queued for retry.
-                if (msg.reactions.size() >= MAX_REACTIONS_PER_MSG) return true;
-                msg.reactions.push_back({emoji, senderName});
+                // sender is not queued for retry (a false return means "target not
+                // found yet", which would leak an entry that can never resolve).
+                if (msg.reactions.size() >= MAX_REACTIONS_PER_MSG) {
+                    LOGF("[MsgStore] Reaction cap (%u) reached; dropping\n",
+                         (unsigned)MAX_REACTIONS_PER_MSG);
+                    return true;
+                }
+                msg.reactions.push_back({e, senderName});
                 saveHistory(id);
                 return true;
             }
@@ -339,13 +356,18 @@ void MessageStore::resolvePendingReactionsInternal(Conversation& convo, const St
         if (it->convoId == convo.convoId && it->targetHash == msgHash) {
             for (auto& msg : convo.messages) {
                 if (msg.msgHash == msgHash) {
+                    // Same normalisation and cap as applyReaction -- this path had
+                    // neither, so a queued reaction could bypass both.
+                    const String e = sanitizeForDisplay(it->emoji);
                     bool dup = false;
                     for (const auto& r : msg.reactions) {
-                        if (r.emoji == it->emoji && r.senderName == it->senderName) {
+                        if (r.emoji == e && r.senderName == it->senderName) {
                             dup = true; break;
                         }
                     }
-                    if (!dup) msg.reactions.push_back({it->emoji, it->senderName});
+                    if (!dup && msg.reactions.size() < MAX_REACTIONS_PER_MSG) {
+                        msg.reactions.push_back({e, it->senderName});
+                    }
                     break;
                 }
             }
