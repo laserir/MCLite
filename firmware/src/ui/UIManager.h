@@ -122,6 +122,10 @@ public:
     // at MAX_TEXT_LEN, so the prefix has to come out of our budget.
     static size_t maxMsgBytesFor(const ConvoId& id);
 
+    // Call from a tap handler that is about to tear down its own overlay, so the
+    // rest of that press cannot leak through to whatever is revealed underneath.
+    static void swallowTouchUntilRelease();
+
     // Key lock (lightweight input lock — no PIN required)
     void engageKeyLock();
     void disengageKeyLock();

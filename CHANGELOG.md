@@ -69,6 +69,17 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   clears the "lang file is older than firmware" serial warning after an update.
 
 ### Fixed
+- **Picking an emoji in a group could silently prepend "@[Name] " to your message.** The pickers are dismissed
+  from the tap that chooses an item and deleted a moment later, so the finger was still down when the overlay
+  disappeared — and LVGL then delivered that same press to whatever it had been covering. When a sender name
+  happened to sit under the spot you tapped, it inserted a reply mention, which then showed up in front of the
+  emoji. The press is now ended with the overlay, so it cannot leak through to the message list underneath. The
+  same shape affected the quick-reply and reaction pickers and the PIN keypad.
+- **Long-pressing a sender name inserted a mention instead of opening the reaction picker.** The name is a
+  clickable element inside the bubble, so it swallowed the press; LVGL also sends a click on release even after a
+  long press. Long-pressing a name now opens the reaction picker like long-pressing the bubble does, and a mention
+  is only inserted on a genuine short tap.
+
 - **A T-Watch could be locked out of its own UI permanently, in two ways.** The PIN entry screen only listened
   for physical key events, and T-Watch has no keyboard or trackball compiled in, so setting **Lock Mode → PIN**
   produced a lock screen with nothing able to type into it — surviving reboots, recoverable only by pulling the

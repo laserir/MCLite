@@ -1617,6 +1617,7 @@ void UIManager::pinKeyCb(lv_event_t* e) {
 // keyboard produces, so onPinKey() stays the single place that knows the rules.
 void UIManager::pinKeypadCb(lv_event_t* e) {
     UIManager* self = static_cast<UIManager*>(lv_event_get_user_data(e));
+    swallowTouchUntilRelease();
     lv_obj_t*  kb   = lv_event_get_target(e);
     uint16_t   id   = lv_btnmatrix_get_selected_btn(kb);
     if (id == LV_BTNMATRIX_BTN_NONE) return;
@@ -1635,6 +1636,7 @@ void UIManager::pinKeypadCb(lv_event_t* e) {
 
 void UIManager::pinCancelCb(lv_event_t* e) {
     UIManager* self = static_cast<UIManager*>(lv_event_get_user_data(e));
+    swallowTouchUntilRelease();
     self->onPinKey(LV_KEY_ESC);
 }
 
@@ -2175,7 +2177,22 @@ void UIManager::switchToModalGroup(lv_obj_t* modalWidget) {
     IInput::instance().attachToGroup(_modalGroup);
 }
 
+// Make LVGL ignore the rest of the current press. Must be called from inside the
+// event callback that handles the tap, while the press is still live -- resetting
+// the indev later (from a deferred dismiss) is too late, because by then LVGL has
+// already re-targeted the still-held finger onto whatever the overlay uncovered.
+//
+// Every picker is dismissed from its own VALUE_CHANGED callback and deleted with
+// lv_obj_del_async, so it disappears AFTER the tap. Without this, the finger that
+// chose an emoji went on to press the message bubble revealed underneath, and if a
+// sender name sat under that exact spot it inserted an "@[Name] " mention -- so
+// picking an emoji silently prepended a mention to the draft.
+void UIManager::swallowTouchUntilRelease() {
+    lv_indev_wait_release(lv_indev_get_act());   // null-safe inside LVGL
+}
+
 void UIManager::restoreFromModalGroup() {
+
     // If the PIN overlay is up, input belongs to it. An inbound SOS alert is
     // deliberately shown while PIN-locked, and its ModalDialog takes the indevs;
     // handing them back to _inputGroup on dismiss left the opaque PIN overlay on

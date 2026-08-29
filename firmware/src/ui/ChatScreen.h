@@ -113,6 +113,7 @@ private:
     static void backBtnCb(lv_event_t* e);
     static void textareaCb(lv_event_t* e);
     static void senderNameClickCb(lv_event_t* e);
+    static void senderNameLongPressCb(lv_event_t* e);
     static void retryBtnCb(lv_event_t* e);
     static void mapLinkCb(lv_event_t* e);
     static void cannedBtnCb(lv_event_t* e);

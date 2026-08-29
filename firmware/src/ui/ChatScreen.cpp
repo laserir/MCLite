@@ -463,7 +463,19 @@ void ChatScreen::addBubble(const Message& msg) {
         lv_obj_add_flag(sender, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_set_ext_click_area(sender, 6);
         lv_obj_set_user_data(sender, new String(msg.senderName));
-        lv_obj_add_event_cb(sender, senderNameClickCb, LV_EVENT_CLICKED, this);
+        // SHORT_CLICKED, not CLICKED: LVGL sends CLICKED on release even when the
+        // press was a long one (lv_indev.c only gates SHORT_CLICKED on
+        // long_pr_sent). This label is a clickable CHILD of the bubble, so it
+        // swallows the press -- long-pressing the name to react silently inserted
+        // a mention instead, and the next emoji picked landed after it, which is
+        // how "@[Name] " ended up in front of the emoji.
+        lv_obj_add_event_cb(sender, senderNameClickCb, LV_EVENT_SHORT_CLICKED, this);
+        // ...and make the long press do what the user meant. The label intercepts
+        // the press, so the bubble's own LONG_PRESSED never runs; forward it,
+        // reading the reaction data off the parent bubble. Done explicitly rather
+        // than with LV_OBJ_FLAG_EVENT_BUBBLE, which would also bubble DELETE and
+        // run the bubble's BubbleReactData destructor when the label dies.
+        lv_obj_add_event_cb(sender, senderNameLongPressCb, LV_EVENT_LONG_PRESSED, this);
         lv_obj_add_event_cb(sender, [](lv_event_t* e) {
             delete static_cast<String*>(lv_obj_get_user_data(lv_event_get_target(e)));
         }, LV_EVENT_DELETE, nullptr);
@@ -811,6 +823,21 @@ void ChatScreen::textareaCb(lv_event_t* e) {
     self->trySendCurrent();
 }
 
+// Long press on a sender name: behave like a long press on the bubble it belongs
+// to, so the reaction picker opens instead of nothing happening.
+void ChatScreen::senderNameLongPressCb(lv_event_t* e) {
+    auto* self = static_cast<ChatScreen*>(lv_event_get_user_data(e));
+    if (!self || !self->_currentConvo || !self->_onReact) return;
+    lv_obj_t* bubble = lv_obj_get_parent(lv_event_get_target(e));
+    if (!bubble) return;
+    // Only set when the message carries a hash and reactions are enabled.
+    auto* brd = static_cast<BubbleReactData*>(lv_obj_get_user_data(bubble));
+    if (!brd) return;
+    self->_reactHash       = brd->hash;
+    self->_reactSenderName = brd->senderName;
+    self->showReactionPicker();
+}
+
 void ChatScreen::senderNameClickCb(lv_event_t* e) {
     auto* self = static_cast<ChatScreen*>(lv_event_get_user_data(e));
     auto* name = static_cast<String*>(lv_obj_get_user_data(lv_event_get_target(e)));
@@ -1011,6 +1038,7 @@ void ChatScreen::showCannedPicker() {
 
 void ChatScreen::cannedBtnmCb(lv_event_t* e) {
     ChatScreen* self = (ChatScreen*)lv_event_get_user_data(e);
+    UIManager::swallowTouchUntilRelease();
     uint16_t idx = lv_btnmatrix_get_selected_btn(self->_cannedBtnm);
     if (idx == LV_BTNMATRIX_BTN_NONE) return;
 
@@ -1121,6 +1149,7 @@ void ChatScreen::showEmojiPicker() {
 
 void ChatScreen::emojiBtnmCb(lv_event_t* e) {
     ChatScreen* self = (ChatScreen*)lv_event_get_user_data(e);
+    UIManager::swallowTouchUntilRelease();
     uint16_t idx = lv_btnmatrix_get_selected_btn(self->_emojiBtnm);
     if (idx == LV_BTNMATRIX_BTN_NONE) return;
     const char* emoji = lv_btnmatrix_get_btn_text(self->_emojiBtnm, idx);
@@ -1224,6 +1253,7 @@ void ChatScreen::showReactionPicker() {
 
 void ChatScreen::reactBtnmCb(lv_event_t* e) {
     auto* self = static_cast<ChatScreen*>(lv_event_get_user_data(e));
+    UIManager::swallowTouchUntilRelease();
     if (!self || !self->_reactBtnm || !self->_currentConvo || !self->_onReact) return;
 
     uint16_t idx = lv_btnmatrix_get_selected_btn(self->_reactBtnm);
