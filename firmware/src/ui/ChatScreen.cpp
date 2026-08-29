@@ -646,7 +646,16 @@ void ChatScreen::addBubble(const Message& msg) {
     // Gated on messaging.reactions: only the *UI* is gated. Inbound reactions are
     // always parsed and swallowed (UIManager::onIncomingMessage), otherwise a peer's
     // reaction would render as a junk text bubble on a device with this turned off.
-    if (!msg.msgHash.isEmpty() && ConfigManager::instance().config().messaging.reactions) {
+    if (msg.msgHash.isEmpty() && ConfigManager::instance().config().messaging.reactions) {
+        // No hash means no timestamp (a peer sent 0, or we sent in the first second
+        // of uptime with no clock), so this message cannot be targeted by the
+        // reaction protocol. Without a handler the long press did nothing at all
+        // and the missing affordance looked like a bug -- say why instead.
+        lv_obj_add_flag(bubble, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_event_cb(bubble, [](lv_event_t*) {
+            UIManager::instance().showToast(t("rxn_no_timestamp"));
+        }, LV_EVENT_LONG_PRESSED, nullptr);
+    } else if (!msg.msgHash.isEmpty() && ConfigManager::instance().config().messaging.reactions) {
         String senderName = msg.fromSelf
             ? ConfigManager::instance().config().deviceName
             : msg.senderName;

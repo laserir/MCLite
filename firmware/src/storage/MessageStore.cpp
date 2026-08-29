@@ -117,6 +117,7 @@ void MessageStore::loadHistory(const ConvoId& id) {
         msg.hops = obj["hops"] | 0;
         msg.repeaterCount = obj["rpt"] | 0;
         msg.msgHash = obj["hash"] | "";
+        msg.prevMsgHash = obj["phash"] | "";
         // History written before reactions existed has no "hash" field, and
         // addMessage() only computes one for newly stored messages — so without
         // this every pre-existing bubble stays un-reactable forever. The hash is
@@ -179,6 +180,7 @@ void MessageStore::saveHistory(const ConvoId& id) {
         if (msg.hops > 0) obj["hops"] = msg.hops;   // received hop count (omit when 0/direct)
         if (msg.repeaterCount > 0) obj["rpt"] = msg.repeaterCount;   // heard-by-N-repeaters (#39)
         if (msg.msgHash.length() > 0) obj["hash"] = msg.msgHash;
+        if (msg.prevMsgHash.length() > 0) obj["phash"] = msg.prevMsgHash;
         if (!msg.reactions.empty()) {
             JsonArray rxns = obj["rxn"].to<JsonArray>();
             for (const auto& r : msg.reactions) {
@@ -318,7 +320,9 @@ bool MessageStore::applyReaction(const ConvoId& id, const String& targetHash,
     Conversation* convo = getConversation(id);
     if (convo) {
         for (auto& msg : convo->messages) {
-            if (msg.msgHash == targetHash) {
+            // Match the pre-retry hash too: see Message::prevMsgHash.
+            if (msg.msgHash == targetHash ||
+                (!msg.prevMsgHash.isEmpty() && msg.prevMsgHash == targetHash)) {
                 // Normalise BEFORE dedup, not at render time: MeshCore One sends
                 // the heart as U+2764 U+FE0F and our own picker sends bare U+2764,
                 // so without this one person reacting from two apps stores two
@@ -355,7 +359,8 @@ void MessageStore::resolvePendingReactionsInternal(Conversation& convo, const St
     while (it != _pendingReactions.end()) {
         if (it->convoId == convo.convoId && it->targetHash == msgHash) {
             for (auto& msg : convo.messages) {
-                if (msg.msgHash == msgHash) {
+                if (msg.msgHash == msgHash ||
+                    (!msg.prevMsgHash.isEmpty() && msg.prevMsgHash == msgHash)) {
                     // Same normalisation and cap as applyReaction -- this path had
                     // neither, so a queued reaction could bypass both.
                     const String e = sanitizeForDisplay(it->emoji);

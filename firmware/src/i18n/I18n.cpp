@@ -149,6 +149,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"lbl_kbd_backlight",   "Kbd Brightness"},
     {"lbl_emoji",           "Emoji Picker"},
     {"lbl_color_emoji",     "Colour Emoji"},
+    {"rxn_no_timestamp",    "No reactions: message has no timestamp"},
     {"lbl_menu_button",     "Menu Button"},
     {"lbl_pin_code",        "PIN Code"},
     {"lbl_lock_mode",       "Lock Mode"},

@@ -3,6 +3,7 @@
 #include "theme.h"
 #include "ModalDialog.h"
 #include "../util/MsgHash.h"
+#include "../util/Utf8Trim.h"
 #include "../util/ReactionParse.h"
 #include "../mesh/MeshManager.h"
 #include "../mesh/ContactStore.h"
@@ -1040,9 +1041,10 @@ void UIManager::roomSilenceTick(size_t roomIdx) {
 }
 
 void UIManager::handleRetry(const ConvoId& id, const String& text, uint32_t oldPacketId) {
-    // Channels are fire-and-forget (status SENT immediately; never reaches FAILED),
-    // so the retry button only ever fires for DM or ROOM bubbles.
-    if (id.type != ConvoId::DM && id.type != ConvoId::ROOM) return;
+    // Channels are fire-and-forget, so they normally go straight to SENT -- but a
+    // send that never reached the air (packetId == 0, typically a drained packet
+    // pool) is stored FAILED and does draw a retry button. Returning early here
+    // made that button do nothing at all when tapped.
 
     // Verify message is still FAILED before sending (guards against double-tap)
     auto* convo = MessageStore::instance().getConversation(id);
@@ -1069,7 +1071,7 @@ void UIManager::handleRetry(const ConvoId& id, const String& text, uint32_t oldP
                 break;
             }
         }
-    } else {  // ROOM
+    } else if (id.type == ConvoId::ROOM) {
         const auto& cfgRooms = ConfigManager::instance().config().roomServers;
         for (size_t i = 0; i < cfgRooms.size() && i < MAX_ROOMS; i++) {
             if (cfgRooms[i].publicKey.length() == 64 &&
@@ -1078,6 +1080,9 @@ void UIManager::handleRetry(const ConvoId& id, const String& text, uint32_t oldP
                 break;
             }
         }
+    } else {  // CHANNEL
+        auto* ch = ChannelStore::instance().findByName(id.id);
+        if (ch) newPacketId = MeshManager::instance().sendGroupMessage(ch->index, text, &wireTimestamp);
     }
 
     if (newPacketId == 0) return;
@@ -1088,8 +1093,14 @@ void UIManager::handleRetry(const ConvoId& id, const String& text, uint32_t oldP
     // ends hashing different inputs, so every reaction to this message would miss
     // in both directions -- silently, since a failed hash lookup just queues.
     target->packetId = newPacketId;
-    target->status = MessageStatus::SENDING;
+    // Channels get no ACK, so a successful resend is final rather than pending.
+    target->status = (id.type == ConvoId::CHANNEL) ? MessageStatus::SENT
+                                                   : MessageStatus::SENDING;
     if (wireTimestamp) {
+        // Keep the old hash as an alias before overwriting it. A FAILED bubble is
+        // often a message the peer DID receive whose ACK was lost -- they hold it
+        // under the original hash and will react against that one.
+        if (!target->msgHash.isEmpty()) target->prevMsgHash = target->msgHash;
         target->timestamp = wireTimestamp;
         target->msgHash   = computeMsgHash(target->text, wireTimestamp);
     }
@@ -1271,7 +1282,11 @@ void UIManager::sendSOSToAll() {
         if (!c || !c->sendSos) continue;
 
         uint32_t sosTs = 0;
-        uint32_t packetId = mesh.sendMessage(i, sosText, &sosTs);
+        // Clamp before sending: MeshCore truncates over-long text itself, at a raw
+        // byte offset that can split a UTF-8 sequence, and does it silently. Store
+        // what actually went out, since the reaction hash covers the text.
+        const String txt = truncateUtf8(sosText, defaults::MAX_MSG_BYTES);
+        uint32_t packetId = mesh.sendMessage(i, txt, &sosTs);
         LOGF("[SOS] DM %s: packetId=%u %s\n",
                       c->name.c_str(), packetId,
                       packetId ? "queued" : "FAILED (pool?)");
@@ -1280,7 +1295,7 @@ void UIManager::sendSOSToAll() {
         ConvoId id{ConvoId::DM, c->shortId()};
         Message msg;
         msg.fromSelf  = true;
-        msg.text      = sosText;
+        msg.text      = txt;
         msg.timestamp = sosTs ? sosTs : TimeHelper::instance().bestEpoch();
         msg.status    = packetId ? MessageStatus::SENDING : MessageStatus::FAILED;
         msg.packetId  = packetId;
@@ -1304,7 +1319,10 @@ void UIManager::sendSOSToAll() {
         const auto& allCh = channels.all();
         if (!allCh[i].sendSos) continue;
         uint32_t sosTs = 0;
-        uint32_t packetId = mesh.sendGroupMessage(allCh[i].index, sosText, &sosTs);
+        // Channels are tighter: MeshCore's "<deviceName>: " prefix is charged too.
+        const String txt = truncateUtf8(
+            sosText, maxMsgBytesFor(ConvoId{ConvoId::CHANNEL, allCh[i].name}));
+        uint32_t packetId = mesh.sendGroupMessage(allCh[i].index, txt, &sosTs);
         LOGF("[SOS] CH %s: packetId=%u %s\n",
                       allCh[i].name.c_str(), packetId,
                       packetId ? "queued" : "FAILED (pool?)");
@@ -1312,7 +1330,7 @@ void UIManager::sendSOSToAll() {
         ConvoId id{ConvoId::CHANNEL, allCh[i].name};
         Message msg;
         msg.fromSelf  = true;
-        msg.text      = sosText;
+        msg.text      = txt;
         msg.timestamp = sosTs ? sosTs : TimeHelper::instance().bestEpoch();
         msg.status    = packetId ? MessageStatus::SENT : MessageStatus::FAILED;
         msg.packetId  = packetId;
@@ -1335,7 +1353,8 @@ void UIManager::sendSOSToAll() {
         if (rooms[i].publicKey.length() != 64) continue;
 
         uint32_t sosTs = 0;
-        uint32_t packetId = mesh.sendRoomPost(i, sosText, &sosTs);
+        const String txt = truncateUtf8(sosText, defaults::MAX_MSG_BYTES);
+        uint32_t packetId = mesh.sendRoomPost(i, txt, &sosTs);
         LOGF("[SOS] ROOM %s: packetId=%u %s\n",
                       rooms[i].name.c_str(), packetId,
                       packetId ? "queued" : "FAILED (pool?)");
@@ -1344,7 +1363,7 @@ void UIManager::sendSOSToAll() {
         ConvoId id{ConvoId::ROOM, shortId};
         Message msg;
         msg.fromSelf  = true;
-        msg.text      = sosText;
+        msg.text      = txt;
         msg.timestamp = sosTs ? sosTs : TimeHelper::instance().bestEpoch();
         msg.status    = packetId ? MessageStatus::SENDING : MessageStatus::FAILED;
         msg.packetId  = packetId;
@@ -1415,12 +1434,13 @@ void UIManager::checkBatteryAlert() {
             for (size_t i = 0; i < contacts.count(); i++) {
                 Contact* c = contacts.findByIndex(i);
                 if (!c || !c->sendSos) continue;
-                uint32_t packetId = mesh.sendMessage(i, alertText, &ts);
+                const String txt = truncateUtf8(alertText, defaults::MAX_MSG_BYTES);
+                uint32_t packetId = mesh.sendMessage(i, txt, &ts);
 
                 ConvoId id{ConvoId::DM, c->shortId()};
                 Message msg;
                 msg.fromSelf  = true;
-                msg.text      = alertText;
+                msg.text      = txt;
                 msg.timestamp = ts;
                 msg.status    = packetId ? MessageStatus::SENDING : MessageStatus::FAILED;
                 msg.packetId  = packetId;
@@ -1430,12 +1450,14 @@ void UIManager::checkBatteryAlert() {
             }
             for (const auto& ch : channels_store.all()) {
                 if (!ch.sendSos) continue;
-                uint32_t packetId = mesh.sendGroupMessage(ch.index, alertText, &ts);
+                const String txt = truncateUtf8(
+                    alertText, maxMsgBytesFor(ConvoId{ConvoId::CHANNEL, ch.name}));
+                uint32_t packetId = mesh.sendGroupMessage(ch.index, txt, &ts);
 
                 ConvoId id{ConvoId::CHANNEL, ch.name};
                 Message msg;
                 msg.fromSelf  = true;
-                msg.text      = alertText;
+                msg.text      = txt;
                 msg.timestamp = ts;
                 msg.status    = packetId ? MessageStatus::SENT : MessageStatus::FAILED;
                 msg.packetId  = packetId;
@@ -1448,12 +1470,13 @@ void UIManager::checkBatteryAlert() {
             for (size_t i = 0; i < rooms.size() && i < MAX_ROOMS; i++) {
                 if (!rooms[i].sendSos) continue;
                 if (rooms[i].publicKey.length() != 64) continue;
-                uint32_t packetId = mesh.sendRoomPost(i, alertText, &ts);
+                const String txt = truncateUtf8(alertText, defaults::MAX_MSG_BYTES);
+                uint32_t packetId = mesh.sendRoomPost(i, txt, &ts);
 
                 ConvoId id{ConvoId::ROOM, rooms[i].publicKey.substring(0, 16)};
                 Message msg;
                 msg.fromSelf  = true;
-                msg.text      = alertText;
+                msg.text      = txt;
                 msg.timestamp = ts;
                 msg.status    = packetId ? MessageStatus::SENDING : MessageStatus::FAILED;
                 msg.packetId  = packetId;

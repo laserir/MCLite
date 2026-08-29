@@ -73,7 +73,7 @@ def color_16_swap():
     return int(m.group(1))
 
 
-SWAP = color_16_swap()
+SWAP = None   # resolved lazily in bake(); --check never bakes
 
 
 def fetch(cp):
@@ -88,6 +88,7 @@ def fetch(cp):
 
 def bake(png_path, px):
     """Autocrop, scale to fit, bottom-align, emit RGB565 + alpha per pixel."""
+    swap = color_16_swap()
     from PIL import Image
     img = Image.open(png_path).convert("RGBA")
     bbox = img.split()[3].getbbox()          # trim transparent margin
@@ -103,7 +104,7 @@ def bake(png_path, px):
     for (r, g, b, a) in list(canvas.getdata()):
         v = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
         hi, lo = (v >> 8) & 0xFF, v & 0xFF
-        out += bytes((hi, lo, a) if SWAP else (lo, hi, a))
+        out += bytes((hi, lo, a) if swap else (lo, hi, a))
     return bytes(out)
 
 
@@ -139,25 +140,62 @@ def render(px, cps):
     return "\n".join(L) + "\n"
 
 
+def verify(cps):
+    """Check the committed output WITHOUT re-baking.
+
+    Re-generating to compare meant --check imported PIL and fetched any codepoint
+    missing from the cache, so it needed Pillow and a network on CI, and a Pillow
+    version bump could flag a spurious mismatch. What actually drifts is the
+    codepoint SET (someone edits the picker and forgets to regenerate), so verify
+    that plus the structural invariants the firmware relies on.
+    """
+    problems = []
+    for px in sorted(SIZES):
+        path = os.path.join(OUT_DIR, f"emoji_color_{px}.c")
+        if not os.path.exists(path):
+            problems.append(f"{os.path.basename(path)} is missing"); continue
+        text = io.open(path, encoding="utf-8").read()
+
+        have = sorted(int(x, 16) for x in re.findall(r"case 0x([0-9A-Fa-f]+):", text))
+        if have != list(cps):
+            missing = [f"U+{c:04X}" for c in cps if c not in have]
+            extra   = [f"U+{c:04X}" for c in have if c not in cps]
+            problems.append(f"{os.path.basename(path)}: codepoint set differs"
+                            + (f", missing {missing}" if missing else "")
+                            + (f", unexpected {extra}" if extra else ""))
+
+        # Every glyph is a px*px image of 3-byte pixels (RGB565 + alpha).
+        want = px * px * 3
+        for name, body in re.findall(r"static const uint8_t (ce\d+_[0-9a-f]+)\[\] = \{(.*?)\};", text, re.S):
+            n = len([b for b in body.replace("\n", "").split(",") if b.strip()])
+            if n != want:
+                problems.append(f"{os.path.basename(path)}: {name} has {n} bytes, expected {want}")
+                break
+        if f"{px}, {px} }}" not in text:
+            problems.append(f"{os.path.basename(path)}: header size is not {px}x{px}")
+    return problems
+
+
 def main():
     check = "--check" in sys.argv
     cps = codepoints_from_source()
     print(f"  {len(cps)} codepoints from ChatScreen.cpp")
-    stale = []
+
+    if check:
+        problems = verify(cps)
+        if problems:
+            print("  OUT OF SYNC:")
+            for p in problems:
+                print("   -", p)
+            return 1
+        print("  colour emoji assets are in sync")
+        return 0
+
     for px in sorted(SIZES):
         text = render(px, cps)
         path = os.path.join(OUT_DIR, f"emoji_color_{px}.c")
-        cur = io.open(path, encoding="utf-8").read() if os.path.exists(path) else None
-        if check:
-            if cur != text:
-                stale.append(os.path.basename(path))
-        else:
-            io.open(path, "w", encoding="utf-8").write(text)
-            print(f"  wrote {os.path.basename(path)}  ({len(text)//1024} KB source)")
-    if check:
-        if stale:
-            print("  OUT OF SYNC:", ", ".join(stale)); return 1
-        print("  colour emoji assets are in sync")
+        io.open(path, "w", encoding="utf-8").write(text)
+        print(f"  wrote {os.path.basename(path)}  ({len(text)//1024} KB source)")
     return 0
 
 

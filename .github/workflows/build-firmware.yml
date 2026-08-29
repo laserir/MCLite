@@ -33,10 +33,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install PlatformIO
-        # Pillow is needed by generate_color_emoji.py --check below: check mode
-        # re-bakes the glyphs from the committed PNGs rather than comparing a
-        # manifest, so it imports PIL. It is not a PlatformIO dependency.
-        run: pip install --upgrade platformio pillow
+        run: pip install --upgrade platformio
 
       - name: Native unit tests
         run: pio test -d firmware/ -e native_test
@@ -92,6 +89,8 @@ jobs:
           EOF
 
       - name: Colour emoji assets match the picker
+        # --check inspects the committed .c files; it does not re-bake, so it needs
+        # neither Pillow nor network access. Regenerating (no --check) does.
         run: python3 firmware/assets/fonts/generate_color_emoji.py --check
 
   build:

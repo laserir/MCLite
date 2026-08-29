@@ -107,7 +107,11 @@ void MeshManager::wireCallbacks() {
         String senderName;
         String msgText = fullText;
         int colonPos = fullText.indexOf(": ");
-        if (colonPos > 0 && colonPos < 32) {
+        // >= 0, not > 0: a peer with an empty device name sends ": text", which
+        // left the colon in the stored text -- so our copy differed from the
+        // sender's and the reaction hash could never match. <= 32 rather than < 32
+        // because a name of exactly the maximum length is legal.
+        if (colonPos >= 0 && colonPos <= 32) {
             senderName = fullText.substring(0, colonPos);
             msgText = fullText.substring(colonPos + 2);
         }

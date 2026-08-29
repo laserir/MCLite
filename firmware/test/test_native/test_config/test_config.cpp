@@ -256,6 +256,25 @@ void test_distinct_contact_keys_both_kept() {
     TEST_ASSERT_EQUAL(2, cfg->config().contacts.size());
 }
 
+// The SOS text is this keyword plus a location string and must fit the message
+// budget; unbounded, a long keyword pushed it over and MeshCore truncated the
+// tail silently -- on the SOS path.
+void test_overlong_sos_keyword_is_truncated() {
+    String k; for (int i = 0; i < 60; i++) k += 'A';
+    parse(String("{\"sound\":{\"sos_keyword\":\"" + k + "\"}}").c_str());
+    TEST_ASSERT_EQUAL(32, cfg->config().sosKeyword.length());
+}
+
+void test_empty_sos_keyword_falls_back_to_default() {
+    parse("{\"sound\":{\"sos_keyword\":\"\"}}");
+    TEST_ASSERT_EQUAL_STRING(defaults::SOS_KEYWORD, cfg->config().sosKeyword.c_str());
+}
+
+void test_normal_sos_keyword_kept() {
+    parse("{\"sound\":{\"sos_keyword\":\"MAYDAY\"}}");
+    TEST_ASSERT_EQUAL_STRING("MAYDAY", cfg->config().sosKeyword.c_str());
+}
+
 void test_permissions_default_full() {
     TEST_ASSERT_TRUE(parse("{}"));
     TEST_ASSERT_EQUAL_STRING("full", cfg->config().permissions.settings.c_str());
@@ -1492,6 +1511,9 @@ int main() {
     RUN_TEST(test_admin_enabled_defaults_true);
     RUN_TEST(test_duplicate_contact_keys_survive_parse);
     RUN_TEST(test_distinct_contact_keys_both_kept);
+    RUN_TEST(test_overlong_sos_keyword_is_truncated);
+    RUN_TEST(test_empty_sos_keyword_falls_back_to_default);
+    RUN_TEST(test_normal_sos_keyword_kept);
     RUN_TEST(test_overlong_pin_is_rejected);
     RUN_TEST(test_too_short_pin_is_rejected);
     RUN_TEST(test_valid_pin_lengths_survive);

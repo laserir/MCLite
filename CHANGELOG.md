@@ -69,6 +69,23 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   clears the "lang file is older than firmware" serial warning after an update.
 
 ### Fixed
+- **SOS and battery alerts could be silently cut short.** Those paths send directly and never checked the message
+  budget, and `sos_keyword` had no length limit, so a long keyword plus a location string went over — at which
+  point MeshCore truncated the tail at a raw byte offset, which can split a character in half, with no warning
+  and no failed-message marker. Both now clamp to the budget on a character boundary, and an over-long
+  `sos_keyword` is trimmed on load.
+- **Reacting to a message you had retried didn't work for the other end.** A retry goes out with a fresh
+  timestamp, but a failed-looking message is often one the peer *did* receive whose acknowledgement was lost — so
+  they still hold it under its original identity. Both are now accepted.
+- **Tapping retry on a failed channel message did nothing.** Channels normally can't fail, but one that never
+  reached the air does, and the button was wired only for direct messages and rooms.
+- **Messages from a peer with an empty or very long device name kept a stray `": "` in front of the text**, so
+  the two devices disagreed about what had been said.
+- **Long-pressing a message that can't take reactions now says so** instead of doing nothing. This happens when a
+  message carries no timestamp, which the reaction protocol needs to identify it.
+- The colour-emoji consistency check no longer needs Pillow or network access — it inspects the committed files
+  rather than rebuilding them, so it can't fail spuriously on a library upgrade.
+
 - **Picking an emoji in a group could silently prepend "@[Name] " to your message.** The pickers are dismissed
   from the tap that chooses an item and deleted a moment later, so the finger was still down when the overlay
   disappeared — and LVGL then delivered that same press to whatever it had been covering. When a sender name

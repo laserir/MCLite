@@ -338,6 +338,14 @@ bool ConfigManager::parseJson(const String& json) {
     // Sound
     _config.soundEnabled = doc["sound"]["enabled"] | defaults::SOUND_ENABLED;
     _config.sosKeyword   = doc["sound"]["sos_keyword"] | defaults::SOS_KEYWORD;
+    // The SOS text is this keyword plus a location string, and the whole thing has
+    // to fit the message budget. Unbounded, a long keyword pushed it over and
+    // MeshCore truncated the tail -- silently, and on the SOS path.
+    if (_config.sosKeyword.length() > 32) {
+        LOGLN("[Config] sos_keyword longer than 32 chars - truncating");
+        _config.sosKeyword = _config.sosKeyword.substring(0, 32);
+    }
+    if (_config.sosKeyword.length() == 0) _config.sosKeyword = defaults::SOS_KEYWORD;
     uint8_t sosRepeat    = doc["sound"]["sos_repeat"]  | defaults::SOS_REPEAT;
     _config.sosRepeat    = constrain(sosRepeat, 1, 10);
 

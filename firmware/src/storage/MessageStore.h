@@ -29,6 +29,11 @@ struct Message {
     uint8_t  hops = 0;      // Received hop count (path_hash_count); 0 = direct / self
     uint8_t  repeaterCount = 0;  // Sent channel msg: distinct repeaters heard echoing it (#39)
     String   msgHash;            // 8-char Crockford B32 hash; empty for legacy messages
+    // The hash this message had before it was retried. A resend goes out with a
+    // fresh timestamp, so the peer that already holds the original copy (a lost
+    // ACK, not a lost message) will react against the OLD hash. Kept as an alias
+    // so those reactions still land. Empty unless the message has been retried.
+    String   prevMsgHash;
     std::vector<Reaction> reactions;  // Reactions received for this message
 };
 
