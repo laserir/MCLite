@@ -722,8 +722,12 @@ void SettingsScreen::buildSecurity() {
     addNavRowGated(t("lbl_admin_lock"), t("admin_lock_action"), adminLockRowCb, false);
 
     // Permissions. basic=false is load-bearing: it means these rows are only
-    // editable while settings=="full", so the device can tighten but never
-    // loosen itself. Recovery from a lockdown is editing config.json on the SD.
+    // editable while settings=="full". So Settings Access itself is one-way on the
+    // device -- once it leaves "full", recovery is editing config.json on the SD.
+    // The other two are NOT one-way: they are gated on Settings Access rather than
+    // on themselves, so while it stays "full" they can be switched back on here.
+    // (perm_lock_convmgmt_body / perm_lock_companion_body say exactly this; only
+    // perm_lock_settings_body promises the SD card.)
     const String& ps = cfg.permissions.settings;
     String psLabel = (ps == "none") ? t("perm_none")
                    : (ps == "restricted") ? t("perm_restricted") : t("perm_full");

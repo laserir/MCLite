@@ -1481,8 +1481,8 @@ void UIManager::showPinLock(PinPurpose purpose) {
     _isLocked = true;
     _pinBuffer = "";
     // Do NOT clear _pinFails/_pinWaitUntil here: re-arming the lock (auto-dim)
-    // must not hand out a fresh set of free guesses. dismissPinLock() clears them
-    // on a correct entry, which is the only way they should reset.
+    // must not hand out a fresh set of free guesses. onPinKey() clears them on a
+    // correct entry, which is the only way they should reset.
 
     _pinOverlay = lv_obj_create(lv_layer_top());
     lv_obj_set_size(_pinOverlay, Display::width(), Display::height());
