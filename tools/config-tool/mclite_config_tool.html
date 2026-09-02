@@ -3236,6 +3236,14 @@ function base64ToBytes(b64) {
 // re-save preserves them. Reset to null by Apply Defaults.
 let _displayThemesPreserved = null;
 
+// messaging.canned_messages is a combined field: false (off) / true (on, built-in
+// defaults) / an array of up to 8 custom replies (on, custom list). The form only
+// carries the on/off toggle, so a loaded custom list is stashed here and re-emitted
+// on export -- otherwise editing any other setting silently reverted the user's
+// quick replies to the defaults. The firmware does the same thing in
+// ConfigManager::save(). Reset to null by Apply Defaults.
+let _cannedGlobalPreserved = null;
+
 // Set the Theme dropdown to `theme`, adding a transient "(custom)" option when
 // the value isn't one of the built-ins so a custom selection round-trips.
 function setThemeSelect(theme) {
@@ -4196,7 +4204,11 @@ function buildConfig() {
       request_telemetry: document.getElementById('msgTelemetry').value === 'true',
       show_telemetry: document.getElementById('msgShowTelemetry').value,
       auto_telemetry: document.getElementById('msgAutoTelemetry').value === 'true',
-      canned_messages: document.getElementById('cannedMessages').value === 'true',
+      // On + a preserved custom list => write the list back (an array implies on).
+      // On with no list => plain true (built-in defaults). Off => false, which
+      // drops the list exactly as the firmware's own save does.
+      canned_messages: document.getElementById('cannedMessages').value !== 'true' ? false
+                       : (_cannedGlobalPreserved || true),
       allow_mute: document.getElementById('msgAllowMute').value === 'true',
       share_contact: document.getElementById('msgShareContact').value === 'true',
       show_hop_count: document.getElementById('msgShowHops').value === 'true',
@@ -4552,6 +4564,7 @@ async function applyPresetFromUrl(b64) {
     if (cfg.messaging.canned_messages !== undefined) {
       const cm = cfg.messaging.canned_messages;
       document.getElementById('cannedMessages').value = String(cm === true || Array.isArray(cm) ? true : cm);
+      _cannedGlobalPreserved = Array.isArray(cm) && cm.length ? cm.slice(0, 8) : null;
     }
     if (cfg.messaging.allow_mute !== undefined) document.getElementById('msgAllowMute').value = String(cfg.messaging.allow_mute);
     if (cfg.messaging.share_contact !== undefined) document.getElementById('msgShareContact').value = String(cfg.messaging.share_contact);
@@ -4744,6 +4757,12 @@ function loadConfig(cfg) {
   }
 
   // Messaging
+  // Outside the guard below: loadConfig replaces the whole form, so a file with no
+  // custom quick-reply list must clear one stashed from a previously loaded file.
+  {
+    const cmRaw = cfg.messaging && cfg.messaging.canned_messages;
+    _cannedGlobalPreserved = Array.isArray(cmRaw) && cmRaw.length ? cmRaw.slice(0, 8) : null;
+  }
   if (cfg.messaging) {
     document.getElementById('msgHistory').value = String(cfg.messaging.save_history ?? true);
     document.getElementById('msgMax').value     = cfg.messaging.max_history_per_chat ?? 100;
@@ -4751,9 +4770,14 @@ function loadConfig(cfg) {
     document.getElementById('msgTelemetry').value = String(cfg.messaging.request_telemetry ?? true);
     document.getElementById('msgShowTelemetry').value = cfg.messaging.show_telemetry ?? 'both';
     document.getElementById('msgAutoTelemetry').value = String(cfg.messaging.auto_telemetry ?? false);
-    // canned_messages can be bool or array — config tool only handles the bool toggle
+    // canned_messages can be bool or array — the toggle covers on/off, and a custom
+    // array has no form field, so stash it for re-emit (see _cannedGlobalPreserved).
     const cm = cfg.messaging.canned_messages;
-    document.getElementById('cannedMessages').value = String(cm === true || Array.isArray(cm) ? true : cm ?? false);
+    // Absent key => the firmware's own default, which is ON (ConfigManager.h
+    // `cannedMessages = true`; load() leaves the struct default when the key is
+    // missing). Defaulting to false here exported a `false` that silently turned
+    // quick replies off on a config that simply predated the field.
+    document.getElementById('cannedMessages').value = String(cm === true || Array.isArray(cm) ? true : cm ?? true);
     document.getElementById('msgAllowMute').value = String(cfg.messaging.allow_mute ?? false);
     document.getElementById('msgShareContact').value = String(cfg.messaging.share_contact ?? true);
     document.getElementById('msgShowHops').value = String(cfg.messaging.show_hop_count ?? false);
@@ -4865,6 +4889,7 @@ async function applyDefaultsAndGenerate() {
   document.getElementById('msgShowTelemetry').value = 'both';
   document.getElementById('msgAutoTelemetry').value = 'false';
   document.getElementById('cannedMessages').value = 'true';
+  _cannedGlobalPreserved = null;
   document.getElementById('msgAllowMute').value = 'false';
   document.getElementById('msgShowHops').value = 'false';
   document.getElementById('msgReactions').value = 'false';

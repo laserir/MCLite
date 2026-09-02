@@ -8,6 +8,15 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Fixed
+- **The config tool no longer wipes a custom quick-reply list.** `messaging.canned_messages` can hold your own
+  list of up to eight replies instead of `true`/`false`, but the tool only ever had the on/off switch — so
+  loading such a config, changing anything at all, and exporting wrote the switch back over your list and the
+  device fell back to the eight built-in defaults. The list now survives the round trip. It became easy to hit
+  once quick replies became editable on the device, since editing one there writes exactly that kind of list
+  into `config.json`. Turning the switch off still clears the list, which is what the firmware does too.
+- **A config that predates the quick-reply setting no longer turns quick replies off.** With
+  `canned_messages` absent the firmware leaves them **on**, but the config tool showed Off and exported that
+  choice — so loading an older config and re-exporting silently disabled the picker.
 - **Config tool: a badly formatted PIN no longer says "Ready to export".** The Admin PIN was not checked by the
   readiness gate at all, so an unusable one exported cleanly — and an unusable PIN means a device that can be
   locked out of Admin with no way back except editing the file on the SD card. A device PIN that is set but
@@ -140,7 +149,8 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 - **Reactions attached to the wrong text.** A retried message went out with a fresh timestamp but kept its old
   identity, the local copy sampled the clock separately from what went on the air (including for SOS and battery
   alerts), and channel messages were measured without the `<name>: ` prefix MeshCore prepends — so a long one was
-  truncated on the air while the sender's own bubble showed the full text.
+  truncated on the air while the sender's own bubble showed the full text. Reactions are also capped per message,
+  so a peer can no longer push unbounded data into the list.
 - **Share-preset links leaked the sharer's WiFi network name and password.** Preset links are meant to be handed
   round a group; they now carry no WiFi at all. "New config" no longer keeps the previous session's credentials
   either.
@@ -152,42 +162,11 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   abandoned permission-lock dialog can no longer reappear and be committed by accident; settings are saved after
   the editors close rather than before, so a reverted lock mode is actually written; per-channel quick replies
   apply to hashtag channels whose name was not already normalised; blank entries in `canned_messages` no longer
-  truncate the chat picker; reaction chips aggregate `❤️` and `❤` as one emoji; and the T-Watch screenshot
-  shortcut works again while a PIN prompt is showing.
+  truncate the chat picker; reaction chips aggregate `❤️` and `❤` as one emoji; the T-Watch screenshot
+  shortcut works again while a PIN prompt is showing; and the config tool validates the Admin PIN.
 - **CI now runs the tests.** Nothing in the pipeline did. It also checks that translations cover every string,
   are ASCII-only, carry the right version, and that the colour-emoji assets still match the picker — each of
   which corresponds to a bug that shipped.
-- **A T-Watch could be locked out of its own UI permanently.** The PIN entry screen only ever listened for
-  physical key events, and T-Watch has no keyboard or trackball compiled in — its only input device is the
-  touchscreen, which never produces them. Setting **Lock Mode → PIN** therefore produced a lock screen with no
-  way to type into it, surviving reboots, recoverable only by pulling the SD card. The same dead end sat behind
-  a single accidental side-button press once Admin was locked, which also meant the advertised T-Watch route
-  back into Admin never worked. The PIN screen now draws an on-screen keyboard on any board without physical
-  keys, and the Admin prompts (never the screen lock) can be dismissed with ESC or a Cancel button.
-- **A PIN outside 4-8 characters could brick the device.** `pin_code` and `admin_pin` were loaded from
-  `config.json` without a length check, but the entry field accepts at most 8 characters, so a longer PIN armed
-  a lock nobody could open. Both are now ignored unless they are 4-8 characters, and a `lock: pin` with no
-  usable PIN falls back to the key lock instead of silently doing nothing.
-- **Ordinary messages could be silently destroyed.** Any direct message whose last line happened to be exactly
-  eight Crockford-legal characters was parsed as an emoji reaction and dropped — no bubble, no unread badge, no
-  notification, nothing written to the SD card. A message opening with an emoji or an accented character and
-  ending in an eight-letter word was enough, and this ran even with reactions turned off. The parser now
-  requires the whole prefix to be non-ASCII and at most a few codepoints.
-- **The three newest translated strings never loaded.** The translation loader's cap was one below the number of
-  strings, so on every German, French and Italian device the last three keys in the file were silently dropped —
-  which happened to be the new per-conversation quick-reply editor's.
-- **Reactions attached to the wrong text after a retry, or on long channel messages.** A retried message went out
-  with a fresh timestamp but kept its old hash, and the local copy sampled the clock a second time rather than
-  using what actually went on the air. Channel messages were also measured without MeshCore's `<name>: ` prefix,
-  so a long one was truncated on the air while the sender's own bubble showed the full text — the two ends then
-  disagreed about what had been said. Reactions are also capped per message now, and a peer can no longer push
-  unbounded data into the list.
-- **Assorted:** `wifi.auto_update` is no longer discarded on a device that has never joined a network; the
-  Set Scope picker no longer strands an overlay on screen when you leave Settings with ESC; an abandoned
-  permission-lock dialog no longer re-appears later and can no longer be committed by accident; per-channel quick
-  replies now apply to hashtag channels whose configured name was not already normalised; blank entries in
-  `canned_messages` no longer truncate the chat picker; reaction chips now aggregate `❤️` and `❤`
-  as the same emoji instead of showing two chips and a tofu box; the config tool now validates the Admin PIN.
 - **The PIN editor now says what it wants.** Entering a PIN asks for it twice, but both prompts were captioned
   identically and a mismatch silently cleared the field, so the second prompt looked like the first had been
   rejected and a typo looked like the editor refusing everything. The second step is now captioned **Repeat PIN**,
