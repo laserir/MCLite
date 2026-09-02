@@ -120,8 +120,8 @@ Visit the [MCLite Web Flasher](https://laserir.github.io/MCLite/tools/web-flashe
 Download the latest binary for your board from the [Releases](../../releases) page -- `mclite-v*.bin` for the **T-Deck Plus**, `mclite-watch-v*.bin` for the **T-Watch Ultra** -- and flash with esptool at offset `0x0`:
 
 ```
-esptool.py write_flash 0x0 mclite-v0.4.0.bin          # T-Deck Plus
-esptool.py write_flash 0x0 mclite-watch-v0.4.0.bin    # T-Watch Ultra
+esptool.py write_flash 0x0 mclite-v0.4.3.bin          # T-Deck Plus
+esptool.py write_flash 0x0 mclite-watch-v0.4.3.bin    # T-Watch Ultra
 ```
 
 The T-Watch Ultra has no power switch -- if esptool can't connect, put it in download mode manually: hold **BOOT**, tap **RST**, release **BOOT**.
