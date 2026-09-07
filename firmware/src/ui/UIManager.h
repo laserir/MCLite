@@ -52,7 +52,7 @@ public:
     // Re-download the SD translations when they predate this firmware, using the
     // running version's tag. Safe to call whenever WiFi is up; no-ops unless the
     // files are actually stale, and runs at most once per boot.
-    void refreshStaleLangFiles();
+    void refreshStaleLangFiles(bool manual = false);
 
     // Offer a WiFi-downloaded update (used by the boot check + WiFi setup screen).
     void showWiFiInstallModal(const String& version, const String& url);

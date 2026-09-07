@@ -273,6 +273,8 @@ const DefaultString DEFAULT_STRINGS[] = {
 
     // Offgrid mode (tap-to-toggle on admin screen)
     {"lang_refreshed",           "Translations updated"},
+    {"lang_up_to_date",          "Translations already current"},
+    {"lang_no_newer",            "No newer translations released yet"},
     {"lbl_offgrid_preset",       "Offgrid Preset"},
     // Offgrid preset labels. "Auto" is the original behaviour; the two MeshCore
     // entries exist because the official clients disagree on the frequency (#49).

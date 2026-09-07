@@ -2389,16 +2389,29 @@ void UIManager::checkForWiFiUpdateOnBoot() {
     }
 }
 
-void UIManager::refreshStaleLangFiles() {
-    // Only when there is something to fix, only once per boot: a build running
-    // ahead of its own release tag can never satisfy the check, and retrying every
-    // time WiFi comes up would burn the connection for nothing.
-    if (_langRefreshTried || !I18n::instance().langNeedsRefresh()) return;
+void UIManager::refreshStaleLangFiles(bool manual) {
+    // The automatic path stays quiet and tries at most once per boot. An explicit
+    // "Check for updates" always tries and ALWAYS answers -- a button that silently
+    // does nothing the second time you press it reads as broken, which is exactly
+    // how this was first reported.
+    if (!manual && _langRefreshTried) return;
+
+    if (!I18n::instance().langNeedsRefresh()) {
+        if (manual) showToast(t("lang_up_to_date"));
+        return;
+    }
     _langRefreshTried = true;
     LOGF("[OTA] lang files are v%d, firmware expects v%d — refreshing from v%s\n",
          I18n::instance().langFileVersion(), (int)defaults::LANG_VERSION, MCLITE_VERSION);
     int n = FirmwareUpdater::refreshLangFiles(MCLITE_VERSION);
-    if (n > 0) showToast(t("lang_refreshed"));
+    if (n > 0) {
+        showToast(t("lang_refreshed"));
+    } else if (manual) {
+        // Stale, but the tag this firmware was built from has nothing newer. Normal
+        // on a build running ahead of its own release: the strings it wants do not
+        // exist in a release yet. Say that rather than claiming success or failure.
+        showToast(t("lang_no_newer"));
+    }
 }
 
 void UIManager::dismissTelemetryModal() {

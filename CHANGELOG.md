@@ -49,8 +49,10 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   firmware. The mismatch was detected at boot and written to a serial log nobody reads. Now, whenever the device
   has WiFi up to check for updates — on boot, or from **Admin → WiFi → Check for updates** — it also brings
   stale translations forward to match the running firmware, whether or not there is a firmware update to
-  install. It only touches languages already on the card, never replaces a file with an older one, and reports
-  "Translations updated" when it does something. Suggested by @laserir.
+  install. It only touches languages already on the card, never replaces a file with one that is not newer, and
+  always tells you what happened when you asked for it: updated, already current, or nothing newer released yet.
+  Note it can only fetch what a published release contains, so a device running a build newer than its own
+  release has nothing to pull. Suggested by @laserir.
 - **A translation can no longer corrupt a message it is used to format.** Some on-screen text is built by
   substituting a value into a translated sentence, and the translation comes from a file on the SD card. If that
   file is older or newer than the firmware, the placeholder in it can disagree with the value being substituted,

@@ -516,7 +516,7 @@ void WiFiSetupScreen::checkUpdatesNow() {
 
     // Same opportunity as the boot check: the link is up, so bring stale
     // translations forward whether or not the firmware itself is behind.
-    UIManager::instance().refreshStaleLangFiles();
+    UIManager::instance().refreshStaleLangFiles(/*manual=*/true);
 
     RemoteRelease rel;
     bool newer = UpdateChecker::checkLatest(rel) &&

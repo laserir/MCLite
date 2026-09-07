@@ -291,8 +291,8 @@ int FirmwareUpdater::refreshLangFiles(const String& version) {
             if (curBody.length() && !deserializeJson(cur, curBody)) {
                 int curVer = cur["version"] | 0;
                 int newVer = doc["version"] | 0;
-                if (newVer < curVer) {
-                    LOGF("[OTA] lang %s: v%d on card is newer than v%d at the tag — kept\n",
+                if (newVer <= curVer) {
+                    LOGF("[OTA] lang %s: card has v%d, tag offers v%d — kept\n",
                          code.c_str(), curVer, newVer);
                     continue;
                 }

@@ -29,7 +29,10 @@ public:
     // set. Detected at boot; acted on when a network is available (the OTA path
     // can re-download the files), rather than only logged to a serial port nobody
     // is watching.
-    bool langNeedsRefresh() const { return _langFileVersion > 0 &&
+    // _count > 0 means a file was actually loaded; version 0 means the file
+    // predates the "version" field (before 0.3.9), which is stale by definition
+    // -- the earlier `> 0` test skipped exactly the oldest files.
+    bool langNeedsRefresh() const { return _count > 0 &&
                                            _langFileVersion < (int)defaults::LANG_VERSION; }
     int  langFileVersion() const { return _langFileVersion; }
 
