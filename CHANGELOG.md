@@ -7,6 +7,28 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 
 ## [Unreleased]
 
+### Added
+- **Offgrid presets: choose which offgrid frequency to meet on.** The two official MeshCore clients disagree —
+  the Android app puts offgrid on **869.945 MHz**, MeshCore Open uses **869.000** — so there is no single value
+  MCLite could hardcode and be compatible with both. Offgrid is now a preset you pick, in the config tool or in
+  **Settings → Radio → Offgrid Preset**, alongside the existing on/off switch. **Nothing changes unless you
+  change it:** the default preset, `auto`, is exactly what MCLite has always done (nearest of 433 / 869 / 918
+  derived from your normal frequency, with spreading factor, bandwidth and coding rate left alone), so an
+  update moves nobody's radio.
+  There is also a **complete** preset, `mclite_869`, which fixes the modem settings as well as the frequency.
+  That matters more than it sounds: because stock MeshCore changes only the frequency, two people whose normal
+  regions differ — say EU/UK Narrow on SF8/CR8 and Netherlands on SF7/CR5 — land on the same offgrid frequency
+  and still cannot hear each other, since LoRa cannot demodulate across a different spreading factor. Everyone
+  who picks a complete preset agrees on all of it. It is MCLite-to-MCLite only, by definition.
+  A `custom` preset takes your own frequency and, optionally, modem settings; leave a field empty to inherit
+  your normal one. TX power is never changed by a preset. Reported by @chevdor, who tested against a real stock
+  node and supplied the screenshots that settled it (#49).
+- **The Radio screen now reports what is actually on the air.** Frequency, SF/BW and coding rate showed the
+  configured values even while offgrid was running on different ones. With presets able to change the modem
+  settings too, that would have been actively misleading, so those rows now show the resolved offgrid values
+  (and the offgrid row itself shows the frequency to three decimals, since 869.000 and 869.945 are both in the
+  list).
+
 ### Fixed
 - **The config tool no longer wipes a custom quick-reply list.** `messaging.canned_messages` can hold your own
   list of up to eight replies instead of `true`/`false`, but the tool only ever had the on/off switch — so

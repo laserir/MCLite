@@ -272,10 +272,20 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"convo_set_scope",     "Set scope"},
 
     // Offgrid mode (tap-to-toggle on admin screen)
+    {"lbl_offgrid_preset",       "Offgrid Preset"},
+    // Offgrid preset labels. "Auto" is the original behaviour; the two MeshCore
+    // entries exist because the official clients disagree on the frequency (#49).
+    {"og_auto",                  "Auto (433/869/918)"},
+    {"og_mc_open",               "MeshCore Open 869.000"},
+    {"og_mc_app",                "MeshCore app 869.945"},
+    {"og_mc_433",                "MeshCore 433.000"},
+    {"og_mc_918",                "MeshCore 918.000"},
+    {"og_mclite_869",            "MCLite 869.000 full"},
+    {"og_custom",                "Custom"},
     {"offgrid_off",              "OFF"},
     {"offgrid_on",               "ON"},
     {"offgrid_confirm_on_title", "Enable offgrid mode?"},
-    {"offgrid_confirm_on_body",  "Switch to %d MHz and relay packets for other offgrid nodes. Device will reboot."},
+    {"offgrid_confirm_on_body",  "Switch to %s MHz and relay packets for other offgrid nodes. Device will reboot."},
     {"offgrid_confirm_off_title","Disable offgrid mode?"},
     {"offgrid_confirm_off_body", "Return to normal frequency (%.3f MHz). Device will reboot."},
     {"reboot_now",               "Reboot now"},

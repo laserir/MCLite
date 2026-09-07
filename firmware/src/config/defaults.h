@@ -26,7 +26,7 @@ constexpr const char* FIRMWARE_VENDOR  = MCLITE_REPO_OWNER "/" MCLITE_REPO_NAME;
 // set the SAME number in each sdcard/mclite/lang/*.json "version". On boot I18n
 // warns (serial) if a loaded lang file's version is older — i.e. it predates the
 // current string set, so some keys will fall back to English.
-constexpr uint16_t LANG_VERSION = 56;   // 0.4.x: + rxn_no_timestamp
+constexpr uint16_t LANG_VERSION = 57;   // 0.4.x: + offgrid presets (og_*), offgrid_confirm_on_body %d -> %s
 
 // Device
 constexpr const char* DEVICE_NAME = "MCLite";

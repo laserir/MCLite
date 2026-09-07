@@ -17,7 +17,7 @@ enum class SettingsSection {
 
 // Generic enum/string choice fields rendered by the shared btnmatrix picker.
 enum class ChoiceField { LocationFormat, ShowTelemetry, LocationPrecision, RegionPreset, AdvertInterval, PathHashMode,
-                         PermSettings };
+                         PermSettings, OffgridPreset };
 
 // Simple bool config fields toggled by the shared lv_switch callback. The id is
 // stashed in the switch's user_data so one callback maps to the right field.
@@ -226,6 +226,7 @@ private:
     static void showTelemetryRowCb(lv_event_t* e);
     static void locPrecisionRowCb(lv_event_t* e);
     static void regionRowCb(lv_event_t* e);
+    static void offgridPresetRowCb(lv_event_t* e);
     static void advertRowCb(lv_event_t* e);
     static void pathHashRowCb(lv_event_t* e);
 

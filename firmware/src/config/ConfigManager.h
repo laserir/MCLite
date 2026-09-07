@@ -132,7 +132,16 @@ struct PermissionsConfig {
 };
 
 struct OffgridConfig {
-    bool enabled = false;  // When true, forward packets + switch to closest offgrid freq (433/869/918)
+    bool enabled = false;  // When true, forward packets + switch to the offgrid radio settings
+    // Which entry of config/offgrid_presets.h to use. "auto" (default) keeps the
+    // original behaviour: nearest of 433/869/918, modem settings inherited.
+    String preset = "auto";
+    // Only read when preset == "custom". 0 means "not set" for each, so a custom
+    // preset can override just the frequency and inherit the rest.
+    float   frequency       = 0.0f;
+    uint8_t spreadingFactor = 0;
+    float   bandwidth       = 0.0f;
+    uint8_t codingRate      = 0;
 };
 
 struct WiFiConfig {

@@ -464,8 +464,15 @@ bool ConfigManager::parseJson(const String& json) {
         _config.permissions.companion = doc["permissions"]["companion"] | defaults::PERM_COMPANION;
     }
 
-    // Offgrid — missing block defaults to enabled=false (backwards compat)
+    // Offgrid — missing block defaults to enabled=false (backwards compat).
+    // An absent or unknown `preset` resolves to "auto" (see offgrid_presets.h),
+    // which is the behaviour every config written before presets existed had.
     _config.offgrid.enabled = doc["offgrid"]["enabled"] | false;
+    _config.offgrid.preset  = doc["offgrid"]["preset"]  | "auto";
+    _config.offgrid.frequency       = doc["offgrid"]["frequency"]        | 0.0f;
+    _config.offgrid.spreadingFactor = doc["offgrid"]["spreading_factor"] | 0;
+    _config.offgrid.bandwidth       = doc["offgrid"]["bandwidth"]        | 0.0f;
+    _config.offgrid.codingRate      = doc["offgrid"]["coding_rate"]      | 0;
 
     // WiFi — missing block defaults to empty (disabled). Used for firmware auto-update.
     _config.wifi.ssid       = doc["wifi"]["ssid"]        | "";
@@ -639,6 +646,13 @@ String ConfigManager::toJson() const {
     doc["permissions"]["companion"]               = _config.permissions.companion;
 
     doc["offgrid"]["enabled"] = _config.offgrid.enabled;
+    doc["offgrid"]["preset"]  = _config.offgrid.preset;
+    // Custom-preset fields are only emitted when set, so a device on a named
+    // preset keeps config.json free of four meaningless zeroes.
+    if (_config.offgrid.frequency       > 0.0f) doc["offgrid"]["frequency"]        = _config.offgrid.frequency;
+    if (_config.offgrid.spreadingFactor > 0)    doc["offgrid"]["spreading_factor"] = _config.offgrid.spreadingFactor;
+    if (_config.offgrid.bandwidth       > 0.0f) doc["offgrid"]["bandwidth"]        = _config.offgrid.bandwidth;
+    if (_config.offgrid.codingRate      > 0)    doc["offgrid"]["coding_rate"]      = _config.offgrid.codingRate;
 
     // WiFi — normally only emitted when an SSID is set, to keep config.json clean on
     // devices that don't use it. auto_update is exempt: its switch is deliberately

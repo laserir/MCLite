@@ -5,6 +5,7 @@
 #include "ChannelStore.h"
 #include "hal/boards/board.h"
 #include "../config/ConfigManager.h"
+#include "../config/offgrid_presets.h"
 #include "../hal/GPS.h"
 #include "../util/TimeHelper.h"
 #include "../util/ContactLocation.h"
@@ -48,20 +49,29 @@ bool MeshManager::initRadio() {
     }
 
     // Apply user config radio parameters (std_init uses compile-time defaults).
-    // Offgrid mode swaps to the closest community band (433/869/918); other radio
-    // params (SF/BW/CR/TX power) stay as configured so peers still interop with the
-    // user's normal-mesh settings when they share them.
-    float freq = cfg.radio.frequency;
-    if (cfg.offgrid.enabled) freq = MCLiteMesh::offgridFreqFor(cfg.radio.frequency);
+    // Offgrid mode resolves through its preset (config/offgrid_presets.h): the
+    // default "auto" preset swaps only the frequency and inherits SF/BW/CR, which
+    // is both the original MCLite behaviour and what stock MeshCore does; a preset
+    // that names its own modem settings overrides them here too. TX power is never
+    // touched by a preset -- that is a regulatory/hardware choice, not a meeting point.
+    float   freq = cfg.radio.frequency;
+    uint8_t sf   = cfg.radio.spreadingFactor;
+    float   bw   = cfg.radio.bandwidth;
+    uint8_t cr   = cfg.radio.codingRate;
+    if (cfg.offgrid.enabled) {
+        OffgridRadio og = resolveOffgrid(cfg.offgrid, cfg.radio);
+        freq = og.frequency; sf = og.spreadingFactor; bw = og.bandwidth; cr = og.codingRate;
+    }
     radio.setFrequency(freq);
-    radio.setSpreadingFactor(cfg.radio.spreadingFactor);
+    radio.setSpreadingFactor(sf);
     // Match MeshCore 1.16's SF-dependent preamble (RadioLibWrapper::preambleLengthForSF):
     // 32 symbols for SF<=8, 16 for SF>8. std_init() seeds a fixed 16 and our direct
     // setSpreadingFactor() bypasses the wrapper's updatePreamble(), so set it explicitly here
     // to stay interoperable with a 1.16 mesh (e.g. low-SF networks running SF7).
-    radio.setPreambleLength(cfg.radio.spreadingFactor <= 8 ? 32 : 16);
-    radio.setBandwidth(cfg.radio.bandwidth);
-    radio.setCodingRate(cfg.radio.codingRate);
+    // Derived from the ACTIVE SF, which offgrid may have changed.
+    radio.setPreambleLength(sf <= 8 ? 32 : 16);
+    radio.setBandwidth(bw);
+    radio.setCodingRate(cr);
     radio.setOutputPower(cfg.radio.txPower);
 
     LOGLN("[Mesh] SX1262 ready");
@@ -263,7 +273,7 @@ bool MeshManager::init() {
 
     const auto& cfg = ConfigManager::instance().config();
     float activeFreq = cfg.offgrid.enabled
-        ? MCLiteMesh::offgridFreqFor(cfg.radio.frequency)
+        ? resolveOffgrid(cfg.offgrid, cfg.radio).frequency
         : cfg.radio.frequency;
     _mesh->setFrequency(activeFreq);
 

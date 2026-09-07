@@ -7,6 +7,7 @@
 #include "../config/ConfigManager.h"
 #include "../config/defaults.h"
 #include "../config/radio_presets.h"
+#include "../config/offgrid_presets.h"
 #include "../hal/Display.h"
 #include "../hal/IInput.h"
 #include "../hal/Speaker.h"
@@ -415,9 +416,11 @@ void SettingsScreen::buildRadio() {
         lv_obj_set_style_text_font(val, FONT_BODY, 0);
         lv_obj_set_style_text_color(val, theme::TEXT_PRIMARY(), 0);
         if (cfg.offgrid.enabled) {
-            char buf[24];
-            snprintf(buf, sizeof(buf), "%s (%d MHz)", t("offgrid_on"),
-                     (int)mclite::offgridFreqFor(cfg.radio.frequency));
+            // Decimals matter here: the preset list contains 869.945 as well as
+            // 869.000, and an integer would render both as "869".
+            char buf[32];
+            snprintf(buf, sizeof(buf), "%s (%s MHz)", t("offgrid_on"),
+                     String(resolveOffgrid(cfg.offgrid, cfg.radio).frequency, 3).c_str());
             lv_label_set_text(val, buf);
         } else {
             lv_label_set_text(val, t("offgrid_off"));
@@ -428,6 +431,12 @@ void SettingsScreen::buildRadio() {
             lv_obj_add_event_cb(row, offgridRowCb, LV_EVENT_CLICKED, this);
         }
     }
+
+    // Offgrid preset — which offgrid settings to use (config/offgrid_presets.h).
+    // Shown always, not just when offgrid is on, so it can be set up in advance.
+    addNavRowGated(t("lbl_offgrid_preset"),
+                   t(OFFGRID_PRESETS[offgridPresetIndex(cfg.offgrid.preset)].labelKey),
+                   offgridPresetRowCb, false);
 
     // Heard adverts — live count, opens the list. _heardCountLabel refreshed by tick().
     {
@@ -462,18 +471,25 @@ void SettingsScreen::buildRadio() {
     addNavRowGated(t("lbl_advert_interval"), advertLabel(cfg.radio.advertIntervalMin), advertRowCb, false);
 
     // Read-only diagnostics.
+    // These report what is ON THE AIR, not what is configured: an offgrid preset
+    // can override the modem settings too, and a diagnostics row that showed the
+    // configured values while the radio ran on others would be worse than useless.
     {
-        float activeFreq = cfg.radio.frequency;
-        String freqSuffix = " MHz";
+        float   activeFreq = cfg.radio.frequency;
+        uint8_t activeSf   = cfg.radio.spreadingFactor;
+        float   activeBw   = cfg.radio.bandwidth;
+        uint8_t activeCr   = cfg.radio.codingRate;
+        String  freqSuffix = " MHz";
         if (cfg.offgrid.enabled) {
-            activeFreq = mclite::offgridFreqFor(cfg.radio.frequency);
+            OffgridRadio og = resolveOffgrid(cfg.offgrid, cfg.radio);
+            activeFreq = og.frequency; activeSf = og.spreadingFactor;
+            activeBw   = og.bandwidth; activeCr = og.codingRate;
             freqSuffix += " (offgrid)";
         }
         addReadOnlyRow(t("lbl_frequency"), String(activeFreq, 3) + freqSuffix);
+        addReadOnlyRow(t("lbl_sf_bw"), String(activeSf) + " / " + String(activeBw, 1));
+        addReadOnlyRow(t("lbl_coding_rate"), String(activeCr));
     }
-    addReadOnlyRow(t("lbl_sf_bw"),
-                   String(cfg.radio.spreadingFactor) + " / " + String(cfg.radio.bandwidth, 1));
-    addReadOnlyRow(t("lbl_coding_rate"), String(cfg.radio.codingRate));
     // Scope/region + path-hash size are editable on-device (gated full settings); both reboot
     // on leave to re-apply (scope re-derives _globalScope, hash re-reads at initRadio).
     addNavRowGated(t("lbl_scope"), cfg.radio.scope, scopeRowCb, false);
@@ -1187,7 +1203,7 @@ void SettingsScreen::openButtonModal(ConvoModal purpose) {
             bool enabling = !cfg.offgrid.enabled;
             char buf[192];
             if (enabling) snprintf(buf, sizeof(buf), t("offgrid_confirm_on_body"),
-                                   (int)mclite::offgridFreqFor(cfg.radio.frequency));
+                                   String(resolveOffgrid(cfg.offgrid, cfg.radio).frequency, 3).c_str());
             else          snprintf(buf, sizeof(buf), t("offgrid_confirm_off_body"), cfg.radio.frequency);
             title = buf;
             g_btnModalLabels = { t("reboot_now"), t("btn_cancel") };
@@ -1900,6 +1916,10 @@ void SettingsScreen::regionRowCb(lv_event_t* e) {
     SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
     if (self) self->openChoicePicker(ChoiceField::RegionPreset);
 }
+void SettingsScreen::offgridPresetRowCb(lv_event_t* e) {
+    SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
+    if (self) self->openChoicePicker(ChoiceField::OffgridPreset);
+}
 void SettingsScreen::advertRowCb(lv_event_t* e) {
     SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
     if (self) self->openChoicePicker(ChoiceField::AdvertInterval);
@@ -1920,6 +1940,12 @@ void SettingsScreen::openChoicePicker(ChoiceField f) {
             g_choiceNames.push_back("full");       g_choiceLabels.push_back(t("perm_full"));
             g_choiceNames.push_back("restricted"); g_choiceLabels.push_back(t("perm_restricted"));
             g_choiceNames.push_back("none");       g_choiceLabels.push_back(t("perm_none"));
+            break;
+        case ChoiceField::OffgridPreset:
+            for (size_t i = 0; i < OFFGRID_PRESET_COUNT; i++) {
+                g_choiceNames.push_back(OFFGRID_PRESETS[i].key);
+                g_choiceLabels.push_back(t(OFFGRID_PRESETS[i].labelKey));
+            }
             break;
         case ChoiceField::LocationFormat:
             g_choiceNames.push_back("decimal"); g_choiceLabels.push_back(t("loc_decimal"));
@@ -1987,6 +2013,9 @@ void SettingsScreen::openChoicePicker(ChoiceField f) {
             if (idx >= 0) initSel = (uint16_t)idx;
             break;
         }
+        case ChoiceField::OffgridPreset:
+            initSel = (uint16_t)offgridPresetIndex(cfg.offgrid.preset);
+            break;
         case ChoiceField::AdvertInterval:
             for (size_t i = 0; i < g_choiceVals.size(); i++) {
                 if (g_choiceVals[i] == (int)cfg.radio.advertIntervalMin) { initSel = (uint16_t)i; break; }
@@ -2151,6 +2180,18 @@ void SettingsScreen::choiceChosenCb(lv_event_t* e) {
                     before.codingRate != c.radio.codingRate ||
                     before.txPower != c.radio.txPower) {
                     g_dsDirty = true;
+                    g_dsReboot = true;
+                    UIManager::instance().showToast(t("theme_apply_body"));
+                }
+            }
+            break;
+        case ChoiceField::OffgridPreset:
+            // Reboot only matters while offgrid is actually on -- otherwise the
+            // preset is just a stored preference and nothing on the air changes.
+            if (idx < g_choiceNames.size() && c.offgrid.preset != g_choiceNames[idx]) {
+                c.offgrid.preset = g_choiceNames[idx];
+                g_dsDirty = true;
+                if (c.offgrid.enabled) {
                     g_dsReboot = true;
                     UIManager::instance().showToast(t("theme_apply_body"));
                 }
