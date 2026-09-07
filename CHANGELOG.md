@@ -36,13 +36,6 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   legal value: quietly moving someone to 150 MHz because they typed a stray digit would be worse than doing
   nothing. The config tool now offers only valid choices for SF, bandwidth and coding rate, and flags a
   frequency outside the range instead of reporting "Ready to export".
-- **The Radio screen now reports what is actually on the air.** Frequency, SF/BW and coding rate showed the
-  configured values even while offgrid was running on different ones. With presets able to change the modem
-  settings too, that would have been actively misleading, so those rows now show the resolved offgrid values
-  (and the offgrid row itself shows the frequency to three decimals, since 869.000 and 869.945 are both in the
-  list).
-
-### Fixed
 - **Out-of-date translations now repair themselves.** The device already re-downloaded its language files right
   after a WiFi firmware update, but that was the only route — so a device flashed over USB or from an SD card
   kept whatever language files were on its card, which is how most devices end up with strings older than their
@@ -53,6 +46,13 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   always tells you what happened when you asked for it: updated, already current, or nothing newer released yet.
   Note it can only fetch what a published release contains, so a device running a build newer than its own
   release has nothing to pull. Suggested by @laserir.
+
+### Fixed
+- **The Radio screen now reports what is actually on the air.** Frequency, SF/BW and coding rate showed the
+  configured values even while offgrid was running on different ones. With presets able to change the modem
+  settings too, that would have been actively misleading, so those rows now show the resolved offgrid values
+  (and the offgrid row itself shows the frequency to three decimals, since 869.000 and 869.945 are both in the
+  list).
 - **A translation can no longer corrupt a message it is used to format.** Some on-screen text is built by
   substituting a value into a translated sentence, and the translation comes from a file on the SD card. If that
   file is older or newer than the firmware, the placeholder in it can disagree with the value being substituted,
