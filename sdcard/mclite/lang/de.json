@@ -1,5 +1,5 @@
 {
-    "version": 59,
+    "version": 60,
     "no_sd_title": "Keine SD-Karte",
     "no_sd_msg": "SD-Karte mit config.json einlegen\nund neu starten.\n\nVerwenden Sie das MCLite Config Tool\num Ihre Konfiguration zu erstellen.",
     "setup_title": "Einrichtung erforderlich",
@@ -205,8 +205,6 @@
     "canned_8": "Alles klar",
 
     "lang_refreshed": "Uebersetzungen aktualisiert",
-    "lang_up_to_date": "Uebersetzungen aktuell",
-    "lang_no_newer": "Keine neueren Uebersetzungen",
     "lbl_offgrid_preset": "Offgrid-Preset",
     "og_auto": "Auto (433/869/918)",
     "og_mc_open": "MeshCore Open 869.000",
@@ -234,6 +232,7 @@
     "wifi_connecting": "Verbinde...",
     "wifi_connect_failed": "Verbindung fehlgeschlagen",
     "wifi_no_update": "Firmware ist aktuell",
+    "wifi_no_update_lang": "Firmware aktuell - Uebersetzungen aktualisiert",
     "wifi_not_configured": "Nicht konfiguriert",
     "wifi_off": "WLAN aus",
     "wifi_connected": "Verbunden: %s",

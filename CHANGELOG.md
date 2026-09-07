@@ -42,10 +42,11 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   firmware. The mismatch was detected at boot and written to a serial log nobody reads. Now, whenever the device
   has WiFi up to check for updates — on boot, or from **Admin → WiFi → Check for updates** — it also brings
   stale translations forward to match the running firmware, whether or not there is a firmware update to
-  install. It only touches languages already on the card, never replaces a file with one that is not newer, and
-  always tells you what happened when you asked for it: updated, already current, or nothing newer released yet.
-  Note it can only fetch what a published release contains, so a device running a build newer than its own
-  release has nothing to pull. Suggested by @laserir.
+  install. It only touches languages already on the card and never replaces a file with one that is not newer.
+  **Check for updates still answers the question you asked** — whether there is new firmware — and mentions
+  translations only when they actually changed and there is no firmware update to report instead
+  ("Firmware is up to date - translations updated"). Note it can only fetch what a published release contains,
+  so a device running a build newer than its own release has nothing to pull. Suggested by @laserir.
 
 ### Fixed
 - **The Radio screen now reports what is actually on the air.** Frequency, SF/BW and coding rate showed the

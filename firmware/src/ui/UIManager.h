@@ -49,10 +49,15 @@ public:
     // WiFi auto-update: if configured + enabled, connect, check GitHub for a
     // newer release, and prompt to download+install. Call after checkForSdFirmware().
     void checkForWiFiUpdateOnBoot();
+    // What a translation refresh actually did, so a caller that is ALSO about to
+    // report on the firmware can compose one message instead of firing two toasts
+    // where the second silently replaces the first.
+    enum class LangRefresh { NotNeeded, Updated, NothingNewer };
     // Re-download the SD translations when they predate this firmware, using the
     // running version's tag. Safe to call whenever WiFi is up; no-ops unless the
-    // files are actually stale, and runs at most once per boot.
-    void refreshStaleLangFiles(bool manual = false);
+    // files are actually stale, and runs at most once per boot on the automatic
+    // path. Only the automatic path toasts; a manual caller owns the messaging.
+    LangRefresh refreshStaleLangFiles(bool manual = false);
 
     // Offer a WiFi-downloaded update (used by the boot check + WiFi setup screen).
     void showWiFiInstallModal(const String& version, const String& url);

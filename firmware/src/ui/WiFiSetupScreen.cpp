@@ -515,8 +515,9 @@ void WiFiSetupScreen::checkUpdatesNow() {
     lv_refr_now(NULL);
 
     // Same opportunity as the boot check: the link is up, so bring stale
-    // translations forward whether or not the firmware itself is behind.
-    UIManager::instance().refreshStaleLangFiles(/*manual=*/true);
+    // translations forward whether or not the firmware itself is behind. The
+    // result is reported below, together with the firmware verdict.
+    auto lang = UIManager::instance().refreshStaleLangFiles(/*manual=*/true);
 
     RemoteRelease rel;
     bool newer = UpdateChecker::checkLatest(rel) &&
@@ -525,8 +526,16 @@ void WiFiSetupScreen::checkUpdatesNow() {
     lv_obj_clear_state(_checkBtn, LV_STATE_DISABLED);
     if (lbl) lv_label_set_text(lbl, t("wifi_check_updates"));
 
-    if (newer) UIManager::instance().showWiFiInstallModal(rel.version, rel.url);
-    else       UIManager::instance().showToast(t("wifi_no_update"));
+    // One message, not two. Pressing this button is a question about the firmware,
+    // so that answer always comes -- the translations are only worth a word when
+    // they actually changed and there is no firmware update to talk about instead.
+    if (newer) {
+        UIManager::instance().showWiFiInstallModal(rel.version, rel.url);
+    } else if (lang == UIManager::LangRefresh::Updated) {
+        UIManager::instance().showToast(t("wifi_no_update_lang"));
+    } else {
+        UIManager::instance().showToast(t("wifi_no_update"));
+    }
 }
 
 void WiFiSetupScreen::backBtnCb(lv_event_t* e) {

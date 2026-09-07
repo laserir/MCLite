@@ -2389,29 +2389,27 @@ void UIManager::checkForWiFiUpdateOnBoot() {
     }
 }
 
-void UIManager::refreshStaleLangFiles(bool manual) {
-    // The automatic path stays quiet and tries at most once per boot. An explicit
-    // "Check for updates" always tries and ALWAYS answers -- a button that silently
-    // does nothing the second time you press it reads as broken, which is exactly
-    // how this was first reported.
-    if (!manual && _langRefreshTried) return;
+UIManager::LangRefresh UIManager::refreshStaleLangFiles(bool manual) {
+    // The automatic path tries at most once per boot. An explicit "Check for
+    // updates" always tries -- a button that silently does nothing the second time
+    // you press it reads as broken, which is how this was first reported.
+    if (!manual && _langRefreshTried) return LangRefresh::NotNeeded;
 
-    if (!I18n::instance().langNeedsRefresh()) {
-        if (manual) showToast(t("lang_up_to_date"));
-        return;
-    }
+    if (!I18n::instance().langNeedsRefresh()) return LangRefresh::NotNeeded;
+
     _langRefreshTried = true;
     LOGF("[OTA] lang files are v%d, firmware expects v%d — refreshing from v%s\n",
          I18n::instance().langFileVersion(), (int)defaults::LANG_VERSION, MCLITE_VERSION);
     int n = FirmwareUpdater::refreshLangFiles(MCLITE_VERSION);
-    if (n > 0) {
-        showToast(t("lang_refreshed"));
-    } else if (manual) {
-        // Stale, but the tag this firmware was built from has nothing newer. Normal
-        // on a build running ahead of its own release: the strings it wants do not
-        // exist in a release yet. Say that rather than claiming success or failure.
-        showToast(t("lang_no_newer"));
-    }
+
+    // Stale but nothing newer at the tag is normal on a build running ahead of its
+    // own release: the strings it wants are not in a release yet. Not an error.
+    if (n <= 0) return LangRefresh::NothingNewer;
+
+    // Only the automatic path speaks here. A manual caller is about to report on
+    // the firmware too, and two toasts in a row means only the last one is seen.
+    if (!manual) showToast(t("lang_refreshed"));
+    return LangRefresh::Updated;
 }
 
 void UIManager::dismissTelemetryModal() {

@@ -273,8 +273,6 @@ const DefaultString DEFAULT_STRINGS[] = {
 
     // Offgrid mode (tap-to-toggle on admin screen)
     {"lang_refreshed",           "Translations updated"},
-    {"lang_up_to_date",          "Translations already current"},
-    {"lang_no_newer",            "No newer translations released yet"},
     {"lbl_offgrid_preset",       "Offgrid Preset"},
     // Offgrid preset labels. "Auto" is the original behaviour; the two MeshCore
     // entries exist because the official clients disagree on the frequency (#49).
@@ -308,6 +306,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"wifi_connecting",          "Connecting..."},
     {"wifi_connect_failed",      "Connection failed"},
     {"wifi_no_update",           "Firmware is up to date"},
+    {"wifi_no_update_lang",      "Firmware is up to date - translations updated"},
     {"wifi_not_configured",      "Not configured"},
     {"wifi_off",                 "WiFi off"},
     {"wifi_connected",           "Connected: %s"},

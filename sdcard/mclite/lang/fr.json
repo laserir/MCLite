@@ -1,5 +1,5 @@
 {
-    "version": 59,
+    "version": 60,
     "no_sd_title": "Pas de carte SD",
     "no_sd_msg": "Inserer une carte SD avec config.json\net redemarrer.\n\nUtilisez l'outil MCLite Config Tool\npour creer votre configuration.",
     "setup_title": "Configuration requise",
@@ -205,8 +205,6 @@
     "canned_8": "Tout est bon",
 
     "lang_refreshed": "Traductions mises a jour",
-    "lang_up_to_date": "Traductions a jour",
-    "lang_no_newer": "Pas de traductions plus recentes",
     "lbl_offgrid_preset": "Preset hors-grille",
     "og_auto": "Auto (433/869/918)",
     "og_mc_open": "MeshCore Open 869.000",
@@ -234,6 +232,7 @@
     "wifi_connecting": "Connexion...",
     "wifi_connect_failed": "Echec de la connexion",
     "wifi_no_update": "Firmware a jour",
+    "wifi_no_update_lang": "Firmware a jour - traductions mises a jour",
     "wifi_not_configured": "Non configure",
     "wifi_off": "WiFi eteint",
     "wifi_connected": "Connecte: %s",
