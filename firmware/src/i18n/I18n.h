@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include "../config/defaults.h"
 
 namespace mclite {
 
@@ -23,6 +24,14 @@ public:
     // otherwise -- worst case the user sees one line in English instead of a
     // corrupted line, or a reboot.
     const char* tf(const char* key);
+
+    // True when a translation file is loaded and predates this firmware's string
+    // set. Detected at boot; acted on when a network is available (the OTA path
+    // can re-download the files), rather than only logged to a serial port nobody
+    // is watching.
+    bool langNeedsRefresh() const { return _langFileVersion > 0 &&
+                                           _langFileVersion < (int)defaults::LANG_VERSION; }
+    int  langFileVersion() const { return _langFileVersion; }
 
     const String& currentLanguage() const { return _currentLang; }
     const String& availableLanguages() const { return _availableLangs; }
@@ -49,6 +58,7 @@ private:
     Entry _entries[MAX_STRINGS];
     size_t _count = 0;
     char* _jsonBuf = nullptr;  // Single allocation owning all key+value strings
+    int _langFileVersion = 0;   // "version" of the loaded lang file; 0 = English/none
     String _currentLang = "en";
     String _availableLangs = "en";
 };

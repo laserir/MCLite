@@ -272,6 +272,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"convo_set_scope",     "Set scope"},
 
     // Offgrid mode (tap-to-toggle on admin screen)
+    {"lang_refreshed",           "Translations updated"},
     {"lbl_offgrid_preset",       "Offgrid Preset"},
     // Offgrid preset labels. "Auto" is the original behaviour; the two MeshCore
     // entries exist because the official clients disagree on the frequency (#49).
@@ -450,6 +451,7 @@ void I18n::init(const String& langCode) {
     // (its "version" is older than defaults::LANG_VERSION), meaning some keys are
     // missing and will fall back to English. Re-export from the config tool to fix.
     int fileVer = obj["version"] | 0;
+    _langFileVersion = fileVer;
     if (fileVer < (int)defaults::LANG_VERSION) {
         LOGF("[I18n] WARNING: '%s' lang file is v%d but firmware expects v%d — "
              "some strings may be missing (English fallback). Re-export the lang "

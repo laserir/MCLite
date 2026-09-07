@@ -2372,6 +2372,13 @@ void UIManager::checkForWiFiUpdateOnBoot() {
         return;
     }
 
+    // While the link is up, bring stale translations forward even if the firmware
+    // itself is current. A device flashed over USB or from SD keeps whatever lang
+    // files were already on its card, so "up to date" firmware and out-of-date
+    // strings is the normal state, not an edge case -- and a stale file means
+    // missing strings falling back to English (and, before tf(), worse).
+    refreshStaleLangFiles();
+
     RemoteRelease rel;
     bool found = UpdateChecker::checkLatest(rel);
     if (found && compareVersions(rel.version.c_str(), MCLITE_VERSION) > 0) {
@@ -2380,6 +2387,18 @@ void UIManager::checkForWiFiUpdateOnBoot() {
     } else {
         WiFiManager::instance().disconnect();  // up-to-date / error → drop the link
     }
+}
+
+void UIManager::refreshStaleLangFiles() {
+    // Only when there is something to fix, only once per boot: a build running
+    // ahead of its own release tag can never satisfy the check, and retrying every
+    // time WiFi comes up would burn the connection for nothing.
+    if (_langRefreshTried || !I18n::instance().langNeedsRefresh()) return;
+    _langRefreshTried = true;
+    LOGF("[OTA] lang files are v%d, firmware expects v%d — refreshing from v%s\n",
+         I18n::instance().langFileVersion(), (int)defaults::LANG_VERSION, MCLITE_VERSION);
+    int n = FirmwareUpdater::refreshLangFiles(MCLITE_VERSION);
+    if (n > 0) showToast(t("lang_refreshed"));
 }
 
 void UIManager::dismissTelemetryModal() {

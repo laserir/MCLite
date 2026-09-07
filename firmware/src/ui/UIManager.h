@@ -49,6 +49,10 @@ public:
     // WiFi auto-update: if configured + enabled, connect, check GitHub for a
     // newer release, and prompt to download+install. Call after checkForSdFirmware().
     void checkForWiFiUpdateOnBoot();
+    // Re-download the SD translations when they predate this firmware, using the
+    // running version's tag. Safe to call whenever WiFi is up; no-ops unless the
+    // files are actually stale, and runs at most once per boot.
+    void refreshStaleLangFiles();
 
     // Offer a WiFi-downloaded update (used by the boot check + WiFi setup screen).
     void showWiFiInstallModal(const String& version, const String& url);
@@ -223,6 +227,7 @@ private:
     static constexpr uint32_t BATTERY_CHECK_MS = 30000;  // Check every 30s
 
     // PIN lock state
+    bool       _langRefreshTried = false;  // one lang re-download attempt per boot
     bool       _isLocked = false;
     lv_obj_t*  _pinOverlay  = nullptr;
     lv_obj_t*  _pinDots     = nullptr;

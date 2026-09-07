@@ -69,6 +69,31 @@ jobs:
           sys.exit(1 if bad else 0)
           EOF
 
+      - name: Translations use the same printf specifiers as English
+        run: |
+          python3 - <<'EOF'
+          import json, re, sys, glob
+          # A translated string is handed to snprintf as the FORMAT. If its
+          # conversion specifiers disagree with the English one the arguments no
+          # longer match the format: undefined behaviour, seen in the field as a
+          # %d printing a pointer. The firmware guards this at runtime (I18n::tf),
+          # but our own files should never need the guard.
+          src = open('firmware/src/i18n/I18n.cpp', encoding='utf-8').read()
+          table = re.search(r'DEFAULT_STRINGS\[\]\s*=\s*\{(.*?)\n\};', src, re.S).group(1)
+          en = dict(re.findall(r'\{\s*"([^"]+)"\s*,\s*"((?:[^"\\]|\\.)*)"', table))
+          spec = lambda s: re.findall(r'%[-+ #0-9.]*[a-zA-Z]', s.replace('%%', ''))
+          bad = False
+          for f in sorted(glob.glob('sdcard/mclite/lang/*.json')):
+              d = json.load(open(f, encoding='utf-8'))
+              for k, v in d.items():
+                  if not isinstance(v, str) or k not in en:
+                      continue
+                  if spec(v) != spec(en[k]):
+                      print(f'{f}: {k} has {spec(v)}, English has {spec(en[k])}')
+                      bad = True
+          sys.exit(1 if bad else 0)
+          EOF
+
       - name: Translation cap fits the string set
         run: |
           python3 - <<'EOF'

@@ -514,6 +514,10 @@ void WiFiSetupScreen::checkUpdatesNow() {
     if (lbl) lv_label_set_text(lbl, t("wifi_checking"));
     lv_refr_now(NULL);
 
+    // Same opportunity as the boot check: the link is up, so bring stale
+    // translations forward whether or not the firmware itself is behind.
+    UIManager::instance().refreshStaleLangFiles();
+
     RemoteRelease rel;
     bool newer = UpdateChecker::checkLatest(rel) &&
                  compareVersions(rel.version.c_str(), MCLITE_VERSION) > 0;

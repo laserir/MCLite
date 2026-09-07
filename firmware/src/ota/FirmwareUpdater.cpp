@@ -280,6 +280,25 @@ int FirmwareUpdater::refreshLangFiles(const String& version) {
         }
 
         String path = String("/mclite/lang/") + code + ".json";
+
+        // Never downgrade a translation. The standalone refresh pins to the
+        // RUNNING firmware's tag, so on a build newer than its own release the
+        // download can be older than what is already on the card -- replacing it
+        // would lose strings and leave the file stale, retried every boot.
+        {
+            JsonDocument cur;
+            String curBody = sd.readFile(path.c_str(), 32768);
+            if (curBody.length() && !deserializeJson(cur, curBody)) {
+                int curVer = cur["version"] | 0;
+                int newVer = doc["version"] | 0;
+                if (newVer < curVer) {
+                    LOGF("[OTA] lang %s: v%d on card is newer than v%d at the tag — kept\n",
+                         code.c_str(), curVer, newVer);
+                    continue;
+                }
+            }
+        }
+
         if (sd.writeAtomic(path.c_str(), body)) {
             updated++;
             LOGF("[OTA] lang updated: %s\n", code.c_str());
