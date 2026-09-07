@@ -8,6 +8,14 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Added
+- **12-hour clock.** Times can show as **1:45 PM** instead of **13:45**. Off by default, so nothing changes
+  unless you turn it on, in the config tool or in **Settings → Display → 12-Hour Clock** — no reboot, the clock
+  switches within a second. It applies to *every* time the device shows: the status-bar clock, chat message
+  timestamps, uptime, last-charged and the room sync time. That consistency is the point; a status bar reading
+  13:45 above a message stamped 1:45 PM would look broken. This changes only how times are displayed — what
+  time it is still comes from `gps.timezone` / `gps.clock_offset`. On the T-Deck the longer clock leaves
+  slightly less room for a long device name in the status bar, which shortens with an ellipsis. Asked for by
+  @thumbtak2 (#50).
 - **Offgrid presets: choose which offgrid frequency to meet on.** The two official MeshCore clients disagree —
   the Android app puts offgrid on **869.945 MHz**, MeshCore Open uses **869.000** — so there is no single value
   MCLite could hardcode and be compatible with both. Offgrid is now a preset you pick, in the config tool or in
@@ -49,6 +57,10 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   so a device running a build newer than its own release has nothing to pull. Suggested by @laserir.
 
 ### Fixed
+- **A room's last-sync time was shown in UTC.** Every other time on the device honours the timezone you
+  configured, but the room list built that one timestamp with its own code that skipped the conversion — so on
+  a device set to, say, CET it read an hour or two behind everything else on screen. It now goes through the
+  same formatter as the rest, which is also what makes it follow the new 12-hour setting.
 - **The Radio screen now reports what is actually on the air.** Frequency, SF/BW and coding rate showed the
   configured values even while offgrid was running on different ones. With presets able to change the modem
   settings too, that would have been actively misleading, so those rows now show the resolved offgrid values

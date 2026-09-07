@@ -281,6 +281,9 @@ To set up a group: use **Fleet Mode** in the Setup Wizard. Add a device for each
                                        //   nothing goes blank. Colour glyphs use a fixed palette and do not follow
                                        //   the theme. Off = the plain monochrome look. Default on.
     "menu_button": false,              // T-Deck only: status-bar gear that opens Admin. Default off (use the "0" key). Hidden when security.admin_enabled is false.
+    "clock_12h": false,                // Show times as "1:45 PM" instead of "13:45". Default off (24-hour). Applies to every
+                                       //   time shown: status bar, chat timestamps, uptime, last charged, room sync. This is
+                                       //   display only -- what time it is comes from gps.timezone / gps.clock_offset below.
 
     // Optional custom palettes. Select one by putting its "name" in "theme" above.
     // Each entry starts from "base" (a built-in) and overrides any of the color

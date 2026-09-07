@@ -91,6 +91,7 @@ struct DisplayConfig {
     bool     emoji          = true;  // Show the chat emoji picker (received emoji always render)
     bool     colorEmoji     = true;  // Render the on-device emoji set in colour (rest stay monochrome)
     bool     menuButton     = false; // T-Deck only: status-bar gear that opens Admin
+    bool     clock12h       = false; // Show times as "1:45 PM" instead of "13:45" (#50)
     std::vector<CustomTheme> customThemes;  // optional user palettes (display.themes[])
 };
 

@@ -537,7 +537,7 @@ void ChatScreen::addBubble(const Message& msg) {
         lv_obj_set_style_text_font(ts, FONT_BODY, 0);
         lv_obj_set_style_text_color(ts,
             msg.fromSelf ? theme::BUBBLE_SELF_META() : theme::TEXT_TIMESTAMP(), 0);
-        char timeStr[8];
+        char timeStr[TimeHelper::CLOCK_BUF];
         TimeHelper::instance().formatHHMM(msg.timestamp, timeStr, sizeof(timeStr));
         lv_label_set_text(ts, timeStr);
     }

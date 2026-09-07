@@ -26,7 +26,7 @@ constexpr const char* FIRMWARE_VENDOR  = MCLITE_REPO_OWNER "/" MCLITE_REPO_NAME;
 // set the SAME number in each sdcard/mclite/lang/*.json "version". On boot I18n
 // warns (serial) if a loaded lang file's version is older — i.e. it predates the
 // current string set, so some keys will fall back to English.
-constexpr uint16_t LANG_VERSION = 60;   // 0.4.x: one message per update check
+constexpr uint16_t LANG_VERSION = 61;   // 0.4.x: + lbl_clock_12h
 
 // Device
 constexpr const char* DEVICE_NAME = "MCLite";
@@ -62,6 +62,7 @@ constexpr uint8_t  KBD_BRIGHTNESS        = 127;
 constexpr bool     EMOJI_ENABLED         = true;   // Chat emoji picker on by default
 constexpr bool     COLOR_EMOJI           = true;   // Colour glyphs for the on-device emoji set
 constexpr bool     MENU_BUTTON           = false;  // T-Deck only: status-bar gear -> Admin. Off by default
+constexpr bool     CLOCK_12H             = false;  // 12-hour clock. Off = 24-hour (#50)
 
 // Messaging
 constexpr bool     SAVE_HISTORY          = true;

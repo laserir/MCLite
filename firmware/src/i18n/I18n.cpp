@@ -151,6 +151,7 @@ const DefaultString DEFAULT_STRINGS[] = {
     {"lbl_color_emoji",     "Colour Emoji"},
     {"rxn_no_timestamp",    "No reactions: message has no timestamp"},
     {"lbl_menu_button",     "Menu Button"},
+    {"lbl_clock_12h",       "12-Hour Clock"},
     {"lbl_pin_code",        "PIN Code"},
     {"lbl_lock_mode",       "Lock Mode"},
     {"lbl_auto_lock",       "Auto-Lock"},

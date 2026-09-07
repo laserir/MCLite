@@ -540,6 +540,11 @@ void SettingsScreen::buildDisplay() {
     addSwitchRowGated(t("lbl_menu_button"), cfg.display.menuButton, menuButtonToggleCb, nullptr, false);
 #endif
 
+    // Both boards. No reboot: StatusBar re-formats every tick and ChatScreen
+    // rebuilds its bubbles on reopen, so the change is visible immediately.
+    addSwitchRowGated(t("lbl_clock_12h"), cfg.display.clock12h, boolToggleCb,
+                      (void*)BoolField::Clock12h, false);
+
     // Screenshots and debug overlays fold into Display (no separate Debug screen / header).
     addSwitchRowGated(t("lbl_screenshots"),  cfg.debug.screenshots, screenshotsToggleCb,  nullptr, false);
     addSwitchRowGated(t("lbl_show_memory"),  cfg.debug.showMemory,  showMemoryToggleCb,   nullptr, false);
@@ -680,7 +685,7 @@ void SettingsScreen::buildBattery() {
 
     {
         uint32_t bootEp = TimeHelper::instance().bootEpoch();
-        char tsBuf[20], agoBuf[16];
+        char tsBuf[TimeHelper::TIMESTAMP_BUF], agoBuf[16];
         TimeHelper::instance().formatTimestamp(bootEp, tsBuf, sizeof(tsBuf));
         uint32_t nowEp = TimeHelper::instance().bestEpoch();
         if (bootEp >= 1700000000 && nowEp > bootEp) {
@@ -689,7 +694,7 @@ void SettingsScreen::buildBattery() {
             strncpy(agoBuf, "--", sizeof(agoBuf));
             agoBuf[sizeof(agoBuf) - 1] = '\0';
         }
-        char rowBuf[48];
+        char rowBuf[56];
         snprintf(rowBuf, sizeof(rowBuf), "%s (%s)", tsBuf, agoBuf);
         addReadOnlyRow(t("lbl_uptime"), rowBuf);
     }
@@ -699,7 +704,7 @@ void SettingsScreen::buildBattery() {
         if (!batt.isCharging()) {
             uint32_t lcEp = batt.lastChargedEpoch();
             if (lcEp >= 1700000000) {
-                char tsBuf[20], agoBuf[16];
+                char tsBuf[TimeHelper::TIMESTAMP_BUF], agoBuf[16];
                 TimeHelper::instance().formatTimestamp(lcEp, tsBuf, sizeof(tsBuf));
                 uint32_t nowEp = TimeHelper::instance().bestEpoch();
                 if (nowEp >= lcEp) {
@@ -708,7 +713,7 @@ void SettingsScreen::buildBattery() {
                     strncpy(agoBuf, "--", sizeof(agoBuf));
                     agoBuf[sizeof(agoBuf) - 1] = '\0';
                 }
-                char rowBuf[48];
+                char rowBuf[56];
                 snprintf(rowBuf, sizeof(rowBuf), "%s (%s, %d%%)",
                          tsBuf, agoBuf, (int)batt.lastChargedPercent());
                 addReadOnlyRow(t("lbl_last_charged"), rowBuf);
@@ -1094,11 +1099,14 @@ void SettingsScreen::buildConvoList() {
                 ConvoId rid { ConvoId::ROOM, shortId };
                 if (Conversation* convo = store.getConversation(rid)) {
                     if (convo->syncSince > 0) {
-                        char ts[24];
-                        time_t tt = (time_t)convo->syncSince;
-                        struct tm* tm_info = gmtime(&tt);
-                        if (tm_info) {
-                            strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M", tm_info);
+                        // Was an inline gmtime()+strftime(), which showed this one
+                        // timestamp in UTC while every other time on the device
+                        // honoured the configured timezone. formatTimestamp() fixes
+                        // that and picks up the 12/24-hour setting for free.
+                        char ts[TimeHelper::TIMESTAMP_BUF];
+                        TimeHelper::instance().formatTimestamp(convo->syncSince, ts, sizeof(ts));
+                        // Writes "" for an implausible epoch -- don't leave a stray space.
+                        if (ts[0]) {
                             info += " ";
                             info += ts;
                         }
@@ -1825,6 +1833,10 @@ void SettingsScreen::boolToggleCb(lv_event_t* e) {
         // so its header/emoji-button labels hold the font pointer they were given
         // then. Rebuilt-per-show screens would follow the toggle, but chat would
         // keep the old font until restart, which reads as the setting half-working.
+        // Pure presentation, re-read on every render -- no reboot, unlike ColorEmoji below.
+        case BoolField::Clock12h:
+            c.display.clock12h = v;
+            break;
         case BoolField::ColorEmoji:
             c.display.colorEmoji = v;
             g_dsReboot = true;

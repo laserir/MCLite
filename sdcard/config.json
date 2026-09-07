@@ -45,7 +45,8 @@
     "kbd_backlight": true,
     "kbd_brightness": 127,
     "emoji": true,
-    "menu_button": false
+    "menu_button": false,
+    "clock_12h": false
   },
   "messaging": {
     "save_history": true,

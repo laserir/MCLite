@@ -122,28 +122,39 @@ void TimeHelper::formatAgo(uint32_t diffSeconds, char* buf, size_t bufLen) {
     else                        { snprintf(buf, bufLen, tf("time_d"), (int)(diffSeconds / 86400)); }
 }
 
+// Both formatters read the 12/24-hour preference straight from config rather
+// than caching it. ConfigManager is already a dependency of this file, and a
+// cached copy would need updating from both boot and the Settings toggle -- two
+// places to forget, with the symptom being a setting that only takes effect
+// after a reboot.
 void TimeHelper::formatTimestamp(uint32_t utcEpoch, char* buf, size_t bufLen) const {
-    if (utcEpoch < 1700000000 || bufLen < 17) {
+    const bool h12 = ConfigManager::instance().config().display.clock12h;
+    if (utcEpoch < 1700000000 || bufLen < (h12 ? 20u : 17u)) {
         buf[0] = '\0';
         return;
     }
     time_t t = (time_t)utcEpoch;
     struct tm result;
     localtime_r(&t, &result);
-    snprintf(buf, bufLen, "%04d-%02d-%02d %02d:%02d",
-             result.tm_year + 1900, result.tm_mon + 1, result.tm_mday,
-             result.tm_hour, result.tm_min);
+    // Build the clock separately and concatenate once, rather than formatting
+    // into the tail of the same buffer with a computed offset.
+    char clk[CLOCK_BUF];
+    formatClock(clk, sizeof(clk), result.tm_hour, result.tm_min, h12);
+    snprintf(buf, bufLen, "%04d-%02d-%02d %s",
+             result.tm_year + 1900, result.tm_mon + 1, result.tm_mday, clk);
 }
 
 void TimeHelper::formatHHMM(uint32_t utcEpoch, char* buf, size_t bufLen) const {
-    if (utcEpoch < 1700000000 || bufLen < 6) {
+    if (utcEpoch < 1700000000) {
         buf[0] = '\0';
         return;
     }
     time_t t = (time_t)utcEpoch;
     struct tm result;
     localtime_r(&t, &result);
-    snprintf(buf, bufLen, "%02d:%02d", result.tm_hour, result.tm_min);
+    // formatClock owns the size check: it knows what each mode needs.
+    formatClock(buf, bufLen, result.tm_hour, result.tm_min,
+                ConfigManager::instance().config().display.clock12h);
 }
 
 }  // namespace mclite

@@ -57,6 +57,7 @@ void ConfigManager::applyDefaults() {
     _config.display.emoji         = defaults::EMOJI_ENABLED;
     _config.display.colorEmoji    = defaults::COLOR_EMOJI;
     _config.display.menuButton    = defaults::MENU_BUTTON;
+    _config.display.clock12h      = defaults::CLOCK_12H;
     _config.messaging.saveHistory      = defaults::SAVE_HISTORY;
     _config.messaging.maxHistoryPerChat = defaults::MAX_HISTORY_PER_CHAT;
     _config.messaging.locationFormat   = defaults::LOCATION_FORMAT;
@@ -263,6 +264,7 @@ bool ConfigManager::parseJson(const String& json) {
         _config.display.emoji          = disp["emoji"] | defaults::EMOJI_ENABLED;
         _config.display.colorEmoji     = disp["color_emoji"] | defaults::COLOR_EMOJI;
         _config.display.menuButton     = disp["menu_button"] | defaults::MENU_BUTTON;
+        _config.display.clock12h       = disp["clock_12h"]   | defaults::CLOCK_12H;
 
         // Custom themes (display.themes[]) — each is {name, base?, <colorKey>:"#RRGGBB"…}.
         // Stored verbatim as strings; the theme layer validates/resolves them at boot.
@@ -628,6 +630,7 @@ String ConfigManager::toJson() const {
     disp["emoji"]            = _config.display.emoji;
     disp["color_emoji"]      = _config.display.colorEmoji;
     disp["menu_button"]      = _config.display.menuButton;
+    disp["clock_12h"]        = _config.display.clock12h;
     if (!_config.display.customThemes.empty()) {
         JsonArray themesArr = disp["themes"].to<JsonArray>();
         for (const auto& ct : _config.display.customThemes) {

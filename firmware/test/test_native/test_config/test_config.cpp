@@ -716,6 +716,24 @@ void test_menu_button_explicit_true() {
     TEST_ASSERT_TRUE(cfg->config().display.menuButton);
 }
 
+void test_clock_12h_defaults_false() {
+    parse("{\"display\":{}}");
+    TEST_ASSERT_FALSE(cfg->config().display.clock12h);
+}
+
+void test_clock_12h_explicit_true() {
+    parse("{\"display\":{\"clock_12h\": true}}");
+    TEST_ASSERT_TRUE(cfg->config().display.clock12h);
+}
+
+void test_clock_12h_round_trips() {
+    parse("{\"display\":{\"clock_12h\": true}}");
+    String json = cfg->toJson();
+    cfg->config() = AppConfig{};
+    cfg->parseJson(json);
+    TEST_ASSERT_TRUE(cfg->config().display.clock12h);
+}
+
 void test_menu_button_round_trips() {
     parse("{\"display\":{\"menu_button\": true}}");
     String json = cfg->toJson();
@@ -1436,6 +1454,9 @@ int main() {
     RUN_TEST(test_menu_button_defaults_false);
     RUN_TEST(test_menu_button_explicit_true);
     RUN_TEST(test_menu_button_round_trips);
+    RUN_TEST(test_clock_12h_defaults_false);
+    RUN_TEST(test_clock_12h_explicit_true);
+    RUN_TEST(test_clock_12h_round_trips);
     RUN_TEST(test_debug_screenshots_defaults_false);
     RUN_TEST(test_debug_screenshots_explicit_true);
     RUN_TEST(test_debug_screenshots_round_trips);

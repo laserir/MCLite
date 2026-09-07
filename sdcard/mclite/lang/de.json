@@ -1,5 +1,5 @@
 {
-    "version": 60,
+    "version": 61,
     "no_sd_title": "Keine SD-Karte",
     "no_sd_msg": "SD-Karte mit config.json einlegen\nund neu starten.\n\nVerwenden Sie das MCLite Config Tool\num Ihre Konfiguration zu erstellen.",
     "setup_title": "Einrichtung erforderlich",
@@ -125,6 +125,7 @@
     "lbl_color_emoji": "Farb-Emoji",
     "rxn_no_timestamp": "Keine Reaktionen: Nachricht ohne Zeitstempel",
     "lbl_menu_button": "Menue-Taste",
+    "lbl_clock_12h": "12-Stunden-Uhr",
     "lbl_screenshots": "Screenshots speichern",
     "lbl_show_memory": "Speichernutzung zeigen",
     "lbl_boot_text": "Boot-Text",

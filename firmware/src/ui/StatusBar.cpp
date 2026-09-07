@@ -343,7 +343,7 @@ void StatusBar::update() {
         clockEpoch = TimeHelper::instance().nowEpoch();
     }
     if (clockEpoch) {
-        char timeStr[8];
+        char timeStr[TimeHelper::CLOCK_BUF];
         TimeHelper::instance().formatHHMM(clockEpoch, timeStr, sizeof(timeStr));
         lv_label_set_text(_lblTime, timeStr[0] ? timeStr : "");
     } else {
