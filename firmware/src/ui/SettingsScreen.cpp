@@ -650,9 +650,9 @@ void SettingsScreen::buildGps() {
             case FixStatus::LAST_KNOWN: {
                 uint32_t age = gps.fixAgeSeconds();
                 char ageBuf[32];
-                if (age < 60)        snprintf(ageBuf, sizeof(ageBuf), t("gps_last_known_s"), (int)age);
-                else if (age < 3600) snprintf(ageBuf, sizeof(ageBuf), t("gps_last_known_m"), (int)(age / 60));
-                else                 snprintf(ageBuf, sizeof(ageBuf), t("gps_last_known_h"), (int)(age / 3600));
+                if (age < 60)        snprintf(ageBuf, sizeof(ageBuf), tf("gps_last_known_s"), (int)age);
+                else if (age < 3600) snprintf(ageBuf, sizeof(ageBuf), tf("gps_last_known_m"), (int)(age / 60));
+                else                 snprintf(ageBuf, sizeof(ageBuf), tf("gps_last_known_h"), (int)(age / 3600));
                 addReadOnlyRow(t("gps_fix_status"), String(ageBuf));
                 addReadOnlyRow(t("gps_coords"), gps.formatLocation());
                 break;
@@ -860,7 +860,7 @@ void SettingsScreen::buildCannedList() {
     char hdr[64];
     String who = cannedTargetName();
     if (who.length() > 0) snprintf(hdr, sizeof(hdr), "%s (%d)", who.c_str(), (int)messages.size());
-    else                  snprintf(hdr, sizeof(hdr), t("sec_canned_messages"), (int)messages.size());
+    else                  snprintf(hdr, sizeof(hdr), tf("sec_canned_messages"), (int)messages.size());
     addSectionHeader(hdr);
 
     // Per-conversation lists that are empty follow the global list; say so rather
@@ -1024,7 +1024,7 @@ void SettingsScreen::buildConvoList() {
     if (_section == SettingsSection::Contacts) {
         if (manage) {
             char hdr[32];
-            snprintf(hdr, sizeof(hdr), t("sec_contacts"), (int)cfg.contacts.size());
+            snprintf(hdr, sizeof(hdr), tf("sec_contacts"), (int)cfg.contacts.size());
             addSectionHeader(hdr);
             addNavRow((String(LV_SYMBOL_PLUS " ") + t("convo_add_contact")).c_str(), "", convoAddRowCb);
             for (size_t i = 0; i < cfg.contacts.size(); i++) {
@@ -1036,7 +1036,7 @@ void SettingsScreen::buildConvoList() {
         } else {
             auto& contacts = ContactStore::instance();
             char hdr[32];
-            snprintf(hdr, sizeof(hdr), t("sec_contacts"), (int)contacts.count());
+            snprintf(hdr, sizeof(hdr), tf("sec_contacts"), (int)contacts.count());
             addSectionHeader(hdr);
             for (size_t i = 0; i < contacts.count(); i++) {
                 const Contact* c = contacts.findByIndex(i);
@@ -1050,7 +1050,7 @@ void SettingsScreen::buildConvoList() {
     } else if (_section == SettingsSection::Channels) {
         if (manage) {
             char hdr[32];
-            snprintf(hdr, sizeof(hdr), t("sec_channels"), (int)cfg.channels.size());
+            snprintf(hdr, sizeof(hdr), tf("sec_channels"), (int)cfg.channels.size());
             addSectionHeader(hdr);
             addNavRow((String(LV_SYMBOL_PLUS " ") + t("convo_add_channel")).c_str(), "", convoAddRowCb);
             for (size_t i = 0; i < cfg.channels.size(); i++) {
@@ -1066,7 +1066,7 @@ void SettingsScreen::buildConvoList() {
         } else {
             auto& channels = ChannelStore::instance();
             char hdr[32];
-            snprintf(hdr, sizeof(hdr), t("sec_channels"), (int)channels.count());
+            snprintf(hdr, sizeof(hdr), tf("sec_channels"), (int)channels.count());
             addSectionHeader(hdr);
             for (const auto& ch : channels.all()) {
                 const char* prefix = ch.isPrivate() ? "  *" : "  #";
@@ -1080,7 +1080,7 @@ void SettingsScreen::buildConvoList() {
     } else {  // Rooms
         const auto& rooms = cfg.roomServers;
         char hdr[32];
-        snprintf(hdr, sizeof(hdr), t("sec_rooms"), (int)rooms.size());
+        snprintf(hdr, sizeof(hdr), tf("sec_rooms"), (int)rooms.size());
         addSectionHeader(hdr);
         if (manage)
             addNavRow((String(LV_SYMBOL_PLUS " ") + t("convo_add_room")).c_str(), "", convoAddRowCb);
@@ -1205,9 +1205,9 @@ void SettingsScreen::openButtonModal(ConvoModal purpose) {
             const auto& cfg = ConfigManager::instance().config();
             bool enabling = !cfg.offgrid.enabled;
             char buf[192];
-            if (enabling) snprintf(buf, sizeof(buf), t("offgrid_confirm_on_body"),
+            if (enabling) snprintf(buf, sizeof(buf), tf("offgrid_confirm_on_body"),
                                    String(resolveOffgrid(cfg.offgrid, cfg.radio).frequency, 3).c_str());
-            else          snprintf(buf, sizeof(buf), t("offgrid_confirm_off_body"), cfg.radio.frequency);
+            else          snprintf(buf, sizeof(buf), tf("offgrid_confirm_off_body"), cfg.radio.frequency);
             title = buf;
             g_btnModalLabels = { t("reboot_now"), t("btn_cancel") };
             break;

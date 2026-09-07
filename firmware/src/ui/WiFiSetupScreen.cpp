@@ -246,7 +246,7 @@ void WiFiSetupScreen::updateStatusUi() {
     if (connected) {
         lv_obj_add_state(_switch, LV_STATE_CHECKED);
         static char buf[96];
-        snprintf(buf, sizeof(buf), t("wifi_connected"), wm.connectedSsid().c_str());
+        snprintf(buf, sizeof(buf), tf("wifi_connected"), wm.connectedSsid().c_str());
         String s = String(buf) + "  " + wm.localIp();
         lv_label_set_text(_statusLabel, s.c_str());
         lv_obj_clear_flag(_checkBtn, LV_OBJ_FLAG_HIDDEN);
@@ -269,7 +269,7 @@ void WiFiSetupScreen::updateStatusUi() {
         else    lv_obj_clear_state(_companionSwitch, LV_STATE_CHECKED);
         if (on) {
             static char cbuf[96];
-            snprintf(cbuf, sizeof(cbuf), t("wifi_companion_addr"), wm.localIp().c_str());
+            snprintf(cbuf, sizeof(cbuf), tf("wifi_companion_addr"), wm.localIp().c_str());
             String cs = cbuf;
             if (comp.clientConnected()) cs += String(" (") + t("wifi_companion_client") + ")";
             lv_label_set_text(_companionLabel, cs.c_str());

@@ -12,6 +12,18 @@ public:
     // Translate a key. Returns English fallback if key not found.
     const char* t(const char* key);
 
+    // Translate a key that will be handed to printf/snprintf as the FORMAT string.
+    // Lang files are user-editable JSON on the SD card, so a translation can carry
+    // conversion specifiers that disagree with the arguments the caller passes --
+    // undefined behaviour, ranging from garbage in a dialog (a %d printing a
+    // pointer) to a crash (a %s dereferencing an integer). It also happens to any
+    // device whose SD lang files are older than its firmware, which is the normal
+    // state after a USB flash. tf() returns the translation only when its
+    // specifiers match the English default exactly, and the English default
+    // otherwise -- worst case the user sees one line in English instead of a
+    // corrupted line, or a reboot.
+    const char* tf(const char* key);
+
     const String& currentLanguage() const { return _currentLang; }
     const String& availableLanguages() const { return _availableLangs; }
 
@@ -28,6 +40,11 @@ private:
     // grew past 320. Headroom is cheap: sizeof(Entry) bytes of .bss per slot.
     static constexpr size_t MAX_STRINGS = 400;
 
+    // English default for `key`, or nullptr if the key is unknown.
+    static const char* englishFor(const char* key);
+    // Do two format strings carry the same conversion specifiers, in order?
+    static bool formatSpecsMatch(const char* a, const char* b);
+
     struct Entry { const char* key; const char* value; };
     Entry _entries[MAX_STRINGS];
     size_t _count = 0;
@@ -38,5 +55,7 @@ private:
 
 // Shorthand global function
 inline const char* t(const char* key) { return I18n::instance().t(key); }
+// Use this, never t(), when the result is a printf/snprintf FORMAT string.
+inline const char* tf(const char* key) { return I18n::instance().tf(key); }
 
 }  // namespace mclite

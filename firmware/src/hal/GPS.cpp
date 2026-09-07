@@ -151,11 +151,11 @@ String GPS::formatLocationWithStatus() const {
             uint32_t age = fixAgeSeconds();
             char ageBuf[32];
             if (age < 60)
-                snprintf(ageBuf, sizeof(ageBuf), t("loc_last_known_s"), (int)age);
+                snprintf(ageBuf, sizeof(ageBuf), tf("loc_last_known_s"), (int)age);
             else if (age < 3600)
-                snprintf(ageBuf, sizeof(ageBuf), t("loc_last_known_m"), (int)(age / 60));
+                snprintf(ageBuf, sizeof(ageBuf), tf("loc_last_known_m"), (int)(age / 60));
             else
-                snprintf(ageBuf, sizeof(ageBuf), t("loc_last_known_h"), (int)(age / 3600));
+                snprintf(ageBuf, sizeof(ageBuf), tf("loc_last_known_h"), (int)(age / 3600));
             loc += ageBuf;
         }
         loc += "]";

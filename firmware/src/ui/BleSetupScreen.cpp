@@ -116,7 +116,7 @@ void BleSetupScreen::show() {
     // Ensure a PIN exists so it can be displayed before the user enables BLE.
     uint32_t pin = CompanionService::instance().ensureBlePin();
     static char pinBuf[40];
-    snprintf(pinBuf, sizeof(pinBuf), t("ble_companion_pin"), (unsigned long)pin);
+    snprintf(pinBuf, sizeof(pinBuf), tf("ble_companion_pin"), (unsigned long)pin);
     lv_label_set_text(_pinLabel, pinBuf);
     updateUi();
     lv_group_t* grp = UIManager::instance().inputGroup();

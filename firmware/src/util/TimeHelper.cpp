@@ -116,10 +116,10 @@ void TimeHelper::recordBootTime() {
 
 void TimeHelper::formatAgo(uint32_t diffSeconds, char* buf, size_t bufLen) {
     if (bufLen < 8) { buf[0] = '\0'; return; }
-    if (diffSeconds < 60)       { snprintf(buf, bufLen, t("time_s"), (int)diffSeconds); }
-    else if (diffSeconds < 3600){ snprintf(buf, bufLen, t("time_m"), (int)(diffSeconds / 60)); }
-    else if (diffSeconds < 86400){ snprintf(buf, bufLen, t("time_h"), (int)(diffSeconds / 3600)); }
-    else                        { snprintf(buf, bufLen, t("time_d"), (int)(diffSeconds / 86400)); }
+    if (diffSeconds < 60)       { snprintf(buf, bufLen, tf("time_s"), (int)diffSeconds); }
+    else if (diffSeconds < 3600){ snprintf(buf, bufLen, tf("time_m"), (int)(diffSeconds / 60)); }
+    else if (diffSeconds < 86400){ snprintf(buf, bufLen, tf("time_h"), (int)(diffSeconds / 3600)); }
+    else                        { snprintf(buf, bufLen, tf("time_d"), (int)(diffSeconds / 86400)); }
 }
 
 void TimeHelper::formatTimestamp(uint32_t utcEpoch, char* buf, size_t bufLen) const {

@@ -54,7 +54,7 @@ String formatHops(uint8_t hops) {
     if (hops == 0) return t("heard_direct");
     if (hops == 1) return t("heard_one_hop");
     char buf[16];
-    snprintf(buf, sizeof(buf), t("heard_hops_fmt"), (int)hops);
+    snprintf(buf, sizeof(buf), tf("heard_hops_fmt"), (int)hops);
     return buf;
 }
 
@@ -100,10 +100,10 @@ String formatAge(uint32_t lastHeardMs) {
     uint32_t diffMs = millis() - lastHeardMs;
     uint32_t s = diffMs / 1000;
     char buf[24];
-    if (s < 60)         { snprintf(buf, sizeof(buf), t("time_s"), (int)s);          return buf; }
-    if (s < 3600)       { snprintf(buf, sizeof(buf), t("time_m"), (int)(s / 60));   return buf; }
-    if (s < 86400)      { snprintf(buf, sizeof(buf), t("time_h"), (int)(s / 3600)); return buf; }
-    snprintf(buf, sizeof(buf), t("time_d"), (int)(s / 86400));
+    if (s < 60)         { snprintf(buf, sizeof(buf), tf("time_s"), (int)s);          return buf; }
+    if (s < 3600)       { snprintf(buf, sizeof(buf), tf("time_m"), (int)(s / 60));   return buf; }
+    if (s < 86400)      { snprintf(buf, sizeof(buf), tf("time_h"), (int)(s / 3600)); return buf; }
+    snprintf(buf, sizeof(buf), tf("time_d"), (int)(s / 86400));
     return buf;
 }
 
@@ -377,7 +377,7 @@ void HeardAdvertsScreen::rebuild() {
             label += known->name;
             if (e.name[0] != '\0' && known->name != e.name) {
                 char akaBuf[80];
-                snprintf(akaBuf, sizeof(akaBuf), t("heard_aka_fmt"), e.name);
+                snprintf(akaBuf, sizeof(akaBuf), tf("heard_aka_fmt"), e.name);
                 label += " ";
                 label += akaBuf;
             }
@@ -564,7 +564,7 @@ void HeardAdvertsScreen::openDetail(int slotIdx) {
     }
     if (e.hasGps) {
         char gpsBuf[40];
-        snprintf(gpsBuf, sizeof(gpsBuf), t("heard_gps_fmt"),
+        snprintf(gpsBuf, sizeof(gpsBuf), tf("heard_gps_fmt"),
                  e.gpsLat / 1e6, e.gpsLon / 1e6);
         _detailText += gpsBuf;
     }

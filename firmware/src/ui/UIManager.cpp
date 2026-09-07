@@ -201,7 +201,7 @@ void UIManager::update() {
         } else if ((uint8_t)left != _pinWaitShown) {
             _pinWaitShown = (uint8_t)left;
             char buf[32];
-            snprintf(buf, sizeof(buf), t("pin_wait"), (int)left);
+            snprintf(buf, sizeof(buf), tf("pin_wait"), (int)left);
             lv_label_set_text(_pinStatus, buf);
         }
     }
@@ -646,7 +646,7 @@ void UIManager::showSOSAlert(const ConvoId& id, const Message& msg) {
 
     // Persist alert text — LVGL only stores pointer, local String would dangle
     char fromBuf[64];
-    snprintf(fromBuf, sizeof(fromBuf), t("sos_from"), msg.senderName.c_str());
+    snprintf(fromBuf, sizeof(fromBuf), tf("sos_from"), msg.senderName.c_str());
     _sosAlertText = String(fromBuf) + "\n\n" + msg.text;
 
     // Shared modal widget; btn 0 = Dismiss (no reply), btn 1 = SOS seen (reply).
@@ -1250,7 +1250,7 @@ void UIManager::updateSOSHold() {
 
     char buf[64];
     char countBuf[48];
-    snprintf(countBuf, sizeof(countBuf), t("sos_countdown"), secsLeft);
+    snprintf(countBuf, sizeof(countBuf), tf("sos_countdown"), secsLeft);
     snprintf(buf, sizeof(buf), LV_SYMBOL_WARNING " %s", countBuf);
     lv_label_set_text(_sosCountdownLabel, buf);
 }
@@ -1380,7 +1380,7 @@ void UIManager::sendSOSToAll() {
 
     // Show confirmation toast via a brief modal
     char confirmBuf[64];
-    snprintf(confirmBuf, sizeof(confirmBuf), t("sos_sent"), sent);
+    snprintf(confirmBuf, sizeof(confirmBuf), tf("sos_sent"), sent);
     String sentTitleStr = String(LV_SYMBOL_WARNING " ") + t("sos_sent_title");
     lv_obj_t* msgbox = ModalDialog::show(sentTitleStr, confirmBuf, { t("btn_ok") },
         [](lv_obj_t* dlg, int) { ModalDialog::close(dlg); });
@@ -1708,7 +1708,7 @@ void UIManager::onPinKey(uint32_t key) {
         uint32_t wait = pinWaitRemaining();
         if (wait > 0) {
             char buf[32];
-            snprintf(buf, sizeof(buf), t("pin_wait"), (int)wait);
+            snprintf(buf, sizeof(buf), tf("pin_wait"), (int)wait);
             lv_obj_set_style_text_color(_pinStatus, theme::BATTERY_LOW(), 0);
             lv_label_set_text(_pinStatus, buf);
             _pinBuffer = "";
@@ -1754,7 +1754,7 @@ void UIManager::onPinKey(uint32_t key) {
                 if (until == 0) until = 1;   // never collide with "free"
                 _pinWaitShown = 0;
                 char buf[32];
-                snprintf(buf, sizeof(buf), t("pin_wait"), (int)BACKOFF_S[step]);
+                snprintf(buf, sizeof(buf), tf("pin_wait"), (int)BACKOFF_S[step]);
                 lv_label_set_text(_pinStatus, buf);
             } else {
                 lv_label_set_text(_pinStatus, t("pin_wrong"));
@@ -1836,7 +1836,7 @@ static String buildTelemText(const Contact* contact, const TelemetryData* td) {
         // Estimate percentage: 4.2V=100%, 3.0V=0% (linear approximation for LiPo)
         int pct = constrain((int)((td->voltage - 3.0f) / 1.2f * 100.0f), 0, 100);
         char buf[48];
-        snprintf(buf, sizeof(buf), t("telem_battery"), td->voltage, pct);
+        snprintf(buf, sizeof(buf), tf("telem_battery"), td->voltage, pct);
         text += buf;
         text += "\n";
     }
@@ -1860,7 +1860,7 @@ static String buildTelemText(const Contact* contact, const TelemetryData* td) {
         if (loc.approximate) locStr = "~ " + locStr;   // advert/heard — may be coarse
 
         char lineBuf[96];
-        snprintf(lineBuf, sizeof(lineBuf), t("telem_location"), locStr.c_str());
+        snprintf(lineBuf, sizeof(lineBuf), tf("telem_location"), locStr.c_str());
         text += lineBuf;
         text += "\n";
 
@@ -1873,7 +1873,7 @@ static String buildTelemText(const Contact* contact, const TelemetryData* td) {
             double dist = haversineMeters(ourLat, ourLon, loc.lat, loc.lon);
             String distStr = formatDistance(dist);
             char distBuf[48];
-            snprintf(distBuf, sizeof(distBuf), t("telem_distance"), distStr.c_str());
+            snprintf(distBuf, sizeof(distBuf), tf("telem_distance"), distStr.c_str());
             text += distBuf;
             text += "\n";
         }
@@ -1898,7 +1898,7 @@ static String buildTelemText(const Contact* contact, const TelemetryData* td) {
         }
         if (envParts.length() > 0) {
             char lineBuf[96];
-            snprintf(lineBuf, sizeof(lineBuf), t("telem_environment"), envParts.c_str());
+            snprintf(lineBuf, sizeof(lineBuf), tf("telem_environment"), envParts.c_str());
             text += lineBuf;
             text += "\n";
         }
@@ -1913,7 +1913,7 @@ static String buildTelemText(const Contact* contact, const TelemetryData* td) {
         else                   snprintf(ageBuf, sizeof(ageBuf), "%dh", (int)(ageSec / 3600));
 
         char updBuf[48];
-        snprintf(updBuf, sizeof(updBuf), t("telem_updated"), ageBuf);
+        snprintf(updBuf, sizeof(updBuf), tf("telem_updated"), ageBuf);
         text += updBuf;
 
         if (stale) {
@@ -2267,7 +2267,7 @@ void UIManager::showWiFiInstallModal(const String& version, const String& url) {
 
 void UIManager::buildFwInstallModal() {
     static char bodyBuf[160];
-    snprintf(bodyBuf, sizeof(bodyBuf), t("fw_update_body"),
+    snprintf(bodyBuf, sizeof(bodyBuf), tf("fw_update_body"),
              _fwVersion.c_str(), MCLITE_VERSION);
 
     ModalDialog::show(t("fw_update_title"), bodyBuf, { t("btn_cancel"), t("fw_install") },

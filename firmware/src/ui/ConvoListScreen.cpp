@@ -281,10 +281,10 @@ void ConvoListScreen::addConvoRow(Conversation* convo) {
         uint32_t now = GPS::instance().currentTimestamp();
         uint32_t diff = (now > lastMsg->timestamp) ? (now - lastMsg->timestamp) : 0;
         char timeBuf[32];
-        if (diff < 60)            snprintf(timeBuf, sizeof(timeBuf), t("time_s"), (int)diff);
-        else if (diff < 3600)     snprintf(timeBuf, sizeof(timeBuf), t("time_m"), (int)(diff / 60));
-        else if (diff < 86400)    snprintf(timeBuf, sizeof(timeBuf), t("time_h"), (int)(diff / 3600));
-        else                      snprintf(timeBuf, sizeof(timeBuf), t("time_d"), (int)(diff / 86400));
+        if (diff < 60)            snprintf(timeBuf, sizeof(timeBuf), tf("time_s"), (int)diff);
+        else if (diff < 3600)     snprintf(timeBuf, sizeof(timeBuf), tf("time_m"), (int)(diff / 60));
+        else if (diff < 86400)    snprintf(timeBuf, sizeof(timeBuf), tf("time_h"), (int)(diff / 3600));
+        else                      snprintf(timeBuf, sizeof(timeBuf), tf("time_d"), (int)(diff / 86400));
         String timeStr = timeBuf;
         lv_obj_t* ts = lv_label_create(topLine);
         lv_obj_set_style_text_font(ts, FONT_BODY, 0);
@@ -384,10 +384,10 @@ String ConvoListScreen::formatLastSeen(uint32_t lastSeenMs) {
     uint32_t diff = (millis() - lastSeenMs) / 1000;  // unsigned wrap is fine
 
     char buf[32];
-    if (diff < 60)       { snprintf(buf, sizeof(buf), t("time_s"), (int)diff); return buf; }
-    if (diff < 3600)     { snprintf(buf, sizeof(buf), t("time_m"), (int)(diff / 60)); return buf; }
-    if (diff < 86400)    { snprintf(buf, sizeof(buf), t("time_h"), (int)(diff / 3600)); return buf; }
-    snprintf(buf, sizeof(buf), t("time_d"), (int)(diff / 86400)); return buf;
+    if (diff < 60)       { snprintf(buf, sizeof(buf), tf("time_s"), (int)diff); return buf; }
+    if (diff < 3600)     { snprintf(buf, sizeof(buf), tf("time_m"), (int)(diff / 60)); return buf; }
+    if (diff < 86400)    { snprintf(buf, sizeof(buf), tf("time_h"), (int)(diff / 3600)); return buf; }
+    snprintf(buf, sizeof(buf), tf("time_d"), (int)(diff / 86400)); return buf;
 }
 
 }  // namespace mclite

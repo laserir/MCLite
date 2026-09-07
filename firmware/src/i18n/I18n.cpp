@@ -506,6 +506,65 @@ void I18n::init(const String& langCode) {
     LOGF("[I18n] Loaded %d strings for '%s'\n", _count, langCode.c_str());
 }
 
+// Copy the next conversion specifier starting at *p (which must point at '%')
+// into out, advancing p past it. "%%" is a literal percent and yields nothing.
+static const char* copySpec(const char* p, char* out, size_t outLen) {
+    size_t o = 0;
+    if (out && outLen) out[0] = '\0';
+    p++;                                   // skip '%'
+    if (*p == '%') return p + 1;           // literal, not a specifier
+    if (o + 1 < outLen) out[o++] = '%';
+    // flags, width, precision, length modifiers, then the conversion char
+    while (*p && !strchr("diouxXeEfFgGaAcspn", *p)) {
+        if (o + 1 < outLen) out[o++] = *p;
+        p++;
+    }
+    if (*p) {
+        if (o + 1 < outLen) out[o++] = *p;
+        p++;
+    }
+    if (out && outLen) out[o] = '\0';
+    return p;
+}
+
+// Advance p to the next real conversion specifier, copying it into out. A literal
+// "%%" consumes no argument, so it is skipped rather than compared -- a translation
+// is free to write "%d%%" where English writes "%d". Returns false at end of string.
+static bool nextSpec(const char*& p, char* out, size_t outLen) {
+    while (true) {
+        const char* pc = strchr(p, '%');
+        if (!pc) { p += strlen(p); return false; }
+        p = copySpec(pc, out, outLen);
+        if (out[0] != '\0') return true;
+    }
+}
+
+bool I18n::formatSpecsMatch(const char* a, const char* b) {
+    char sa[16], sb[16];
+    while (true) {
+        bool ha = nextSpec(a, sa, sizeof(sa));
+        bool hb = nextSpec(b, sb, sizeof(sb));
+        if (!ha || !hb) return ha == hb;   // both exhausted = match
+        if (strcmp(sa, sb) != 0) return false;
+    }
+}
+
+const char* I18n::englishFor(const char* key) {
+    for (size_t i = 0; DEFAULT_STRINGS[i].key != nullptr; i++) {
+        if (strcmp(DEFAULT_STRINGS[i].key, key) == 0) return DEFAULT_STRINGS[i].en;
+    }
+    return nullptr;
+}
+
+const char* I18n::tf(const char* key) {
+    const char* tr = t(key);
+    const char* en = englishFor(key);
+    if (!en || tr == en) return tr;        // unknown key, or already the default
+    if (formatSpecsMatch(tr, en)) return tr;
+    LOGF("[i18n] '%s' has wrong format specifiers for this firmware; using English\n", key);
+    return en;
+}
+
 const char* I18n::t(const char* key) {
     // Check loaded translations first
     for (size_t i = 0; i < _count; i++) {

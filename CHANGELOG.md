@@ -43,6 +43,14 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   list).
 
 ### Fixed
+- **A translation can no longer corrupt a message it is used to format.** Some on-screen text is built by
+  substituting a value into a translated sentence, and the translation comes from a file on the SD card. If that
+  file is older or newer than the firmware, the placeholder in it can disagree with the value being substituted,
+  and the result is anything from a meaningless long number in place of a frequency to a reboot. That is not
+  hypothetical: it happens to every device flashed over USB, because the SD card keeps whatever language files
+  were already on it. Those substitutions now check the translation against the built-in English one first, and
+  fall back to English for that one line when they disagree. Worst case is now a single line in the wrong
+  language instead of a corrupted screen. All 48 places that format a translated string are covered.
 - **The config tool no longer wipes a custom quick-reply list.** `messaging.canned_messages` can hold your own
   list of up to eight replies instead of `true`/`false`, but the tool only ever had the on/off switch — so
   loading such a config, changing anything at all, and exporting wrote the switch back over your list and the
