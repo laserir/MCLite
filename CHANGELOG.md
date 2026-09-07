@@ -23,6 +23,19 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   A `custom` preset takes your own frequency and, optionally, modem settings; leave a field empty to inherit
   your normal one. TX power is never changed by a preset. Reported by @chevdor, who tested against a real stock
   node and supplied the screenshots that settled it (#49).
+- **Define your own offgrid presets in the config.** `offgrid.presets[]` takes up to eight named entries, each
+  with a frequency and optionally its own SF / bandwidth / coding rate, and they appear next to the built-in
+  ones both in the config tool and in the on-device picker. So a group can agree its own offgrid settings and
+  hand them round in one config file, and if MeshCore settles on a different frequency you can follow it the
+  same day instead of waiting for a firmware release. Same shape as the existing `display.themes[]`: hand-edited
+  in `config.json`, and the config tool round-trips them untouched. A name that collides with a built-in is
+  ignored, so a config can never redefine what `auto` does.
+- **Out-of-range offgrid values are refused rather than obeyed.** Anything outside what the radio actually
+  supports (frequency 150-960 MHz, SF 5-12, bandwidth 7.8-500 kHz, coding rate 5-8) is ignored and your normal
+  setting is inherited for that field, with a note on the serial log. They are *not* clamped to the nearest
+  legal value: quietly moving someone to 150 MHz because they typed a stray digit would be worse than doing
+  nothing. The config tool now offers only valid choices for SF, bandwidth and coding rate, and flags a
+  frequency outside the range instead of reporting "Ready to export".
 - **The Radio screen now reports what is actually on the air.** Frequency, SF/BW and coding rate showed the
   configured values even while offgrid was running on different ones. With presets able to change the modem
   settings too, that would have been actively misleading, so those rows now show the resolved offgrid values

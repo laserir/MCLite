@@ -2,6 +2,7 @@
 #include "util/log.h"
 #include "../storage/SDCard.h"
 #include "defaults.h"
+#include "offgrid_presets.h"   // range checks + built-in names, shared with the resolver
 #include <Arduino.h>
 #include <mbedtls/sha256.h>
 #include <mbedtls/base64.h>
@@ -474,6 +475,54 @@ bool ConfigManager::parseJson(const String& json) {
     _config.offgrid.bandwidth       = doc["offgrid"]["bandwidth"]        | 0.0f;
     _config.offgrid.codingRate      = doc["offgrid"]["coding_rate"]      | 0;
 
+    // User-defined presets (offgrid.presets[]) — same shape as display.themes[]:
+    // hand-edited in config.json, offered next to the built-ins. Entries are kept
+    // as written; out-of-range numbers are dropped at resolve time (one gate for
+    // every source), but warn here so a typo is visible on the serial log rather
+    // than silently behaving as "inherit".
+    _config.offgrid.presets.clear();
+    JsonArray ogPresets = doc["offgrid"]["presets"].as<JsonArray>();
+    for (JsonObject po : ogPresets) {
+        OffgridUserPreset up;
+        up.name = po["name"] | "";
+        if (up.name.length() == 0) {
+            LOGLN("[Config] offgrid.presets: entry without a name, skipped");
+            continue;
+        }
+        // A built-in key always wins in resolveOffgrid(), so an entry that shadows
+        // one can never be selected. Say so rather than letting it look applied.
+        bool shadows = false;
+        for (size_t i = 0; i < OFFGRID_PRESET_COUNT; i++) {
+            if (up.name == OFFGRID_PRESETS[i].key) { shadows = true; break; }
+        }
+        if (shadows) {
+            LOGF("[Config] offgrid.presets: '%s' is a built-in name, ignored\n", up.name.c_str());
+            continue;
+        }
+        up.frequency       = po["frequency"]        | 0.0f;
+        up.spreadingFactor = po["spreading_factor"] | 0;
+        up.bandwidth       = po["bandwidth"]        | 0.0f;
+        up.codingRate      = po["coding_rate"]      | 0;
+        if (up.frequency       > 0.0f && !offgridFreqValid(up.frequency))
+            LOGF("[Config] offgrid preset '%s': frequency %.3f out of range, inheriting\n",
+                 up.name.c_str(), up.frequency);
+        if (up.spreadingFactor > 0    && !offgridSfValid(up.spreadingFactor))
+            LOGF("[Config] offgrid preset '%s': SF %u out of range, inheriting\n",
+                 up.name.c_str(), (unsigned)up.spreadingFactor);
+        if (up.bandwidth       > 0.0f && !offgridBwValid(up.bandwidth))
+            LOGF("[Config] offgrid preset '%s': BW %.1f out of range, inheriting\n",
+                 up.name.c_str(), up.bandwidth);
+        if (up.codingRate      > 0    && !offgridCrValid(up.codingRate))
+            LOGF("[Config] offgrid preset '%s': CR %u out of range, inheriting\n",
+                 up.name.c_str(), (unsigned)up.codingRate);
+        if ((int)_config.offgrid.presets.size() >= defaults::MAX_OFFGRID_PRESETS) {
+            LOGF("[Config] offgrid.presets: cap %d reached, '%s' and later ignored\n",
+                 defaults::MAX_OFFGRID_PRESETS, up.name.c_str());
+            break;
+        }
+        _config.offgrid.presets.push_back(up);
+    }
+
     // WiFi — missing block defaults to empty (disabled). Used for firmware auto-update.
     _config.wifi.ssid       = doc["wifi"]["ssid"]        | "";
     _config.wifi.password   = doc["wifi"]["password"]    | "";
@@ -653,6 +702,19 @@ String ConfigManager::toJson() const {
     if (_config.offgrid.spreadingFactor > 0)    doc["offgrid"]["spreading_factor"] = _config.offgrid.spreadingFactor;
     if (_config.offgrid.bandwidth       > 0.0f) doc["offgrid"]["bandwidth"]        = _config.offgrid.bandwidth;
     if (_config.offgrid.codingRate      > 0)    doc["offgrid"]["coding_rate"]      = _config.offgrid.codingRate;
+    // Round-trip user presets: nothing on-device edits them, so a save must not
+    // drop them (the class of bug that lost wifi in 0.3.5 and quick replies in 0.4.3).
+    if (!_config.offgrid.presets.empty()) {
+        JsonArray arr = doc["offgrid"]["presets"].to<JsonArray>();
+        for (const auto& up : _config.offgrid.presets) {
+            JsonObject po = arr.add<JsonObject>();
+            po["name"] = up.name;
+            if (up.frequency       > 0.0f) po["frequency"]        = up.frequency;
+            if (up.spreadingFactor > 0)    po["spreading_factor"] = up.spreadingFactor;
+            if (up.bandwidth       > 0.0f) po["bandwidth"]        = up.bandwidth;
+            if (up.codingRate      > 0)    po["coding_rate"]      = up.codingRate;
+        }
+    }
 
     // WiFi — normally only emitted when an SSID is set, to keep config.json clean on
     // devices that don't use it. auto_update is exempt: its switch is deliberately

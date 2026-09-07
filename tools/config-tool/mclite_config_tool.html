@@ -2495,27 +2495,35 @@ body.v4 *::-webkit-scrollbar-thumb:hover { background: var(--shell-line-2); }
         </div>
         <div class="field">
           <label>Offgrid Preset<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
-          <select id="offgridPreset">
-            <option value="auto" selected>Auto (433/869/918)</option>
-            <option value="mc_open">MeshCore Open 869.000</option>
-            <option value="mc_app">MeshCore app 869.945</option>
-            <option value="mc_433">MeshCore 433.000</option>
-            <option value="mc_918">MeshCore 918.000</option>
-            <option value="mclite_869">MCLite 869.000 full (SF8 / BW62.5 / CR8)</option>
-            <option value="custom">Custom</option>
-          </select>
+          <!-- Options are generated from OFFGRID_PRESETS + any offgrid.presets[] in the
+               loaded config; a hand-written list here would drift from the table. -->
+          <select id="offgridPreset"></select>
           <div class="hint collapsible"><b>The two official MeshCore clients disagree:</b> the Android app puts offgrid on 869.945 MHz, MeshCore Open uses 869.000. Pick the one your group runs. <b>Auto</b> (the default) keeps MCLite's original behaviour: nearest of 433 / 869 / 918 derived from your normal frequency, with SF / BW / coding rate left as configured. That matches what stock MeshCore does, but it means two people whose normal regions differ still cannot hear each other offgrid, because a shared frequency is not a shared modem setting. <b>MCLite 869.000 full</b> also fixes SF / BW / coding rate, so everyone who picks it agrees on all of them &mdash; reliable between MCLite devices, not compatible with stock. TX power is never changed by a preset.</div>
           <div class="hint" id="offgridDerivedFreq" style="margin-top:6px; font-weight:500;">Offgrid radio: &mdash;</div>
         </div>
         <div class="field" id="offgridCustomFields" style="display:none;">
           <label>Custom offgrid radio<button type="button" class="info-icon" onclick="toggleHint(this)" aria-label="Toggle hint">i</button></label>
           <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
-            <input type="number" id="offgridFreq" step="0.001" min="400" max="960" placeholder="MHz">
-            <input type="number" id="offgridSf"   step="1" min="0" max="12" placeholder="SF">
-            <input type="number" id="offgridBw"   step="0.1" min="0" max="500" placeholder="BW kHz">
-            <input type="number" id="offgridCr"   step="1" min="0" max="8" placeholder="CR">
+            <input type="number" id="offgridFreq" step="0.001" min="150" max="960" placeholder="MHz">
+            <select id="offgridSf">
+              <option value="">SF: inherit</option>
+              <option value="5">SF5</option><option value="6">SF6</option><option value="7">SF7</option>
+              <option value="8">SF8</option><option value="9">SF9</option><option value="10">SF10</option>
+              <option value="11">SF11</option><option value="12">SF12</option>
+            </select>
+            <select id="offgridBw">
+              <option value="">BW: inherit</option>
+              <option value="31.25">31.25</option><option value="62.5">62.5</option>
+              <option value="125">125</option><option value="250">250</option><option value="500">500</option>
+            </select>
+            <select id="offgridCr">
+              <option value="">CR: inherit</option>
+              <option value="5">CR5</option><option value="6">CR6</option>
+              <option value="7">CR7</option><option value="8">CR8</option>
+            </select>
           </div>
-          <div class="hint collapsible">Leave a field empty to inherit your normal setting for it. Setting only the frequency reproduces stock behaviour on a frequency of your choosing; setting all four makes a complete preset that works between devices with different normal regions.</div>
+          <div class="hint collapsible">Leave a field on <b>inherit</b> to keep your normal setting for it. Setting only the frequency reproduces stock behaviour on a frequency of your choosing; setting all four makes a complete preset that works between devices with different normal regions. Frequency must be 150&ndash;960 MHz (what the SX1262 supports); SF, bandwidth and coding rate offer only values the radio accepts. The firmware ignores any out-of-range value and inherits your normal setting instead, rather than moving you somewhere you did not ask for.</div>
+          <div class="hint" id="offgridCustomWarn" style="margin-top:6px; color:var(--red); display:none;"></div>
         </div>
       </div>
     </details>
@@ -3993,6 +4001,20 @@ function validate() {
   }
   check('radioFreq', 100, 1000);
   check('radioTX', -9, 22);
+  // Offgrid custom frequency: only when it is in play, and empty is legal there
+  // (it means "inherit"), so this cannot use check(), which rejects NaN.
+  {
+    const el = document.getElementById('offgridFreq');
+    const field = el ? el.closest('.field') : null;
+    const active = document.getElementById('offgridPreset').value === 'custom' && el && el.value !== '';
+    const v = active ? parseFloat(el.value) : NaN;
+    if (active && (isNaN(v) || v < 150 || v > 960)) {
+      field.classList.add('invalid');
+      invalidNumericFields++;
+    } else if (field) {
+      field.classList.remove('invalid');
+    }
+  }
   check('dispBrightness', 10, 255);
   check('dispAutoDim', 0, 3600);
   check('dispDimBrightness', 0, 255);
@@ -4268,6 +4290,9 @@ function buildConfig() {
     offgrid: {
       enabled: document.getElementById('offgridEnabled').value === 'true',
       preset: document.getElementById('offgridPreset').value,
+      // No editor for these in the tool, so re-emit what was loaded rather than
+      // dropping it (the wifi-0.3.5 / quick-replies-0.4.3 class of bug).
+      ...(_offgridUserPresets.length ? { presets: _offgridUserPresets } : {}),
       // Custom fields are only emitted when filled in: 0/absent means "inherit",
       // so a device on a named preset carries no meaningless zeroes.
       ...offgridCustomOut()
@@ -5344,30 +5369,81 @@ function offgridFreqFor(f) {
 // Mirror firmware/src/config/offgrid_presets.h. freq 0 = derive from the normal
 // frequency; sf 0 = inherit the normal modem settings.
 const OFFGRID_PRESETS = {
-  auto:       { freq: 0,       sf: 0,  bw: 0,    cr: 0 },
-  mc_open:    { freq: 869.000, sf: 0,  bw: 0,    cr: 0 },
-  mc_app:     { freq: 869.945, sf: 0,  bw: 0,    cr: 0 },
-  mc_433:     { freq: 433.000, sf: 0,  bw: 0,    cr: 0 },
-  mc_918:     { freq: 918.000, sf: 0,  bw: 0,    cr: 0 },
-  mclite_869: { freq: 869.000, sf: 8,  bw: 62.5, cr: 8 },
-  custom:     { freq: 0,       sf: 0,  bw: 0,    cr: 0 }
+  auto:       { label: 'Auto (433/869/918)',       freq: 0,       sf: 0,  bw: 0,    cr: 0 },
+  mc_open:    { label: 'MeshCore Open 869.000',    freq: 869.000, sf: 0,  bw: 0,    cr: 0 },
+  mc_app:     { label: 'MeshCore app 869.945',     freq: 869.945, sf: 0,  bw: 0,    cr: 0 },
+  mc_433:     { label: 'MeshCore 433.000',         freq: 433.000, sf: 0,  bw: 0,    cr: 0 },
+  mc_918:     { label: 'MeshCore 918.000',         freq: 918.000, sf: 0,  bw: 0,    cr: 0 },
+  mclite_869: { label: 'MCLite 869.000 full (SF8 / BW62.5 / CR8)', freq: 869.000, sf: 8, bw: 62.5, cr: 8 },
+  custom:     { label: 'Custom',                   freq: 0,       sf: 0,  bw: 0,    cr: 0 }
 };
+
+// offgrid.presets[] from the loaded config. The tool has no editor for them (same
+// as display.themes), so they are stashed here to be offered in the dropdown and
+// written back untouched on export.
+let _offgridUserPresets = [];
+
+// Rebuild the dropdown from the table plus the config-defined entries. Generated
+// rather than hand-written so the option list cannot drift from OFFGRID_PRESETS.
+function rebuildOffgridPresetOptions() {
+  const sel = document.getElementById('offgridPreset');
+  const keep = sel.value;
+  sel.innerHTML = '';
+  for (const [key, p] of Object.entries(OFFGRID_PRESETS)) {
+    const o = document.createElement('option');
+    o.value = key; o.textContent = p.label;
+    sel.appendChild(o);
+  }
+  for (const up of _offgridUserPresets) {
+    if (!up.name || OFFGRID_PRESETS[up.name]) continue;   // built-ins always win
+    const o = document.createElement('option');
+    o.value = up.name; o.textContent = up.name + ' (from config)';
+    sel.appendChild(o);
+  }
+  sel.value = [...sel.options].some(o => o.value === keep) ? keep : 'auto';
+}
 
 // An unknown key (a preset this build does not have) falls back to auto, matching
 // offgridPresetIndex() in the firmware.
 function setOffgridPreset(key) {
   const sel = document.getElementById('offgridPreset');
-  sel.value = OFFGRID_PRESETS[key] ? key : 'auto';
+  rebuildOffgridPresetOptions();
+  sel.value = [...sel.options].some(o => o.value === key) ? key : 'auto';
   updateOffgridDerivedFreq();
 }
 
 function loadOffgridCustom(og) {
+  _offgridUserPresets = Array.isArray(og.presets) ? og.presets.slice(0, 8) : [];
+  rebuildOffgridPresetOptions();
   const set = (id, v) => { document.getElementById(id).value = (v === undefined || v === 0) ? '' : v; };
   set('offgridFreq', og.frequency);
   set('offgridSf',   og.spreading_factor);
   set('offgridBw',   og.bandwidth);
   set('offgridCr',   og.coding_rate);
   updateOffgridDerivedFreq();
+}
+
+// Same bounds as offgrid_presets.h / the firmware's radio block. The selects make
+// SF/BW/CR unrepresentable when wrong, so in practice this catches the frequency,
+// which has to stay a free-text field.
+function offgridRangeProblem() {
+  if (document.getElementById('offgridPreset').value !== 'custom') return '';
+  const raw = document.getElementById('offgridFreq').value;
+  if (raw === '') return '';
+  const f = parseFloat(raw);
+  if (isNaN(f) || f < 150 || f > 960)
+    return 'Offgrid frequency must be between 150 and 960 MHz. The device will ignore it and stay on your normal frequency.';
+  return '';
+}
+
+function showOffgridRangeWarning() {
+  const el = document.getElementById('offgridCustomWarn');
+  if (!el) return;
+  const msg = offgridRangeProblem();
+  el.textContent = msg;
+  el.style.display = msg ? '' : 'none';
+  const field = document.getElementById('offgridFreq').closest('.field');
+  if (field) field.classList.toggle('invalid', !!msg);
 }
 
 function offgridCustomOut() {
@@ -5393,7 +5469,12 @@ function updateOffgridDerivedFreq() {
   const normal = parseFloat(document.getElementById('radioFreq').value);
   if (isNaN(normal)) { el.textContent = 'Offgrid radio: —'; return; }
 
-  const p = OFFGRID_PRESETS[document.getElementById('offgridPreset').value] || OFFGRID_PRESETS.auto;
+  const key = document.getElementById('offgridPreset').value;
+  const user = _offgridUserPresets.find(u => u.name === key && !OFFGRID_PRESETS[key]);
+  const p = OFFGRID_PRESETS[key] ||
+            (user ? { freq: user.frequency || 0, sf: user.spreading_factor || 0,
+                      bw: user.bandwidth || 0, cr: user.coding_rate || 0 }
+                  : OFFGRID_PRESETS.auto);
   const num = id => { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? 0 : v; };
   let freq = p.freq || offgridFreqFor(normal);
   let sf = parseInt(document.getElementById('radioSF').value) || 0;
@@ -5405,9 +5486,14 @@ function updateOffgridDerivedFreq() {
     if (num('offgridSf')   > 0) { sf = num('offgridSf'); inherited = false; }
     if (num('offgridBw')   > 0) { bw = num('offgridBw'); inherited = false; }
     if (num('offgridCr')   > 0) { cr = num('offgridCr'); inherited = false; }
-  } else if (p.sf > 0) {
-    sf = p.sf; bw = p.bw; cr = p.cr; inherited = false;
+  } else if (p.sf > 0 || (user && user.frequency)) {
+    // A config-defined preset sets only the fields it names, like custom does.
+    if (p.freq > 0) freq = p.freq;
+    if (p.sf > 0) { sf = p.sf; inherited = false; }
+    if (p.bw > 0) { bw = p.bw; inherited = false; }
+    if (p.cr > 0) { cr = p.cr; inherited = false; }
   }
+  showOffgridRangeWarning();
   el.textContent = 'Offgrid radio: ' + freq.toFixed(3) + ' MHz / SF' + sf + ' / BW' + bw + ' / CR' + cr +
                    (inherited ? ' (modem settings inherited)' : ' (fixed by preset)');
 }
@@ -6548,6 +6634,20 @@ maybeShowWizard();
       ['gps',       [['gpsLastKnownMaxAge',60,7200],['gpsClockOffset',-12,14]]],
       ['battery',   [['batteryThreshold',5,50]]],
     ];
+    // Offgrid custom frequency is conditional (only with the custom preset) and
+    // legally empty, so it cannot join the table above.
+    {
+      const ogEl = document.getElementById('offgridFreq');
+      if (ogEl && document.getElementById('offgridPreset').value === 'custom' && ogEl.value !== '') {
+        const v = parseFloat(ogEl.value);
+        if (isNaN(v) || v < 150 || v > 960) {
+          issues.push('radio.offgridFreq: must be 150–960 MHz');
+          elevate('radio', 'err');
+          markStatic('offgridFreq');
+        }
+      }
+    }
+
     // Keyboard brightness only validates when backlight is enabled —
     // mirrors the original validate() conditional behavior.
     const kbdBacklight = document.getElementById('kbdBacklight');

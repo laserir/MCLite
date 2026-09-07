@@ -131,6 +131,19 @@ struct PermissionsConfig {
     bool   companion = true;               // show the Companion group in Admin
 };
 
+// A user-defined offgrid preset from config (offgrid.presets[]), named so it can
+// be selected like a built-in. Same idea as display.themes[]: the built-in table
+// covers the common cases, and this lets a group ship its own without waiting for
+// a firmware release -- which matters here because the upstream offgrid values are
+// still moving. Unset (0) fields inherit the user's normal radio setting.
+struct OffgridUserPreset {
+    String  name;
+    float   frequency       = 0.0f;
+    uint8_t spreadingFactor = 0;
+    float   bandwidth       = 0.0f;
+    uint8_t codingRate      = 0;
+};
+
 struct OffgridConfig {
     bool enabled = false;  // When true, forward packets + switch to the offgrid radio settings
     // Which entry of config/offgrid_presets.h to use. "auto" (default) keeps the
@@ -142,6 +155,8 @@ struct OffgridConfig {
     uint8_t spreadingFactor = 0;
     float   bandwidth       = 0.0f;
     uint8_t codingRate      = 0;
+    // Extra named presets from config, offered alongside the built-in table.
+    std::vector<OffgridUserPreset> presets;
 };
 
 struct WiFiConfig {

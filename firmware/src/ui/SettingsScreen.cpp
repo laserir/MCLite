@@ -27,6 +27,9 @@
 
 namespace mclite {
 
+// Defined further down with the rest of the offgrid picker code.
+static String offgridPresetLabel(const OffgridConfig& o);
+
 namespace {
 // Batched-save state (A+B model): editors update the in-memory config live and
 // set g_dsDirty; the SD write happens once when leaving the screen (hide()).
@@ -432,10 +435,10 @@ void SettingsScreen::buildRadio() {
         }
     }
 
-    // Offgrid preset — which offgrid settings to use (config/offgrid_presets.h).
-    // Shown always, not just when offgrid is on, so it can be set up in advance.
-    addNavRowGated(t("lbl_offgrid_preset"),
-                   t(OFFGRID_PRESETS[offgridPresetIndex(cfg.offgrid.preset)].labelKey),
+    // Offgrid preset — which offgrid settings to use (config/offgrid_presets.h,
+    // plus anything in offgrid.presets[]). Shown always, not just when offgrid is
+    // on, so it can be set up in advance.
+    addNavRowGated(t("lbl_offgrid_preset"), offgridPresetLabel(cfg.offgrid),
                    offgridPresetRowCb, false);
 
     // Heard adverts — live count, opens the list. _heardCountLabel refreshed by tick().
@@ -1916,6 +1919,19 @@ void SettingsScreen::regionRowCb(lv_event_t* e) {
     SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
     if (self) self->openChoicePicker(ChoiceField::RegionPreset);
 }
+// Display name for the selected offgrid preset: a built-in resolves to its
+// translated label, a config-defined one shows the name from config, and anything
+// unrecognised reports the fallback that resolveOffgrid() will actually use.
+static String offgridPresetLabel(const OffgridConfig& o) {
+    for (size_t i = 0; i < OFFGRID_PRESET_COUNT; i++) {
+        if (o.preset == OFFGRID_PRESETS[i].key) return String(t(OFFGRID_PRESETS[i].labelKey));
+    }
+    for (const auto& up : o.presets) {
+        if (o.preset == up.name) return up.name;
+    }
+    return String(t(OFFGRID_PRESETS[0].labelKey));
+}
+
 void SettingsScreen::offgridPresetRowCb(lv_event_t* e) {
     SettingsScreen* self = (SettingsScreen*)lv_event_get_user_data(e);
     if (self) self->openChoicePicker(ChoiceField::OffgridPreset);
@@ -1945,6 +1961,13 @@ void SettingsScreen::openChoicePicker(ChoiceField f) {
             for (size_t i = 0; i < OFFGRID_PRESET_COUNT; i++) {
                 g_choiceNames.push_back(OFFGRID_PRESETS[i].key);
                 g_choiceLabels.push_back(t(OFFGRID_PRESETS[i].labelKey));
+            }
+            // Then anything the user defined in offgrid.presets[]. Their label is
+            // the name they chose -- there is no i18n key for a config-defined entry,
+            // same as custom themes.
+            for (const auto& up : ConfigManager::instance().config().offgrid.presets) {
+                g_choiceNames.push_back(up.name);
+                g_choiceLabels.push_back(up.name);
             }
             break;
         case ChoiceField::LocationFormat:
@@ -2014,7 +2037,11 @@ void SettingsScreen::openChoicePicker(ChoiceField f) {
             break;
         }
         case ChoiceField::OffgridPreset:
-            initSel = (uint16_t)offgridPresetIndex(cfg.offgrid.preset);
+            // Match across the merged list (built-ins + config-defined), not the
+            // built-in table, or a user preset would open the picker on "auto".
+            for (size_t i = 0; i < g_choiceNames.size(); i++) {
+                if (g_choiceNames[i] == cfg.offgrid.preset) { initSel = (uint16_t)i; break; }
+            }
             break;
         case ChoiceField::AdvertInterval:
             for (size_t i = 0; i < g_choiceVals.size(); i++) {

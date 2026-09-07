@@ -47,6 +47,9 @@ constexpr int      MAX_CHAT_CONTACTS     = 32;
 // Channels (MeshCore MAX_GROUP_CHANNELS=16) and room servers (MAX_ROOMS_RUNTIME=8,
 // part of the 40-contact MeshCore budget). On-device add refuses at these caps.
 constexpr int      MAX_CHANNELS          = 16;
+// Cap on user-defined offgrid presets (offgrid.presets[]). Small on purpose: the
+// picker is a roller, and this is a "my group's frequency" list, not a database.
+constexpr int      MAX_OFFGRID_PRESETS   = 8;
 constexpr int      MAX_ROOM_SERVERS      = 8;
 
 // Display
