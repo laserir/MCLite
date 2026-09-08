@@ -5,7 +5,7 @@ All notable changes to MCLite are documented here. The format is loosely based o
 
 Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-watch-vX.Y.Z.bin`).
 
-## [Unreleased]
+## [0.4.4] — 2026-09-08
 
 ### Added
 - **12-hour clock.** Times can show as **1:45 PM** instead of **13:45**. Off by default, so nothing changes
