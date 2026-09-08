@@ -1575,6 +1575,10 @@ void UIManager::showPinLock(PinPurpose purpose) {
     if (!IInput::instance().has(InputCapability::Keyboard)) {
         _pinKeypad = lv_keyboard_create(_pinOverlay);
         lv_keyboard_set_mode(_pinKeypad, LV_KEYBOARD_MODE_TEXT_LOWER);
+        // Popovers, like every other keyboard in the app. These keys are about
+        // 30x48 px and the field is masked with an escalating lockout behind it,
+        // so seeing which key you actually hit matters more here than anywhere.
+        lv_keyboard_set_popovers(_pinKeypad, true);
         lv_keyboard_set_textarea(_pinKeypad, NULL);   // we own the buffer, not a textarea
         lv_obj_set_width(_pinKeypad, LV_PCT(100));
         lv_obj_set_height(_pinKeypad, LV_PCT(45));

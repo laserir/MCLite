@@ -16,6 +16,18 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   time it is still comes from `gps.timezone` / `gps.clock_offset`. On the T-Deck the longer clock leaves
   slightly less room for a long device name in the status bar, which shortens with an ellipsis. Asked for by
   @thumbtak2 (#50).
+- **The message length limit is visible while you type.** The chat input allows 160 characters, but the radio's
+  limit is 160 *bytes* — and an emoji costs four of them, an accented letter two. So a message could look well
+  short of the limit and still be refused when you pressed send. A small counter now appears above the input
+  once a draft passes about three quarters of its budget, in amber, turning red at the point where the send
+  would be refused. It stays hidden the rest of the time, and it counts against the same budget the send path
+  enforces, so it cannot disagree with it — channels are tighter than direct messages, because the sender's
+  name travels with each channel message.
+- **The map opens on a regional view instead of a street corner.** It used to open at the deepest zoom your tile
+  pack happened to contain, which on a detailed pack meant landing with no idea where you were and zooming out
+  before you could use it. It now opens at whichever level you have that sits closest to a town-and-road scale,
+  in either direction — a city pack covering only close-in levels opens at its widest rather than its tightest,
+  and a pack that jumps from continent to street picks the street. Idea from @jason-s13r's fork.
 - **Offgrid presets: choose which offgrid frequency to meet on.** The two official MeshCore clients disagree —
   the Android app puts offgrid on **869.945 MHz**, MeshCore Open uses **869.000** — so there is no single value
   MCLite could hardcode and be compatible with both. Offgrid is now a preset you pick, in the config tool or in
@@ -57,6 +69,10 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
   so a device running a build newer than its own release has nothing to pull. Suggested by @laserir.
 
 ### Fixed
+- **The PIN keypad shows which key you pressed.** On the T-Watch, the on-screen keypad for entering a PIN was
+  the only keyboard in the app without the enlarged popover over the pressed key. Its keys are about 30x48
+  pixels, the field is masked so you cannot see what you typed, and wrong entries back off for longer each
+  time — the one keyboard where you most need the feedback had none.
 - **A room's last-sync time was shown in UTC.** Every other time on the device honours the timezone you
   configured, but the room list built that one timestamp with its own code that skipped the conversion — so on
   a device set to, say, CET it read an hour or two behind everything else on screen. It now goes through the

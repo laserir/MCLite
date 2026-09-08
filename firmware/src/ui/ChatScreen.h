@@ -73,6 +73,7 @@ private:
 #endif
 
     std::unique_ptr<ConvoId> _currentConvo;
+    lv_obj_t* _byteHint = nullptr;   // floating "142/160" budget hint, hidden until near the limit
     String _lastLocInsert;   // last "@ <coords>" appended via the GPS button (anti-double-insert)
     String _reactHash;       // target message hash for the open reaction picker
     String _reactSenderName; // sender name for channel reaction wire format
@@ -112,6 +113,9 @@ private:
     static void gpsBtnCb(lv_event_t* e);
     static void backBtnCb(lv_event_t* e);
     static void textareaCb(lv_event_t* e);
+    static void textareaChangedCb(lv_event_t* e);
+    // Refresh the byte-budget hint from the current draft. Cheap; runs per keypress.
+    void updateByteHint();
     static void senderNameClickCb(lv_event_t* e);
     static void senderNameLongPressCb(lv_event_t* e);
     static void retryBtnCb(lv_event_t* e);

@@ -224,6 +224,29 @@ void ChatScreen::createInputBar() {
     lv_obj_set_style_border_color(_textarea, theme::ACCENT(), LV_STATE_FOCUSED);
     lv_obj_set_style_border_width(_textarea, 1, LV_STATE_FOCUSED);
     lv_obj_add_event_cb(_textarea, textareaCb, LV_EVENT_READY, this);
+    lv_obj_add_event_cb(_textarea, textareaChangedCb, LV_EVENT_VALUE_CHANGED, this);
+
+    // Byte-budget hint. The textarea caps at 160 *characters* but MeshCore's limit
+    // is 160 *bytes*, so an emoji or accented draft can look short and still be
+    // refused on send -- which is what the length guard added in 0.3.4 does, after
+    // the fact. This shows the budget filling while you type.
+    //
+    // IGNORE_LAYOUT keeps it out of the input bar's flex row: on a 320 px T-Deck
+    // that row is already carrying up to four buttons plus the textarea, and a
+    // label appearing mid-sentence would reflow the field under the cursor. It
+    // floats just above the bar instead, and stays hidden until the draft is
+    // actually close to the limit, so it costs nothing in normal use.
+    _byteHint = lv_label_create(_inputBar);
+    lv_obj_add_flag(_byteHint, LV_OBJ_FLAG_IGNORE_LAYOUT);
+    lv_obj_add_flag(_byteHint, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_style_text_font(_byteHint, FONT_SMALL, 0);
+    lv_obj_align(_byteHint, LV_ALIGN_TOP_RIGHT, -4, -13);
+    // The hint sits just ABOVE the input bar, i.e. outside its parent's box, and
+    // LVGL clips children to the parent unless told otherwise — without this the
+    // label is laid out correctly and then never drawn. Staying a child of the bar
+    // (rather than the screen) means it follows when showKeyboard() lifts the bar
+    // above the T-Watch on-screen keyboard.
+    lv_obj_add_flag(_inputBar, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
 
     // GPS location button
     _gpsBtn = lv_btn_create(_inputBar);
@@ -388,6 +411,10 @@ void ChatScreen::open(const ConvoId& id) {
             lv_group_focus_obj(_textarea);
         }
     }
+    // Read-only conversations skip the clear above, so refresh explicitly: the
+    // budget differs between a DM and a channel, and a hint left over from the
+    // previous chat would be quoting the wrong limit.
+    updateByteHint();
 }
 
 void ChatScreen::close() {
@@ -815,6 +842,39 @@ void ChatScreen::backBtnCb(lv_event_t* e) {
         self->close();
         self->_onBack();
     }
+}
+
+void ChatScreen::textareaChangedCb(lv_event_t* e) {
+    auto* self = (ChatScreen*)lv_event_get_user_data(e);
+    if (self) self->updateByteHint();
+}
+
+void ChatScreen::updateByteHint() {
+    if (!_byteHint || !_textarea || !_currentConvo) return;
+
+    // Same budget AND the same measurement the send path uses, so the hint cannot
+    // disagree with the refusal. trySendCurrent() sanitizes before measuring, which
+    // strips U+FE0F (3 bytes each) and folds smart quotes 3 bytes -> 1; counting the
+    // raw text instead would show "163/160" in red on a draft that sends fine.
+    // Channels are tighter than DMs because MeshCore prepends "<name>: ".
+    const size_t budget = UIManager::maxMsgBytesFor(*_currentConvo);
+    const size_t used   = sanitizeForDisplay(String(lv_textarea_get_text(_textarea))).length();
+
+    // Quiet until it matters: most messages never come near the limit, and a
+    // permanent counter would just be noise over the chat.
+    if (budget == 0 || used * 4 < budget * 3) {   // below 75%
+        lv_obj_add_flag(_byteHint, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%u/%u", (unsigned)used, (unsigned)budget);
+    lv_label_set_text(_byteHint, buf);
+    // Amber approaching, red once the send would actually be refused. The
+    // threshold mirrors trySendCurrent() exactly -- it rejects `> budget`, so a
+    // draft sitting on the limit still sends and must not be coloured as failing.
+    lv_obj_set_style_text_color(_byteHint,
+        used > budget ? theme::BATTERY_LOW() : theme::GPS_LAST_KNOWN(), 0);
+    lv_obj_clear_flag(_byteHint, LV_OBJ_FLAG_HIDDEN);
 }
 
 void ChatScreen::textareaCb(lv_event_t* e) {

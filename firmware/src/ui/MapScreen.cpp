@@ -1,4 +1,5 @@
 #include "MapScreen.h"
+#include "../util/zoom_pick.h"
 #include "util/log.h"
 #include "UIManager.h"
 #include "theme.h"
@@ -298,18 +299,16 @@ void MapScreen::close() {
 }
 
 void MapScreen::pickInitialZoom() {
-    // Pick the largest available zoom where the centre tile exists; fall back
-    // to the largest available zoom if no centre tile is present.
+    // Which centre tiles exist; the choice itself is pickZoomIdx() in
+    // util/zoom_pick.h, kept pure so the tile-pack cases are unit-tested.
     auto& loader = TileLoader::instance();
-    int chosen = (int)_zooms.size() - 1;
-    for (int i = (int)_zooms.size() - 1; i >= 0; i--) {
+    std::vector<bool> hasTile(_zooms.size(), false);
+    for (size_t i = 0; i < _zooms.size(); i++) {
         uint8_t z = _zooms[i];
         TileFrac f = latLonToTileXY(_contactLat, _contactLon, z);
-        int tx = (int)floor(f.x);
-        int ty = (int)floor(f.y);
-        if (loader.tileExists(z, tx, ty)) { chosen = i; break; }
+        hasTile[i] = loader.tileExists(z, (int)floor(f.x), (int)floor(f.y));
     }
-    _zoomIdx = chosen;
+    _zoomIdx = pickZoomIdx(_zooms, hasTile);
     _zoom = _zooms[_zoomIdx];
 }
 
