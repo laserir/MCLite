@@ -13,6 +13,7 @@
 #include "../storage/MessageStore.h"  // ConvoId
 #include "../hal/Battery.h"
 #include "../storage/SDCard.h"
+#include "../util/TimeHelper.h"
 
 #include <MeshCore.h>   // PUB_KEY_SIZE, MAX_PATH_SIZE
 #include <helpers/ContactInfo.h>
@@ -638,7 +639,10 @@ void CompanionService::cmdGetDeviceTime() {
 }
 
 // CMD_SET_DEVICE_TIME -> OK (only if monotonic-forward). Apps set time on
-// connect; this feeds the same RTC clock the mesh stamps messages with.
+// connect; this feeds the same RTC clock the mesh stamps messages with. Goes
+// through TimeHelper so it counts as a sync -- setting the clock directly left
+// the status bar blank, since nowEpoch() reports 0 until a sync has happened.
+// Also written to the T-Watch RTC so a watch without a GPS fix keeps the time.
 void CompanionService::cmdSetDeviceTime(size_t len) {
     if (len < 5) { writeErr(ERR_CODE_ILLEGAL_ARG); return; }
     auto* mesh = MeshManager::instance().mesh();
@@ -646,7 +650,7 @@ void CompanionService::cmdSetDeviceTime(size_t len) {
     uint32_t secs; memcpy(&secs, &_cmd[1], 4);
     uint32_t curr = mesh->getRTCClock()->getCurrentTime();
     if (secs >= curr) {
-        mesh->getRTCClock()->setCurrentTime(secs);
+        TimeHelper::instance().syncAndPersist(secs);
         writeOK();
     } else {
         writeErr(ERR_CODE_ILLEGAL_ARG);

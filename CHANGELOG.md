@@ -8,6 +8,15 @@ Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-wa
 ## [Unreleased]
 
 ### Fixed
+- **Auto-update now sets the clock at boot.** The T-Deck has no battery-backed clock, so without a GPS fix it
+  boots with no time. With **WiFi → Auto Update** on, MCLite already connected at boot to check for a new
+  release, but it disconnected before the internet time sync (NTP) could run. It now waits up to 5 seconds for
+  NTP first, so the clock is set at every boot even without GPS (#52, reported by @mueslimak3r).
+- **Time sent by the companion app now shows on the device.** The app sets the clock when it connects. The
+  firmware accepted that time, but the status bar clock stayed blank, because the device didn't count it as
+  a valid time source. It does now (#52).
+- **T-Watch keeps time from WiFi or the app across reboots.** Only GPS used to save the time to the watch's
+  battery-backed clock, so a time from WiFi or the companion app was lost on reboot. Both are now saved too.
 - **"Discover Repeaters" in the phone app no longer errors.** Selecting **Discover Nodes → Discover Repeaters**
   returned "Unsupported Command - Please update your companion firmware", which was misleading: the firmware was
   current, it had simply never implemented the command behind that button. It does now, and the answers come

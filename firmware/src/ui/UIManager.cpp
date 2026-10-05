@@ -2376,6 +2376,11 @@ void UIManager::checkForWiFiUpdateOnBoot() {
         return;
     }
 
+    // The link is only up for the duration of this call, so the loop's
+    // non-blocking maybeNtpSync() never sees it. Without RTC hardware (T-Deck)
+    // this is the one chance to set the clock from WiFi before GPS locks.
+    TimeHelper::instance().ntpSyncBlocking(5000);
+
     // While the link is up, bring stale translations forward even if the firmware
     // itself is current. A device flashed over USB or from SD keeps whatever lang
     // files were already on its card, so "up to date" firmware and out-of-date

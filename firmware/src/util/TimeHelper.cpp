@@ -3,6 +3,9 @@
 #include "../i18n/I18n.h"
 #include "../config/ConfigManager.h"
 #include "../net/WiFiManager.h"
+#ifdef PLATFORM_TWATCH
+#include "../hal/twatch/Rtc.h"
+#endif
 #include <sys/time.h>
 #include <Arduino.h>
 
@@ -67,10 +70,20 @@ void TimeHelper::maybeNtpSync() {
     if (getLocalTime(&tmv, 0)) {
         time_t now = time(nullptr);
         if (now > 1700000000) {
-            syncSystemClock((uint32_t)now);
+            syncAndPersist((uint32_t)now);
             LOGF("[Time] NTP synced: %lu\n", (unsigned long)now);
         }
     }
+}
+
+bool TimeHelper::ntpSyncBlocking(uint32_t timeoutMs) {
+    uint32_t start = millis();
+    while (!_synced && millis() - start < timeoutMs) {
+        maybeNtpSync();
+        if (!_ntpStarted) break;                           // WiFi not connected
+        delay(100);
+    }
+    return _synced;
 }
 
 uint32_t TimeHelper::nowEpoch() const {
@@ -103,6 +116,14 @@ void TimeHelper::syncSystemClock(uint32_t utcEpoch) {
             LOGF("[Time] Boot epoch adjusted to %lu\n", (unsigned long)_bootEpoch);
         }
     }
+}
+
+void TimeHelper::syncAndPersist(uint32_t utcEpoch) {
+    if (utcEpoch < 1700000000) return;
+    syncSystemClock(utcEpoch);
+#ifdef PLATFORM_TWATCH
+    Rtc::instance().setEpoch(utcEpoch);
+#endif
 }
 
 void TimeHelper::recordBootTime() {

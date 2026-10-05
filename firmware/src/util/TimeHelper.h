@@ -31,10 +31,21 @@ public:
     // Idempotent: skips if epoch hasn't changed.
     void syncSystemClock(uint32_t utcEpoch);
 
+    // syncSystemClock() for one-off sources (NTP, companion app), which also
+    // writes the battery-backed RTC on boards that have one (T-Watch) so the
+    // time survives a reboot. GPS has its own throttled RTC write in loop().
+    void syncAndPersist(uint32_t utcEpoch);
+
     // Call every loop. No-op unless WiFi is connected AND the clock isn't already
     // synced (GPS wins). Starts SNTP once per connection and polls non-blocking;
     // sets the clock once a time arrives, honoring the configured timezone.
     void maybeNtpSync();
+
+    // Blocking NTP sync for callers that hold a short-lived WiFi link (the boot
+    // update check connects and disconnects inside setup(), so maybeNtpSync()
+    // never sees it up). Waits up to timeoutMs. Returns true if the clock is
+    // synced afterwards; returns immediately if it already was.
+    bool ntpSyncBlocking(uint32_t timeoutMs);
 
     // The effective POSIX TZ string applyTimezone() last applied.
     const String& posixTz() const { return _tz; }
