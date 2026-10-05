@@ -5,7 +5,7 @@ All notable changes to MCLite are documented here. The format is loosely based o
 
 Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-watch-vX.Y.Z.bin`).
 
-## [Unreleased]
+## [0.4.5] — 2026-10-05
 
 ### Fixed
 - **Auto-update now sets the clock at boot.** The T-Deck has no battery-backed clock, so without a GPS fix it
