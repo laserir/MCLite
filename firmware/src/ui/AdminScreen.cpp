@@ -194,6 +194,8 @@ void AdminScreen::show() {
             "(c) Espressif\n\n"
             "OpenMoji emoji font - CC-BY-SA 4.0\n"
             "(c) OpenMoji project (hfg-gmuend)\n\n"
+            "Montserrat font - SIL OFL 1.1\n"
+            "(c) 2011 The Montserrat Project Authors\n\n"
             "MIT/Apache-2.0/Zlib libraries are used under\n"
             "the terms of those licenses. LGPL-2.1 libraries\n"
             "are dynamically linked; users may replace them\n"

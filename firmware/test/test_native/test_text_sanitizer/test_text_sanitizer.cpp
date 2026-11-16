@@ -37,6 +37,24 @@ void test_preserves_4byte_emoji() {
     TEST_ASSERT_EQUAL_STRING("hi \xF0\x9F\x99\x82", sanitizeForDisplay(String("hi \xF0\x9F\x99\x82")).c_str());
 }
 
+// Cyrillic and accented Latin (2-byte UTF-8, issue #53) pass through byte-identical:
+// the ext fonts can only draw them if the sanitizer leaves them alone.
+void test_preserves_cyrillic_and_latin1() {
+    // "Привет, Ёж" (D0 9F D1 80 D0 B8 D0 B2 D0 B5 D1 82 ... D0 81 D0 B6)
+    const char* cyr = "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82, \xD0\x81\xD0\xB6";
+    TEST_ASSERT_EQUAL_STRING(cyr, sanitizeForDisplay(String(cyr)).c_str());
+    // "Grüße, señor, Łódź"
+    const char* lat = "Gr\xC3\xBC\xC3\x9F" "e, se\xC3\xB1or, \xC5\x81\xC3\xB3" "d\xC5\xBA";
+    TEST_ASSERT_EQUAL_STRING(lat, sanitizeForDisplay(String(lat)).c_str());
+}
+
+// Mixed Cyrillic + emoji + VS16 + typographic quotes: only the VS16 and quotes change.
+void test_cyrillic_mixed_with_emoji_and_quotes() {
+    // “Да” ❤️  ->  "Да" ❤
+    TEST_ASSERT_EQUAL_STRING("\"\xD0\x94\xD0\xB0\" \xE2\x9D\xA4",
+        sanitizeForDisplay(String("\xE2\x80\x9C\xD0\x94\xD0\xB0\xE2\x80\x9D \xE2\x9D\xA4\xEF\xB8\x8F")).c_str());
+}
+
 // Empty string is fine.
 void test_empty() {
     TEST_ASSERT_EQUAL_STRING("", sanitizeForDisplay(String("")).c_str());
@@ -49,6 +67,8 @@ int main() {
     RUN_TEST(test_emoji_with_vs16);
     RUN_TEST(test_normalizes_quotes);
     RUN_TEST(test_preserves_4byte_emoji);
+    RUN_TEST(test_preserves_cyrillic_and_latin1);
+    RUN_TEST(test_cyrillic_mixed_with_emoji_and_quotes);
     RUN_TEST(test_empty);
     return UNITY_END();
 }

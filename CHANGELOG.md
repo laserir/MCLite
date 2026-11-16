@@ -5,6 +5,16 @@ All notable changes to MCLite are documented here. The format is loosely based o
 
 Targets: **T-Deck Plus** (`mclite-vX.Y.Z.bin`) and **T-Watch Ultra** (`mclite-watch-vX.Y.Z.bin`).
 
+## [Unreleased]
+
+### Added
+- **Cyrillic and accented letters now display.** Messages, contact names and channel names in Russian,
+  Ukrainian, Bulgarian, Serbian and other Cyrillic-script languages used to show up as blanks, and so did
+  accented Latin letters such as ä, ö, ü, ß, é, ñ or ł. They now render everywhere on both the T-Deck and the
+  T-Watch, in the same Montserrat typeface as the rest of the screen (Latin-1, Latin Extended-A and Cyrillic).
+  This is display only: the T-Deck keyboard still types ASCII, so you can read these letters but not type them
+  on the device (#53, reported by @jwcatGIT, who also sent the first working patch).
+
 ## [0.4.5] — 2026-10-05
 
 ### Fixed

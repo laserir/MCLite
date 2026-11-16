@@ -40,6 +40,15 @@ void test_never_splits_a_4_byte_sequence() {
     TEST_ASSERT_EQUAL_STRING(s.c_str(), truncateUtf8(s, 5).c_str());
 }
 
+// Cyrillic is 2 bytes per letter (issue #53): an odd budget must not keep half a letter.
+void test_never_splits_a_2_byte_sequence() {
+    String s = "\xD0\x9F\xD1\x80\xD0\xB8";   // "При", 6 bytes
+    TEST_ASSERT_EQUAL_STRING("\xD0\x9F", truncateUtf8(s, 3).c_str());
+    TEST_ASSERT_EQUAL_STRING("\xD0\x9F\xD1\x80", truncateUtf8(s, 5).c_str());
+    TEST_ASSERT_EQUAL_STRING("", truncateUtf8(s, 1).c_str());
+    TEST_ASSERT_EQUAL_STRING(s.c_str(), truncateUtf8(s, 6).c_str());
+}
+
 // A cut landing exactly on a lead byte keeps everything before it.
 void test_cut_on_lead_byte_keeps_prefix() {
     String s = String(EURO) + EURO;             // 6 bytes
@@ -58,6 +67,7 @@ int main(int, char**) {
     RUN_TEST(test_ascii_truncates_at_limit);
     RUN_TEST(test_never_splits_a_3_byte_sequence);
     RUN_TEST(test_never_splits_a_4_byte_sequence);
+    RUN_TEST(test_never_splits_a_2_byte_sequence);
     RUN_TEST(test_cut_on_lead_byte_keeps_prefix);
     RUN_TEST(test_zero_budget_yields_empty);
     return UNITY_END();

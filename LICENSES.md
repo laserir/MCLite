@@ -34,6 +34,7 @@ MCLite uses the following open-source libraries. Their license terms apply to th
 |-------|---------|-----------|
 | [OpenMoji](https://openmoji.org/) emoji font (monochrome subset, `firmware/src/ui/fonts/emoji_font_*.c`) | CC-BY-SA 4.0 | (c) OpenMoji project (HfG Schwaebisch Gmuend) |
 | [OpenMoji](https://openmoji.org/) colour glyphs (`firmware/src/ui/fonts/emoji_color_*.c`, source PNGs in `firmware/assets/fonts/.openmoji-cache/`) | CC-BY-SA 4.0 | (c) OpenMoji project (HfG Schwaebisch Gmuend) |
+| [Montserrat](https://github.com/JulietaUla/Montserrat) Medium, accented Latin + Cyrillic subset (`firmware/src/ui/fonts/ext_font_*.c`) | SIL OFL 1.1 | (c) 2011 The Montserrat Project Authors |
 
 ## License Notes
 
@@ -48,4 +49,7 @@ MCLite uses the following open-source libraries. Their license terms apply to th
   The colour subset's original PNGs are also checked in under `firmware/assets/fonts/.openmoji-cache/`, so the
   generated output is reproducible offline. That directory is redistributed OpenMoji artwork, under the same
   CC-BY-SA 4.0 terms.
+- The **Montserrat** glyphs (accented Latin + Cyrillic) are used under the **SIL Open Font License 1.1**. They are
+  generated from the `Montserrat-Medium.ttf` that LVGL ships (the source of its built-in fonts), see
+  `firmware/assets/fonts/generate_ext_fonts.sh`. The embedded subset keeps the font's name and is not sold on its own.
 - MCLite itself is released under the **MIT License**. See [LICENSE](LICENSE).

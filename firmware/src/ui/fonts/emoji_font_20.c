@@ -5,7 +5,7 @@
 /*******************************************************************************
  * Size: 20 px
  * Bpp: 1
- * Opts: --font OpenMoji-black-glyf.ttf -r 0x2600-0x26FF -r 0x2700-0x27BF -r 0x1F300-0x1F6FF -r 0x1F900-0x1FAFF --size 20 --bpp 1 --format lvgl --lv-font-name lv_font_emoji_20 --lv-fallback lv_font_montserrat_20 -o emoji_font_20.c
+ * Opts: --font OpenMoji-black-glyf.ttf -r 0x2600-0x26FF -r 0x2700-0x27BF -r 0x1F300-0x1F6FF -r 0x1F900-0x1FAFF --size 20 --bpp 1 --format lvgl --lv-font-name lv_font_emoji_20 --lv-fallback lv_font_ext_20 -o emoji_font_20.c
  ******************************************************************************/
 
 #ifdef LV_LVGL_H_INCLUDE_SIMPLE
@@ -11596,7 +11596,7 @@ static lv_font_fmt_txt_dsc_t font_dsc = {
 #endif
 };
 
-extern const lv_font_t lv_font_montserrat_20;
+extern const lv_font_t lv_font_ext_20;
 
 
 /*-----------------
@@ -11622,7 +11622,7 @@ lv_font_t lv_font_emoji_20 = {
 #endif
     .dsc = &font_dsc,          /*The custom font data. Will be accessed by `get_glyph_bitmap/dsc` */
 #if LV_VERSION_CHECK(8, 2, 0) || LVGL_VERSION_MAJOR >= 9
-    .fallback = &lv_font_montserrat_20,
+    .fallback = &lv_font_ext_20,  /* -> lv_font_montserrat_20 (see ext_font_20.c) */
 #endif
     .user_data = NULL,
 };

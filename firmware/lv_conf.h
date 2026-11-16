@@ -45,7 +45,10 @@
 #define LV_FONT_MONTSERRAT_20 1
 #define LV_FONT_MONTSERRAT_24 1
 #define LV_FONT_MONTSERRAT_28 1
-#define LV_FONT_DEFAULT &lv_font_montserrat_14
+/* Default font = Montserrat 14 + accented Latin/Cyrillic (src/ui/fonts/ext_font_14.c,
+ * falls back to the built-in above), so widgets without an explicit font render them too. */
+#define LV_FONT_CUSTOM_DECLARE LV_FONT_DECLARE(lv_font_ext_14)
+#define LV_FONT_DEFAULT &lv_font_ext_14
 
 /* Widgets */
 #define LV_USE_ARC        0

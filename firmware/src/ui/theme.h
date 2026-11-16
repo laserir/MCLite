@@ -4,14 +4,25 @@
 
 #include "../hal/boards/board.h"
 
-// Generated OpenMoji emoji fonts (src/ui/fonts/, board-gated). Each carries a
-// Montserrat `.fallback`, so assigning one to a label renders emoji from it and
-// all ASCII from Montserrat (visually identical). T-Deck links 12/14, T-Watch
-// 16/20 — the declarations for the other board's sizes are unreferenced externs.
+// Generated OpenMoji emoji fonts (src/ui/fonts/, board-gated). Each falls back to
+// the ext font of the same size, so assigning one to a label renders emoji from it,
+// accented Latin + Cyrillic from ext, and ASCII from Montserrat. T-Deck links 12/14,
+// T-Watch 16/20 — the declarations for the other board's sizes are unreferenced externs.
 LV_FONT_DECLARE(lv_font_emoji_12)
 LV_FONT_DECLARE(lv_font_emoji_14)
 LV_FONT_DECLARE(lv_font_emoji_16)
 LV_FONT_DECLARE(lv_font_emoji_20)
+
+// Generated "ext" Montserrat fonts (src/ui/fonts/ext_font_*.c, issue #53): Latin-1 +
+// Latin Extended-A + Cyrillic, falling back to the built-in lv_font_montserrat_N for
+// ASCII and LV_SYMBOL_* icons. Every FONT_* below resolves through one of these, so
+// any label can show non-ASCII names and messages. T-Deck links 12/14/16/20, T-Watch
+// 14/16/20/24. lv_font_ext_14 is also LV_FONT_DEFAULT (lv_conf.h).
+LV_FONT_DECLARE(lv_font_ext_12)
+LV_FONT_DECLARE(lv_font_ext_14)
+LV_FONT_DECLARE(lv_font_ext_16)
+LV_FONT_DECLARE(lv_font_ext_20)
+LV_FONT_DECLARE(lv_font_ext_24)
 
 // Icon aliases — simple text characters that always render correctly
 #define ICON_DM       "@"                  // DM contact
@@ -310,22 +321,22 @@ void initColorEmoji();     // called once after config load (main.cpp, only when
 // Fonts — T-Watch bumps every level up by 2-4pt so labels are readable at
 // arm's length. T-Deck unchanged.
 #ifdef PLATFORM_TWATCH
-#define FONT_SMALL          &lv_font_montserrat_14
-#define FONT_NORMAL         &lv_font_montserrat_16
-#define FONT_LARGE          &lv_font_montserrat_20
-#define FONT_TITLE          &lv_font_montserrat_24
+#define FONT_SMALL          &lv_font_ext_14
+#define FONT_NORMAL         &lv_font_ext_16
+#define FONT_LARGE          &lv_font_ext_20
+#define FONT_TITLE          &lv_font_ext_24
 #define FONT_STATUSBAR_ICON &lv_font_montserrat_28  // 2x current icon size for finger taps
 // Semantic fonts — one step larger than the size-named FONT_* on T-Watch so body
 // text and section headings read comfortably at arm's length. Emoji fonts are
-// primary here; they fall back to Montserrat for ASCII (--lv-fallback), so emoji
+// primary here; they fall back to ext -> Montserrat (--lv-fallback), so emoji
 // in any message render inline. Used in chat bubbles, the chat header, admin rows.
 #define FONT_BODY     mclite::theme::fontBody()     // colour-emoji font when enabled, else mono
 #define FONT_HEADING  mclite::theme::fontHeading()
 #else
-#define FONT_SMALL    &lv_font_montserrat_12
-#define FONT_NORMAL   &lv_font_montserrat_14
-#define FONT_LARGE    &lv_font_montserrat_16
-#define FONT_TITLE    &lv_font_montserrat_20
+#define FONT_SMALL    &lv_font_ext_12
+#define FONT_NORMAL   &lv_font_ext_14
+#define FONT_LARGE    &lv_font_ext_16
+#define FONT_TITLE    &lv_font_ext_20
 #define FONT_BODY     mclite::theme::fontBody()     // colour-emoji font when enabled, else mono
 #define FONT_HEADING  mclite::theme::fontHeading()
 #endif

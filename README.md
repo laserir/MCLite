@@ -87,6 +87,7 @@ That's it. Full walkthrough in [Getting Started](#getting-started) below, plus [
 **Device & comfort**
 - **Themes** -- Dark, Light, Amber (night-vision), High-contrast, or your own custom palette
 - **Multi-language** -- English, German, French, Italian, plus your own translations via SD
+- **International text** -- received messages and names in Cyrillic and accented Latin (ä, é, ñ, ł, ...) display correctly
 - **Auto-dim** -- screen and keyboard backlight dim on inactivity to save battery
 - **Screen & PIN lock** -- key lock or PIN code, with optional auto-lock on dim
 - **Real-time clock** *(T-Watch Ultra)* -- battery-backed RTC keeps time across reboots
